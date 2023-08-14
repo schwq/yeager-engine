@@ -6,6 +6,10 @@
 #include <math.h>
 #include <string.h>
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -18,10 +22,11 @@
 #include "../../../libs/imgui/imgui_impl_glfw.h"
 #include "../../../libs/imgui/imgui_impl_opengl3.h"
 
-#define WindowX 1900
-#define WindowY 1200
+extern unsigned int kWindowX;
+extern unsigned int kWindowY;
 #define EngineVersion 1.0
 
+typedef unsigned int uint;
 typedef std::string String;
 typedef glm::mat4 Matrix4;
 typedef glm::mat3 Matrix3;

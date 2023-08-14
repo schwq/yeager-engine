@@ -39,7 +39,7 @@ class EditorCamera {
     float m_cameraPitch = 0.0f;
     float m_cameraSpeed = 0.2f;
     Application *m_app;
-    bool m_cameraShouldMove = true;
+    bool m_cameraShouldMove = false;
 };
 
 class PlayerCamera : public EditorCamera {

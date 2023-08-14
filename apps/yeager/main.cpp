@@ -5,20 +5,33 @@
 #include "engine/renderer/window.h"
 #include <GLFW/glfw3.h>
 
-int main(int argc, char *argv[]) {
+static void glfwErrorCallback(int error, const char* description)
+{
+  VLOG_F(ERROR, description);
+}
 
-    static Application app;
+int main(int argc, char* argv[])
+{
+  static Application* app = new Application();
+  Input* input = new Input(app);
+  Window* window = new Window(kWindowX, kWindowY, glfwErrorCallback,
+                              app->GetInput()->MouseCallback);
 
-    VLOG_F(INFO, "START PROGRAM");
+  RendererEngine* engine = new RendererEngine(RendererEngineName::kOpenGL, app);
+  app->GetRendererEngine()->checkGLAD();
+  Interface* interfaceUI = new Interface(window, app);
+  EditorCamera* camera = new EditorCamera(app);
 
-    glfwSetFramebufferSizeCallback(app.GetWindowManager()->getWindow(),
-                                   app.GetWindowManager()->FramebufferSizeCallback);
-    glfwSetInputMode(app.GetWindowManager()->getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    glfwSetCursorPosCallback(app.GetWindowManager()->getWindow(), app.GetInput()->MouseCallback);
+  app->SetupApplication(input, window, engine, camera, interfaceUI);
 
-    app.GetRendererEngine()->checkGLAD();
+  app->GetRendererEngine()->Render();
+  VLOG_F(INFO, "Shutdown program");
 
-    app.GetRendererEngine()->Render();
-
-    VLOG_F(INFO, "SHUTDOWN");
+  delete app;
+  delete input;
+  delete window;
+  delete engine;
+  delete interfaceUI;
+  delete camera;
+  return EXIT_SUCCESS;
 }

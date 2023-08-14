@@ -3,26 +3,28 @@
 #include "../../common/common.h"
 #include "../../application.h"
 #include "../../input.h"
+#include "texture.h"
+#include "shader.h"
 
 class Application;
 
 enum class RendererEngineName { kOpenGL, kDirectX, kVulkan };
 
 struct RendererEngineHandle {
-    RendererEngineName name;
+  RendererEngineName name;
 };
 
 class RendererEngine {
-  public:
-    RendererEngine(RendererEngineName name, Application *app);
-    ~RendererEngine(){};
+ public:
+  RendererEngine(RendererEngineName name, Application *app);
+  ~RendererEngine(){};
 
-    void Render();
-    void checkGLAD();
+  void Render();
+  void checkGLAD();
 
-  private:
-    RendererEngineHandle m_handle;
-    Application *m_app;
+ private:
+  RendererEngineHandle m_handle;
+  Application *m_app;
 
-    void RendererOpenGL();
+  void RendererOpenGL();
 };

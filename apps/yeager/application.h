@@ -14,32 +14,35 @@ class Interface;
 class EditorCamera;
 
 enum class ApplicationCurrentMode {
-    kEditorMode,
-    kErrorMode,
-    kAwaitMode,
-    kSettingsMode,
-    kLauncherMode,
-    kCeaseMode
+  kEditorMode,
+  kErrorMode,
+  kAwaitMode,
+  kSettingsMode,
+  kLauncherMode,
+  kCeaseMode
 };
 
 class Application {
-  public:
-    Application();
-    ~Application();
-    bool ShouldRendererActive();
-    Window *GetWindowManager() { return m_window; }
-    RendererEngine *GetRendererEngine() { return m_engine; }
-    Input *GetInput() { return m_input; }
-    Interface *GetInterface() { return m_interface; }
-    ApplicationCurrentMode GetCurrentMode() { return m_current_mode; }
-    const void SetCurrentMode(ApplicationCurrentMode mode);
-    EditorCamera *GetEditorCamera() { return m_camera; }
+ public:
+  Application();
+  ~Application();
 
-  private:
-    ApplicationCurrentMode m_current_mode = ApplicationCurrentMode::kAwaitMode;
-    EditorCamera *m_camera;
-    Window *m_window;
-    RendererEngine *m_engine;
-    Input *m_input;
-    Interface *m_interface;
+  Window *GetWindowManager() const { return m_window; }
+  RendererEngine *GetRendererEngine() const { return m_engine; }
+  Input *GetInput() const { return m_input; }
+  Interface *GetInterface() const { return m_interface; }
+  ApplicationCurrentMode GetCurrentMode() const { return m_current_mode; }
+  EditorCamera *GetEditorCamera() const { return m_camera; }
+  void SetupApplication(Input *input, Window *window, RendererEngine *engine,
+                        EditorCamera *camera, Interface *interfaceUI);
+  const void SetCurrentMode(ApplicationCurrentMode mode);
+  bool ShouldRendererActive();
+
+ private:
+  ApplicationCurrentMode m_current_mode = ApplicationCurrentMode::kEditorMode;
+  EditorCamera *m_camera;
+  Window *m_window;
+  RendererEngine *m_engine;
+  Input *m_input;
+  Interface *m_interface;
 };
