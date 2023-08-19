@@ -88,13 +88,80 @@ void Interface::CreateSpaceX(uint count)
 void Interface::RenderUI()
 {
   m_frames++;
-
-  RenderLauncher();
+  switch (m_current_mode) {
+    case InterfaceMode::kLauncherMode:
+      RenderLauncher();
+      break;
+    case InterfaceMode::kEditorMode:
+      RenderEditor();
+      break;
+    default:
+      RenderError();
+  }
 }
 
 void Interface::RenderAwait() {}
 
-void Interface::RenderEditor() {}
+void Interface::RenderEditor()
+{
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+  NewFrame();
+
+  if (m_dont_move_windows_editor) {
+    Begin("Explorer", NULL,
+          ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+              ImGuiWindowFlags_NoMove);
+  }
+  else {
+    Begin("Explorer");
+  }
+  End();
+
+  if (m_dont_move_windows_editor) {
+    Begin("Console", NULL,
+          ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+              ImGuiWindowFlags_NoMove);
+  }
+  else {
+    Begin("Console");
+  }
+  End();
+
+  RenderDebugger();
+
+  InterfaceButton file_button("editor_file_button", "FILE");
+  InterfaceButton edit_button("editor_edit_button", "EDIT");
+  InterfaceButton help_button("editor_help_button", "HELP");
+  InterfaceButton debug_button("editor_debug_button", "DEBUG");
+
+  SetNextWindowPos(ImVec2(0, 0));
+  SetNextWindowSize(ImVec2(kWindowX, 50.0f));
+  Begin("Editor menu", NULL,
+        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoScrollbar);
+
+  if (file_button.AddButton()) {
+    logButton(file_button);
+  }
+  SameLine();
+  if (edit_button.AddButton()) {
+    logButton(edit_button);
+  }
+  SameLine();
+  if (help_button.AddButton()) {
+    logButton(help_button);
+  }
+  SameLine();
+  if (debug_button.AddButton()) {
+    logButton(debug_button);
+  }
+
+  End();
+
+  Render();
+  ImGui_ImplOpenGL3_RenderDrawData(GetDrawData());
+}
 
 void Interface::RenderLauncher()
 {
@@ -108,7 +175,8 @@ void Interface::RenderLauncher()
 
   SetNextWindowPos(ImVec2(0, 0));
   SetNextWindowSize(ImVec2(kWindowX, kWindowY));
-  Begin("Yaeger Launcher");
+  Begin("Yaeger Launcher", NULL,
+        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
 
   CenteredText("Welcome to the Yaeger Engine!");
   CenteredText(
@@ -133,6 +201,7 @@ void Interface::RenderLauncher()
 
   if (open_project.AddButton()) {
     logButton(open_project);
+    m_app->SetCurrentMode(ApplicationCurrentMode::kEditorMode);
   }
 
   SameLine();
@@ -153,6 +222,8 @@ void Interface::RenderLauncher()
     logButton(help_button);
   }
   End();
+
+  RenderDebugger();
   Render();
   ImGui_ImplOpenGL3_RenderDrawData(GetDrawData());
 }
@@ -217,4 +288,19 @@ void Interface::StyleImGui()
   style.Colors[ImGuiCol_PlotHistogramHovered] =
       ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
   style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.00f, 0.00f, 1.00f, 0.35f);
+}
+
+void Interface::RenderDebugger()
+{
+  Begin("Application Debugger");
+
+  Text("Frames %u", m_frames);
+  Text("Camera should move: %s",
+       m_app->GetEditorCamera()->GetShouldMove() ? "true" : "false");
+  Vector3 cameraPos = m_app->GetEditorCamera()->GetPosition();
+  Text("Camera world position: x: %f y: %f z: %f", cameraPos.x, cameraPos.y,
+       cameraPos.z);
+  Checkbox("Windows dont move", &m_dont_move_windows_editor);
+
+  End();
 }

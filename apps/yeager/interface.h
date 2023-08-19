@@ -49,6 +49,7 @@ class Interface {
   static uint m_frames;
   InterfaceMode m_current_mode = InterfaceMode::kLauncherMode;
   Application *m_app;
+  bool m_dont_move_windows_editor = false;
 
   void RenderAwait();
   void RenderLauncher();
@@ -61,4 +62,5 @@ class Interface {
   void CenteredText(String text);
   void AlignForWidth(float width, float alignment = 0.5f);
   void CreateSpaceX(uint count);
+  void RenderDebugger();
 };

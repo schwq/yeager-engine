@@ -40,9 +40,9 @@ class Application {
 
  private:
   ApplicationCurrentMode m_current_mode = ApplicationCurrentMode::kEditorMode;
-  EditorCamera *m_camera;
-  Window *m_window;
-  RendererEngine *m_engine;
-  Input *m_input;
-  Interface *m_interface;
+  EditorCamera *m_camera = nullptr;
+  Window *m_window = nullptr;
+  RendererEngine *m_engine = nullptr;
+  Input *m_input = nullptr;
+  Interface *m_interface = nullptr;
 };

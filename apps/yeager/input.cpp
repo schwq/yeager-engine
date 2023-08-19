@@ -52,7 +52,7 @@ void Input::ProcessInputRender(Window *window, float delta)
       else {
         m_app->GetEditorCamera()->SetShouldMove(true);
         glfwSetInputMode(m_app->GetWindowManager()->getWindow(), GLFW_CURSOR,
-                         GLFW_CURSOR_HIDDEN);
+                         GLFW_CURSOR_DISABLED);
       }
     }
   }

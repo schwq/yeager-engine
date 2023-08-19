@@ -12,6 +12,7 @@ static void glfwErrorCallback(int error, const char* description)
 
 int main(int argc, char* argv[])
 {
+  loguru::init(argc, argv);
   static Application* app = new Application();
   Input* input = new Input(app);
   Window* window = new Window(kWindowX, kWindowY, glfwErrorCallback,
