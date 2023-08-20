@@ -3,9 +3,12 @@
 #include "../../common/common.h"
 #include "../../application.h"
 
+
+class Application;
+
 class Shader {
   public:
-    Shader(const char *fragmentPath, const char *vertexPath, String name);
+    Shader(const char *fragmentPath, const char *vertexPath, String name, Application* app);
     ~Shader();
 
     void UseShader();
@@ -22,6 +25,7 @@ class Shader {
     GLuint m_id;
     String m_name;
     bool m_initialize = false;
+    Application* m_app = nullptr;
 
     uint CreateVertexGL(const char *vertexPath);
     uint CreateFragmentGL(const char *fragmentPath);

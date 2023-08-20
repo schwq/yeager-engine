@@ -24,7 +24,6 @@ int main(int argc, char* argv[])
   EditorCamera* camera = new EditorCamera(app);
 
   app->SetupApplication(input, window, engine, camera, interfaceUI);
-
   app->GetRendererEngine()->Render();
   VLOG_F(INFO, "Shutdown program");
 

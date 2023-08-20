@@ -5,11 +5,13 @@
 #include "../../input.h"
 #include "texture.h"
 #include "shader.h"
+#include "shapes.h"
 
 class Application;
 
-enum class RendererEngineName { kOpenGL, kDirectX, kVulkan };
+enum class RendererEngineName { kOpenGL = 0, kDirectX = 1, kVulkan = 2 };
 
+/* TODO: make sure the program args and argv are taken to here for revision, user choices i mean*/
 struct RendererEngineHandle {
   RendererEngineName name;
 };

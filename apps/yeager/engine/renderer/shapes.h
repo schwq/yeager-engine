@@ -4,14 +4,17 @@
 #include "../../application.h"
 #include "shader.h"
 #include "texture.h"
+#include "../editor/toolbox_object.h"
 
-namespace yaeger {
+class EngineTexture2D;
+class Application;
+class ToolBoxObject;
 
-class Cube {
+class YaegerCube {
  public:
-  Cube(String name, EngineTexture2D* texture = nullptr,
+  YaegerCube(String name, Application* app, EngineTexture2D* texture = nullptr,
        const Vector3 position = Vector3(0.0f));
-  ~Cube();
+  ~YaegerCube();
   void Draw(Shader* shader);
   void SetPosition(Vector3 position) { m_position = position; }
   Vector3 GetPosition() { return m_position; }
@@ -20,11 +23,14 @@ class Cube {
 
  private:
   String m_name;
-  Vector3 m_position;
-  Vector3 m_rotation;
+  Vector3 m_position = Vector3(1.0f);
+  Vector3 m_rotation = Vector3(0.0f);
   EngineTexture2D* m_texture = nullptr;
+  uint m_vbo, m_vao;
+  Application* m_app;
+  ToolBoxObject *m_toolbox = nullptr;
 
-  float vertices[] = {
+  float vertices[180] = {
       -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 0.0f,
       0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
       -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
@@ -50,4 +56,3 @@ class Cube {
       -0.5f, 0.5f,  0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f};
 };
 
-}  // namespace yaeger

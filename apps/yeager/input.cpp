@@ -46,6 +46,7 @@ void Input::ProcessInputRender(Window *window, float delta)
       VLOG_F(INFO, "Key E pressed");
       if (m_app->GetEditorCamera()->GetShouldMove()) {
         m_app->GetEditorCamera()->SetShouldMove(false);
+        firstMouse = true;
         glfwSetInputMode(m_app->GetWindowManager()->getWindow(), GLFW_CURSOR,
                          GLFW_CURSOR_NORMAL);
       }

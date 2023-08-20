@@ -22,6 +22,7 @@ set(LIBRARIES
     ../../libs/imgui/imgui_tables.cpp
     ../../libs/imgui/imgui_widgets.cpp
     ../../libs/imgui/imgui_demo.cpp
+    ../../libs/imgui/imgui_stdlib.cpp
 )
 
 set(SOURCEFILES 
@@ -32,8 +33,14 @@ set(SOURCEFILES
     input.cpp 
     engine/renderer/renderer.cpp 
     engine/renderer/shader.cpp 
+    engine/renderer/shapes.cpp 
     engine/renderer/texture.cpp 
     engine/renderer/window.cpp 
+    engine/editor/camera.cpp 
+    engine/editor/editor_explorer.cpp
+    engine/editor/editor_console.cpp
+    common/common.cpp
+    engine/editor/toolbox_object.cpp
 )
 
 add_executable(${projectName} ${SOURCEFILES})

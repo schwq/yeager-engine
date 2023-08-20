@@ -2,5 +2,5 @@
 
 void yaeger::Error::LogError()
 {
-  VLOG_F(ERROR, "Error: %s, Code: %u", m_error, m_code);
+  VLOG_F(ERROR, "Error: %s, Code: %u", m_error.c_str(), m_code);
 }

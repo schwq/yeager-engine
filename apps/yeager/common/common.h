@@ -5,7 +5,8 @@
 #include <vector>
 #include <math.h>
 #include <string.h>
-
+#include <algorithm>
+#include <filesystem>
 #ifdef _WIN32
 #include <Windows.h>
 #endif
@@ -21,9 +22,16 @@
 #include "../../../libs/imgui/imgui.h"
 #include "../../../libs/imgui/imgui_impl_glfw.h"
 #include "../../../libs/imgui/imgui_impl_opengl3.h"
+#include "../../../libs/imgui/imgui_stdlib.h"
+#include "../../../libs/portable-file-dialogs.h"
+#define FMT_HEADER_ONLY
+#include "../../../libs/fmt/core.h"
+#include "../../../libs/fmt/format.h"
 
 extern unsigned int kWindowX;
 extern unsigned int kWindowY;
+extern const char* kOperatingSystem;
+extern std::string GetPath(std::string path);
 #define EngineVersion 1.0
 
 typedef unsigned int uint;

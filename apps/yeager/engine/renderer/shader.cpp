@@ -2,8 +2,8 @@
 #include <fstream>
 #include <ios>
 
-Shader::Shader(const char *fragmentPath, const char *vertexPath, String name)
-    : m_name(name)
+Shader::Shader(const char *fragmentPath, const char *vertexPath, String name, Application* app)
+    : m_name(name), m_app(app)
 {
   uint vt = CreateVertexGL(vertexPath);
   uint fg = CreateFragmentGL(fragmentPath);

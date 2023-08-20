@@ -4,6 +4,7 @@
 #include "../../application.h"
 #include "shader.h"
 
+class Application;
 class Shader;
 
 bool LoadTextureFromFile(const char *filename, GLuint *out_texture,
@@ -11,7 +12,7 @@ bool LoadTextureFromFile(const char *filename, GLuint *out_texture,
 
 class EngineTexture2D {
  public:
-  EngineTexture2D(const char *texturePath, String name = "DEFAULT");
+  EngineTexture2D(const char *texturePath, Application* app,  String name = "DEFAULT");
   ~EngineTexture2D();
 
   GLuint GetID() { return m_id; }
@@ -23,12 +24,13 @@ class EngineTexture2D {
   GLuint m_id;
   String m_name;
   uint m_texture_num;
+  Application *m_app;
   static uint m_texture_count;
 };
 
 class EngineSkybox {
  public:
-  EngineSkybox(std::vector<String> faces, String name = "DEFAULT");
+  EngineSkybox(std::vector<String> faces, Application *app, String name = "DEFAULT");
   ~EngineSkybox();
 
   GLuint GetID() { return m_id; }
@@ -40,6 +42,7 @@ class EngineSkybox {
 
   GLuint m_id;
   String m_name;
+  Application *m_app = nullptr;
   unsigned int skyboxVAO, skyboxVBO;
 
   float skyboxVertices[108] = {

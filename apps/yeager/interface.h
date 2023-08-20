@@ -4,6 +4,9 @@
 #include "common/common.h"
 #include "engine/renderer/window.h"
 #include "engine/renderer/texture.h"
+#include "engine/editor/editor_explorer.h"
+
+struct ExplorerObject;
 
 enum class InterfaceMode {
   kEditorMode,
@@ -42,14 +45,14 @@ class Interface {
   const void SetCurrentMode(InterfaceMode mode) { m_current_mode = mode; }
 
  private:
-  ImGuiIO &m_imgui_io = ImGuiIO();
-  ImGuiStyle &m_imgui_style = ImGuiStyle();
   bool m_initialize = false;
   float size_pixels = 13.0f;
   static uint m_frames;
   InterfaceMode m_current_mode = InterfaceMode::kLauncherMode;
   Application *m_app;
   bool m_dont_move_windows_editor = false;
+  bool m_comment_window_open = false;
+  String comment;
 
   void RenderAwait();
   void RenderLauncher();

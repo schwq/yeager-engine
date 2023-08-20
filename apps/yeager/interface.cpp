@@ -1,5 +1,7 @@
 #include "interface.h"
+#include <GLFW/glfw3.h>
 #include "common/common.h"
+#include "engine/editor/editor_explorer.h"
 #include "input.h"
 using namespace ImGui;
 
@@ -56,21 +58,20 @@ Interface::Interface(Window *window, Application *app) : m_app(app)
 {
   IMGUI_CHECKVERSION();
   CreateContext();
-  m_imgui_io = GetIO();
+  ImGuiIO& m_imgui_io = GetIO();
   (void)m_imgui_io;
   m_imgui_io.ConfigFlags |=
       ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
   m_imgui_io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
   StyleColorsDark();
-  m_imgui_style = GetStyle();
+  ImGuiStyle& m_imgui_style = GetStyle();
 
   ImGui_ImplGlfw_InitForOpenGL(window->getWindow(), true);
   ImGui_ImplOpenGL3_Init("#version 330");
   VLOG_F(INFO, "Initialize ImGui");
 
   m_imgui_io.Fonts->AddFontFromFileTTF(
-      "C:\\Users\\schwq\\OneDrive\\Documentos\\GitHub\\yeager-"
-      "engine\\apps\\yeager\\assets\\fonts\\big_blue_term.ttf",
+      GetPath("/assets/fonts/big_blue_term.ttf").c_str(),
       size_pixels);
   StyleImGui();
   m_initialize = true;
@@ -108,24 +109,47 @@ void Interface::RenderEditor()
   ImGui_ImplGlfw_NewFrame();
   NewFrame();
 
-  if (m_dont_move_windows_editor) {
-    Begin("Explorer", NULL,
-          ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-              ImGuiWindowFlags_NoMove);
-  }
-  else {
-    Begin("Explorer");
-  }
+
+  Begin("Explorer", NULL, m_dont_move_windows_editor ? ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+              ImGuiWindowFlags_NoMove : ImGuiWindowFlags_None );
+
+  m_app->explorer->DrawExplorer();
+
   End();
 
-  if (m_dont_move_windows_editor) {
-    Begin("Console", NULL,
-          ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-              ImGuiWindowFlags_NoMove);
+  
+  Begin("Console", NULL, m_dont_move_windows_editor ? ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+              ImGuiWindowFlags_NoMove : ImGuiWindowFlags_None);
+  if(Button("Add Comment:")) {
+    m_comment_window_open = true;
   }
-  else {
-    Begin("Console");
+  if(m_comment_window_open) {
+    SetNextWindowPos(ImVec2((kWindowX / 2) - 200, (kWindowY /2) - 25));
+    SetNextWindowSize(ImVec2(400, 50));
+    Begin("Comment");
+    InputText("Say: ", &comment);
+    SameLine();
+    if(Button("ADD") || glfwGetKey(m_app->GetWindowManager()->getWindow(), GLFW_KEY_ENTER) == GLFW_PRESS) {
+      m_comment_window_open = false;
+      m_app->m_console.SetLog(comment);
+      comment.clear();
+    }
+    End();
   }
+  m_app->m_console.ReadLog();
+
+  End();
+
+  Begin("Toolbox", NULL, m_dont_move_windows_editor ? ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+              ImGuiWindowFlags_NoMove : ImGuiWindowFlags_None);
+
+  if(m_app->explorer->toolbox_selected.m_type == ExplorerObjectType::kNone) {
+    Text("None");
+  } else {
+    Text(m_app->explorer->toolbox_selected.m_name.c_str());
+    m_app->explorer->toolbox_selected.m_object_toolbox->DrawObject();
+  }
+  
   End();
 
   RenderDebugger();
@@ -188,6 +212,8 @@ void Interface::RenderLauncher()
   CenteredText("https://github.com/schwq/yeager-engine");
 
   CreateSpaceX(2);
+
+  ImGuiStyle& m_imgui_style = GetStyle();
 
   float width = 0.0f;
   width += CalcTextSize(open_project.m_text.c_str()).x;

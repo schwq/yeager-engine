@@ -4,7 +4,15 @@
 
 Application::Application() { VLOG_F(INFO, "Start program"); }
 
-Application::~Application() {}
+Application::~Application() {
+  delete explorer;
+  for(uint x = 0; x < m_cubes_user_created.size(); x++) {
+    delete m_cubes_user_created[x];
+  }
+  for(uint x = 0; x < m_2d_textures_user_handle.size(); x++) {
+    delete m_2d_textures_user_handle[x];
+  }
+}
 
 bool Application::ShouldRendererActive()
 {
@@ -23,6 +31,7 @@ void Application::SetupApplication(Input *input, Window *window,
   m_camera = camera;
   m_window = window;
   m_interface = interfaceUI;
+  explorer = new EditorExplorer(this);
 }
 
 const void Application::SetCurrentMode(ApplicationCurrentMode mode)
