@@ -19,6 +19,14 @@ void Input::MouseCallback(GLFWwindow *window, double xpos, double ypos)
   }
 }
 
+const void Input::SetCursorCanDisappear(bool should) {
+  m_cursor_can_disappear = should;
+  if(should) {
+         glfwSetInputMode(m_app->GetWindowManager()->getWindow(), GLFW_CURSOR,
+                         GLFW_CURSOR_NORMAL);
+  }
+}
+
 void Input::ProcessInputRender(Window *window, float delta)
 {
   m_framesCount++;
@@ -43,7 +51,6 @@ void Input::ProcessInputRender(Window *window, float delta)
     }
     if ((glfwGetKey(window->getWindow(), GLFW_KEY_E) == GLFW_PRESS) &&
         m_framesCount % 5 == 0) {
-      VLOG_F(INFO, "Key E pressed");
       if (m_app->GetEditorCamera()->GetShouldMove()) {
         m_app->GetEditorCamera()->SetShouldMove(false);
         firstMouse = true;
@@ -51,9 +58,12 @@ void Input::ProcessInputRender(Window *window, float delta)
                          GLFW_CURSOR_NORMAL);
       }
       else {
-        m_app->GetEditorCamera()->SetShouldMove(true);
-        glfwSetInputMode(m_app->GetWindowManager()->getWindow(), GLFW_CURSOR,
-                         GLFW_CURSOR_DISABLED);
+        
+          m_app->GetEditorCamera()->SetShouldMove(true);
+         
+          glfwSetInputMode(m_app->GetWindowManager()->getWindow(), GLFW_CURSOR,
+                          GLFW_CURSOR_DISABLED);
+          
       }
     }
   }

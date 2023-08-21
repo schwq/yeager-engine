@@ -45,6 +45,7 @@ class Application {
                         EditorCamera *camera, Interface *interfaceUI);
   const void SetCurrentMode(ApplicationCurrentMode mode);
   bool ShouldRendererActive();
+  bool EnterKeyPressed();
 
   EditorExplorer* explorer = nullptr;
   std::vector<YaegerCube*> m_cubes_user_created;

@@ -77,9 +77,7 @@ void EngineTexture2D::ReadDataToTexture(const char *path)
     glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format,
                  GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
-    String log = fmt::format("Create Texture: {}, ID: {}", m_name.c_str(), m_texture_num);
     VLOG_F(INFO, "Create texture: %s, ID: %u", m_name.c_str(), m_texture_num);
-    m_app->m_console.SetLog(log);
     stbi_image_free(data);
   }
   else {

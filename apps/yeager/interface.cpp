@@ -129,12 +129,16 @@ void Interface::RenderEditor()
     Begin("Comment");
     InputText("Say: ", &comment);
     SameLine();
-    if(Button("ADD") || glfwGetKey(m_app->GetWindowManager()->getWindow(), GLFW_KEY_ENTER) == GLFW_PRESS) {
+    if(Button("ADD") || m_app->EnterKeyPressed()) {
       m_comment_window_open = false;
-      m_app->m_console.SetLog(comment);
+      m_app->m_console.SetLogString(comment);
       comment.clear();
+      m_app->GetEditorCamera()->SetShouldMove(true);
+      m_app->GetInput()->SetCursorCanDisappear(true);
     }
     End();
+    m_app->GetEditorCamera()->SetShouldMove(false);
+    m_app->GetInput()->SetCursorCanDisappear(false);
   }
   m_app->m_console.ReadLog();
 

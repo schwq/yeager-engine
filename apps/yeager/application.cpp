@@ -14,6 +14,10 @@ Application::~Application() {
   }
 }
 
+bool Application::EnterKeyPressed() {
+  return glfwGetKey(m_window->getWindow(), GLFW_KEY_ENTER) == GLFW_PRESS;
+}
+
 bool Application::ShouldRendererActive()
 {
   if (glfwWindowShouldClose(m_window->getWindow())) {

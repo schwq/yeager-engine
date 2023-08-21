@@ -65,7 +65,7 @@ void EditorExplorer::DrawExplorer() {
         SameLine();
         Text("Cube Texture path: %s", m_new_cube_texture_path.c_str());
         
-        if(Button("Create")) {
+        if(Button("Create") ) {
             EngineTexture2D *texture = new EngineTexture2D(m_new_cube_texture_path.c_str(), m_app);
             YaegerCube *cube = new YaegerCube(m_new_cube_name.c_str(), m_app, texture);
             m_app->m_cubes_user_created.push_back(cube);

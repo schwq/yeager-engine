@@ -7,7 +7,13 @@ class EditorConsole {
     public:
     EditorConsole() {};
     ~EditorConsole() {}; 
-    void SetLog(String log) {
+    
+    template<typename... Args>
+    auto SetLog(std::format_string<Args...> fmt, Args&&... args) {
+        String log = std::format(fmt, args...);
+        m_logs.push_back(log);
+    }
+    void SetLogString(String log) {
         m_logs.push_back(log);
     }
 

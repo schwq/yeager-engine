@@ -24,6 +24,7 @@ class Input {
   static void MouseCallback(GLFWwindow *window, double xpos, double ypos);
   InputCurrentMode GetCurrentMode() { return m_current_mode; }
   const void SetCurrentMode(InputCurrentMode mode) { m_current_mode = mode; };
+  const void SetCursorCanDisappear(bool should);
 
  private:
   InputCurrentMode m_current_mode = InputCurrentMode::kAwaitMode;
@@ -32,4 +33,5 @@ class Input {
   static float lastX;
   static bool firstMouse;
   static uint m_framesCount;
+  bool m_cursor_can_disappear = true;
 };
