@@ -1,25 +1,23 @@
-#pragma once 
+#pragma once
 
-#include <format>
 #include "../../common/common.h"
 
+enum class MessageOrigin {
+  kUserOrigin,
+  kSystemOrigin,
+  kNoneOrigin,
+  kGameOrigin
+};
+
 class EditorConsole {
-    public:
-    EditorConsole() {};
-    ~EditorConsole() {}; 
-    
-    template<typename... Args>
-    auto SetLog(std::format_string<Args...> fmt, Args&&... args) {
-        String log = std::format(fmt, args...);
-        m_logs.push_back(log);
-    }
-    void SetLogString(String log) {
-        m_logs.push_back(log);
-    }
+ public:
+  EditorConsole(){};
+  ~EditorConsole(){};
 
-    void ReadLog();
+  void SetLogString(String log) { m_logs.push_back(log); }
 
-    private:
+  void ReadLog();
 
-    std::vector<String> m_logs;
+ private:
+  std::vector<String> m_logs;
 };

@@ -1,16 +1,33 @@
 #include "application.h"
 #include "input.h"
-#include <GLFW/glfw3.h>
 
-Application::Application() { VLOG_F(INFO, "Start program"); }
+constexpr String ConsoleLogSenderToString(ConsoleLogSender sender) {
+  switch (sender) {
+    case ConsoleLogSender::kUserLog:
+      return "USER";
+    case ConsoleLogSender::kSystemLog:
+      return "SYSTEM";
+    case ConsoleLogSender::kNoneLog:
+    default:
+      return "ERROR_SENDER";
+  }
+}
+
+Application::Application() {
+  YeagerLog(INFO, ConsoleLogSender::kSystemLog, "Start program");
+}
 
 Application::~Application() {
-  delete explorer;
-  for(uint x = 0; x < m_cubes_user_created.size(); x++) {
+  for (uint x = 0; x < m_cubes_user_created.size(); x++) {
     delete m_cubes_user_created[x];
   }
-  for(uint x = 0; x < m_2d_textures_user_handle.size(); x++) {
-    delete m_2d_textures_user_handle[x];
+  for (uint x = 0; x < m_textures_2d_user_created.size(); x++) {
+    delete m_textures_2d_user_created[x];
+  }
+  for (uint x = 0; x < m_imported_objects.size(); x++) {
+    if (!(m_imported_objects[x] == nullptr)) {
+      delete m_imported_objects[x];
+    }
   }
 }
 
@@ -18,28 +35,21 @@ bool Application::EnterKeyPressed() {
   return glfwGetKey(m_window->getWindow(), GLFW_KEY_ENTER) == GLFW_PRESS;
 }
 
-bool Application::ShouldRendererActive()
-{
-  if (glfwWindowShouldClose(m_window->getWindow())) {
-    return false;
-  }
-  return true;
+bool Application::ShouldRendererActive() {
+  return (glfwWindowShouldClose(m_window->getWindow())) ? false : true;
 }
 
-void Application::SetupApplication(Input *input, Window *window,
-                                   RendererEngine *engine, EditorCamera *camera,
-                                   Interface *interfaceUI)
-{
-  m_input = input;
-  m_engine = engine;
-  m_camera = camera;
-  m_window = window;
-  m_interface = interfaceUI;
-  explorer = new EditorExplorer(this);
+void Application::SetupApplication(ApplicationSetup setup) {
+  m_camera = setup.ptr_camera;
+  m_window = setup.ptr_window;
+  m_engine = setup.ptr_engine;
+  m_input = setup.ptr_input;
+  m_interface = setup.ptr_interface;
+  m_console = setup.ptr_console;
+  m_explorer = setup.ptr_explorer;
 }
 
-const void Application::SetCurrentMode(ApplicationCurrentMode mode)
-{
+const void Application::SetCurrentMode(ApplicationCurrentMode mode) {
   switch (mode) {
     case ApplicationCurrentMode::kEditorMode:
       m_input->SetCurrentMode(InputCurrentMode::kEditorMode);
@@ -61,7 +71,8 @@ const void Application::SetCurrentMode(ApplicationCurrentMode mode)
       m_input->SetCurrentMode(InputCurrentMode::kErrorMode);
       m_interface->SetCurrentMode(InterfaceMode::kErrorMode);
       break;
-
-      // TODO rest of modes
+    case ApplicationCurrentMode::kCeaseMode:
+      m_input->SetCurrentMode(InputCurrentMode::kCeaseMode);
+      m_interface->SetCurrentMode(InterfaceMode::kCeaseMode);
   }
 }

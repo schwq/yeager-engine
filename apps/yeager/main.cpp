@@ -1,17 +1,14 @@
+// clang-format off
 #include "common/common.h"
-
 #include "application.h"
 #include "engine/renderer/renderer.h"
 #include "engine/renderer/window.h"
-#include <GLFW/glfw3.h>
-
-static void glfwErrorCallback(int error, const char* description)
-{
+// clang-format on 
+static void glfwErrorCallback(int error, const char* description) {
   VLOG_F(ERROR, description);
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   loguru::init(argc, argv);
   static Application* app = new Application();
   Input* input = new Input(app);
@@ -22,8 +19,19 @@ int main(int argc, char* argv[])
   app->GetRendererEngine()->checkGLAD();
   Interface* interfaceUI = new Interface(window, app);
   EditorCamera* camera = new EditorCamera(app);
+  EditorConsole* console = new EditorConsole();
+  EditorExplorer* explorer = new EditorExplorer(app);
 
-  app->SetupApplication(input, window, engine, camera, interfaceUI);
+  ApplicationSetup setup;
+  setup.ptr_camera = camera;
+  setup.ptr_input = input;
+  setup.ptr_console = console;
+  setup.ptr_interface = interfaceUI;
+  setup.ptr_explorer = explorer;
+  setup.ptr_window = window;
+  setup.ptr_engine = engine;
+
+  app->SetupApplication(setup);
   app->GetRendererEngine()->Render();
   VLOG_F(INFO, "Shutdown program");
 

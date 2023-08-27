@@ -2,9 +2,14 @@
 
 #include "application.h"
 #include "common/common.h"
-#include "engine/renderer/window.h"
-#include "engine/renderer/texture.h"
 #include "engine/editor/editor_explorer.h"
+#include "engine/renderer/texture.h"
+#include "engine/renderer/window.h"
+
+#define kWindowStatic                                       \
+  ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | \
+      ImGuiWindowFlags_NoMove
+#define kWindowMoveable ImGuiWindowFlags_None
 
 struct ExplorerObject;
 
@@ -13,7 +18,15 @@ enum class InterfaceMode {
   kLauncherMode,
   kSettingsMode,
   kAwaitMode,
-  kErrorMode
+  kErrorMode,
+  kCeaseMode
+};
+
+struct InterfaceWarningWindow {
+  String warning;
+  uint size_x, size_y;
+  bool active = false;
+  bool RenderWarning();
 };
 
 struct InterfaceButton {
@@ -26,7 +39,7 @@ struct InterfaceButton {
 };
 
 struct InterfaceImage {
-  InterfaceImage(const char *path);
+  InterfaceImage(const char* path);
   void LoadInterfaceImage();
   void LoadInterfaceCenteredImage();
   int m_image_width = 0;
@@ -36,23 +49,29 @@ struct InterfaceImage {
 
 class Interface {
  public:
-  Interface(Window *window, Application *app);
+  Interface(Window* window, Application* app);
   ~Interface();
 
   bool getInitStatus() { return m_initialize; }
   void RenderUI();
   InterfaceMode GetCurrentMode() { return m_current_mode; }
   const void SetCurrentMode(InterfaceMode mode) { m_current_mode = mode; }
+  void CenteredWindow(uint size_x, uint size_y);
+  void DisplayWarningWindow();
+  void AddWarningWindow(const String& warning, uint size_x = 400,
+                        uint size_y = 100);
 
  private:
   bool m_initialize = false;
   float size_pixels = 13.0f;
   static uint m_frames;
   InterfaceMode m_current_mode = InterfaceMode::kLauncherMode;
-  Application *m_app;
+  Application* m_app;
   bool m_dont_move_windows_editor = false;
   bool m_comment_window_open = false;
   String comment;
+
+  InterfaceWarningWindow m_current_warning;
 
   void RenderAwait();
   void RenderLauncher();

@@ -2,7 +2,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/geometric.hpp>
 
-EditorCamera::EditorCamera(Application *app, Vector3 cameraPosition,
+EditorCamera::EditorCamera(Application* app, Vector3 cameraPosition,
                            Vector3 cameraFront, Vector3 cameraUp)
     : m_app(app) {
   m_position = cameraPosition;
@@ -13,15 +13,19 @@ EditorCamera::EditorCamera(Application *app, Vector3 cameraPosition,
   m_cameraYaw = 0.0f;
 }
 
-void EditorCamera::UpdateSpeed(float speed) { m_cameraSpeed = speed; }
+void EditorCamera::UpdateSpeed(float speed) {
+  m_cameraSpeed = speed;
+}
 
-bool EditorCamera::GetShouldMove() { return m_cameraShouldMove; }
+bool EditorCamera::GetShouldMove() {
+  return m_cameraShouldMove;
+}
 
 const Matrix4 EditorCamera::ReturnViewMatrix() {
   return glm::lookAt(m_position, m_position + m_cameraFront, m_cameraUp);
 }
 
-void EditorCamera::Update(Shader *shader) {
+void EditorCamera::Update(Shader* shader) {
   Matrix4 view = Matrix4(1.0f);
   view = glm::lookAt(m_position, m_position + m_cameraFront, m_cameraUp);
   shader->SetMat4("view", view);
@@ -36,6 +40,7 @@ void EditorCamera::UpdatePosition(CameraPosition position, float delta) {
       break;
     case CameraPosition::kBackward:
       m_position -= m_cameraSpeed * m_cameraFront;
+      break;
     case CameraPosition::kRight:
       m_position +=
           glm::normalize(glm::cross(m_cameraFront, m_cameraUp)) * m_cameraSpeed;
@@ -70,15 +75,23 @@ void EditorCamera::UpdateDirection(float xoffset, float yoffset) {
   m_cameraFront = glm::normalize(m_cameraDirection);
 }
 
-const Vector3 EditorCamera::GetPosition() { return m_position; }
+const Vector3 EditorCamera::GetPosition() {
+  return m_position;
+}
 
-const Vector3 EditorCamera::GetDirection() { return m_cameraDirection; }
+const Vector3 EditorCamera::GetDirection() {
+  return m_cameraDirection;
+}
 
-const float &EditorCamera::GetSensitivity() { return m_sensitivity; }
+const float& EditorCamera::GetSensitivity() {
+  return m_sensitivity;
+}
 
-void EditorCamera::SetShouldMove(bool move) { m_cameraShouldMove = move; }
+void EditorCamera::SetShouldMove(bool move) {
+  m_cameraShouldMove = move;
+}
 
-void EditorCamera::MouseCallback(bool &firstMouse, float &lastX, float &lastY,
+void EditorCamera::MouseCallback(bool& firstMouse, float& lastX, float& lastY,
                                  double xpos, double ypos) {
   if (m_cameraShouldMove &&
       m_app->GetCurrentMode() == ApplicationCurrentMode::kEditorMode) {

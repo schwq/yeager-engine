@@ -1,11 +1,12 @@
 #pragma once
 
-#include "../../common/common.h"
 #include "../../application.h"
+#include "../../common/common.h"
 #include "../../input.h"
-#include "texture.h"
+#include "imported_object.h"
 #include "shader.h"
 #include "shapes.h"
+#include "texture.h"
 
 class Application;
 
@@ -18,7 +19,7 @@ struct RendererEngineHandle {
 
 class RendererEngine {
  public:
-  RendererEngine(RendererEngineName name, Application *app);
+  RendererEngine(RendererEngineName name, Application* app);
   ~RendererEngine(){};
 
   void Render();
@@ -26,7 +27,7 @@ class RendererEngine {
 
  private:
   RendererEngineHandle m_handle;
-  Application *m_app;
+  Application* m_app;
 
   void RendererOpenGL();
 };

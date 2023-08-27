@@ -1,9 +1,7 @@
 #include "window.h"
-#include <GLFW/glfw3.h>
 
 Window::Window(uint window_x, uint window_y, GLFWerrorfun error,
-               GLFWcursorposfun cursor)
-{
+               GLFWcursorposfun cursor) {
   if (!glfwInit()) {
     VLOG_F(ERROR, "Cannot initialize glfw!");
   }
@@ -28,12 +26,29 @@ Window::Window(uint window_x, uint window_y, GLFWerrorfun error,
   glfwSwapInterval(1);
 }
 
-void Window::FramebufferSizeCallback(GLFWwindow *window, int width, int height)
-{
+void Window::FramebufferSizeCallback(GLFWwindow* window, int width,
+                                     int height) {
   kWindowX = width;
   kWindowY = height;
 
   glViewport(0, 0, width, height);
 }
 
-Window::~Window() { glfwTerminate(); }
+void Window::LaunchEditor() {
+  glfwDestroyWindow(m_window);
+
+  GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+  const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+
+  m_window =
+      glfwCreateWindow(mode->width, mode->height, "Yeager Engine", NULL, NULL);
+
+  if (m_window == NULL) {
+    VLOG_F(ERROR, "Cannot created GLFW window!");
+    glfwTerminate();
+  }
+}
+
+Window::~Window() {
+  glfwTerminate();
+}

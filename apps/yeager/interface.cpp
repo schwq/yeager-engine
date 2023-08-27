@@ -1,5 +1,4 @@
 #include "interface.h"
-#include <GLFW/glfw3.h>
 #include "common/common.h"
 #include "engine/editor/editor_explorer.h"
 #include "input.h"
@@ -7,55 +6,83 @@ using namespace ImGui;
 
 uint Interface::m_frames = 0;
 
-Interface::~Interface()
-{
+Interface::~Interface() {
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   DestroyContext();
 }
 
-bool InterfaceButton::CenteredButton()
-{
+void Interface::CenteredWindow(uint size_x, uint size_y) {
+  SetNextWindowPos(
+      ImVec2((kWindowX / 2) - (size_x / 2), (kWindowY / 2) - (size_y / 2)));
+  SetNextWindowSize(ImVec2(size_x, size_y));
+}
+
+bool InterfaceButton::CenteredButton() {
   auto windowWidth = GetWindowSize().x;
   auto textWidth = CalcTextSize(m_text.c_str()).x;
   SetCursorPosX((windowWidth - textWidth) * 0.5f);
   return Button(m_text.c_str());
 }
 
-bool InterfaceButton::AddButton() { return Button(m_text.c_str()); }
+void Interface::DisplayWarningWindow() {
+  if (m_current_warning.active) {
+    Begin("Warning!");
+    CenteredWindow(m_current_warning.size_x, m_current_warning.size_y);
+    CenteredText(m_current_warning.warning);
+    VLOG_F(WARNING, "%s", m_current_warning.warning.c_str());
+    Spacing();
+    if (Button("Understood")) {
+      m_current_warning.active = false;
+      m_current_warning.warning.clear();
+    }
+    End();
+  }
+}
 
-float InterfaceButton::TextWidth() { return CalcTextSize(m_text.c_str()).x; }
+void Interface::AddWarningWindow(const String& warning, uint size_x,
+                                 uint size_y) {
+  m_current_warning.warning = warning;
+  m_current_warning.size_x = size_x;
+  m_current_warning.size_y = size_y;
+  m_current_warning.active = true;
+}
 
-InterfaceImage::InterfaceImage(const char *path)
-{
+bool InterfaceButton::AddButton() {
+  return Button(m_text.c_str());
+}
+
+float InterfaceButton::TextWidth() {
+  return CalcTextSize(m_text.c_str()).x;
+}
+
+InterfaceImage::InterfaceImage(const char* path) {
   bool ret = LoadTextureFromFile(path, &m_image_texture, &m_image_width,
                                  &m_image_height);
+  VLOG_F(INFO, "%s", path);
   IM_ASSERT(ret);
 }
 
-void InterfaceImage::LoadInterfaceImage()
-{
-  Image((void *)(intptr_t)m_image_texture,
+void InterfaceImage::LoadInterfaceImage() {
+  Image((void*)(intptr_t)m_image_texture,
         ImVec2(m_image_width / 2, m_image_height / 2));
 }
 
-void InterfaceImage::LoadInterfaceCenteredImage()
-{
+void InterfaceImage::LoadInterfaceCenteredImage() {
   auto windowWidth = GetWindowSize().x;
   SetCursorPosX((windowWidth - m_image_width) * 0.5f);
-  Image((void *)(intptr_t)m_image_texture,
+  Image((void*)(intptr_t)m_image_texture,
         ImVec2(m_image_width / 2, m_image_height / 2));
 }
 
-void Interface::AlignForWidth(float width, float alignment)
-{
+void Interface::AlignForWidth(float width, float alignment) {
   float avail = GetContentRegionAvail().x;
   float off = (avail - width) * alignment;
-  if (off > 0.0f) SetCursorPosX(GetCursorPosX() + off);
+  if (off > 0.0f)
+    SetCursorPosX(GetCursorPosX() + off);
 }
 
-Interface::Interface(Window *window, Application *app) : m_app(app)
-{
+Interface::Interface(Window* window, Application* app) : m_app(app) {
   IMGUI_CHECKVERSION();
   CreateContext();
   ImGuiIO& m_imgui_io = GetIO();
@@ -69,16 +96,14 @@ Interface::Interface(Window *window, Application *app) : m_app(app)
   ImGui_ImplGlfw_InitForOpenGL(window->getWindow(), true);
   ImGui_ImplOpenGL3_Init("#version 330");
   VLOG_F(INFO, "Initialize ImGui");
-
+  VLOG_F(INFO, "%s", GetPath("/assets/fonts/big_blue_term.ttf").c_str());
   m_imgui_io.Fonts->AddFontFromFileTTF(
-      GetPath("/assets/fonts/big_blue_term.ttf").c_str(),
-      size_pixels);
+      GetPath("/assets/fonts/big_blue_term.ttf").c_str(), size_pixels);
   StyleImGui();
   m_initialize = true;
 }
 
-void Interface::CreateSpaceX(uint count)
-{
+void Interface::CreateSpaceX(uint count) {
   if (count > 0) {
     for (uint x = 0; x < count; x++) {
       NewLine();
@@ -86,74 +111,82 @@ void Interface::CreateSpaceX(uint count)
   }
 }
 
-void Interface::RenderUI()
-{
+void Interface::RenderUI() {
   m_frames++;
-  switch (m_current_mode) {
-    case InterfaceMode::kLauncherMode:
-      RenderLauncher();
-      break;
-    case InterfaceMode::kEditorMode:
-      RenderEditor();
-      break;
-    default:
-      RenderError();
-  }
-}
 
-void Interface::RenderAwait() {}
-
-void Interface::RenderEditor()
-{
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   NewFrame();
 
+  switch (m_current_mode) {
+    case InterfaceMode::kLauncherMode:
+      RenderLauncher();
+      DisplayWarningWindow();
+      break;
+    case InterfaceMode::kEditorMode:
+      RenderEditor();
+      DisplayWarningWindow();
+      break;
+    default:
+      RenderError();
+  }
 
-  Begin("Explorer", NULL, m_dont_move_windows_editor ? ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-              ImGuiWindowFlags_NoMove : ImGuiWindowFlags_None );
+  Render();
+  ImGui_ImplOpenGL3_RenderDrawData(GetDrawData());
+}
 
-  m_app->explorer->DrawExplorer();
+void Interface::RenderAwait() {}
+
+void Interface::RenderEditor() {
+
+  Begin("Explorer", NULL,
+        m_dont_move_windows_editor ? kWindowStatic : kWindowMoveable);
+
+  m_app->GetExplorer()->DrawExplorer();
 
   End();
 
-  
-  Begin("Console", NULL, m_dont_move_windows_editor ? ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-              ImGuiWindowFlags_NoMove : ImGuiWindowFlags_None);
-  if(Button("Add Comment:")) {
+  Begin("Console", NULL,
+        m_dont_move_windows_editor ? kWindowStatic : kWindowMoveable);
+
+  if (Button("Add Comment:")) {
     m_comment_window_open = true;
   }
-  if(m_comment_window_open) {
-    SetNextWindowPos(ImVec2((kWindowX / 2) - 200, (kWindowY /2) - 25));
-    SetNextWindowSize(ImVec2(400, 50));
+  if (m_comment_window_open) {
+    CenteredWindow(400, 50);
     Begin("Comment");
     InputText("Say: ", &comment);
     SameLine();
-    if(Button("ADD") || m_app->EnterKeyPressed()) {
+    m_app->GetEditorCamera()->SetShouldMove(false);
+    m_app->GetInput()->SetCursorCanDisappear(false);
+
+    if (Button("ADD") || m_app->EnterKeyPressed()) {
       m_comment_window_open = false;
-      m_app->m_console.SetLogString(comment);
+      m_app->GetConsole()->SetLogString(comment);
       comment.clear();
       m_app->GetEditorCamera()->SetShouldMove(true);
       m_app->GetInput()->SetCursorCanDisappear(true);
     }
     End();
-    m_app->GetEditorCamera()->SetShouldMove(false);
-    m_app->GetInput()->SetCursorCanDisappear(false);
   }
-  m_app->m_console.ReadLog();
+  m_app->GetConsole()->ReadLog();
 
   End();
 
-  Begin("Toolbox", NULL, m_dont_move_windows_editor ? ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-              ImGuiWindowFlags_NoMove : ImGuiWindowFlags_None);
+  Begin("Toolbox", NULL,
+        m_dont_move_windows_editor
+            ? ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+                  ImGuiWindowFlags_NoMove
+            : ImGuiWindowFlags_None);
 
-  if(m_app->explorer->toolbox_selected.m_type == ExplorerObjectType::kNone) {
+  if (m_app->GetExplorer()->toolbox_selected.m_type ==
+      ExplorerObjectType::kNone) {
     Text("None");
   } else {
-    Text(m_app->explorer->toolbox_selected.m_name.c_str());
-    m_app->explorer->toolbox_selected.m_object_toolbox->DrawObject();
+    Text(m_app->GetExplorer()->toolbox_selected.m_name.c_str());
+    m_app->GetExplorer()->toolbox_selected.m_object_toolbox->DrawObject();
   }
-  
+
   End();
 
   RenderDebugger();
@@ -186,16 +219,10 @@ void Interface::RenderEditor()
   }
 
   End();
-
-  Render();
-  ImGui_ImplOpenGL3_RenderDrawData(GetDrawData());
 }
 
-void Interface::RenderLauncher()
-{
-  ImGui_ImplOpenGL3_NewFrame();
-  ImGui_ImplGlfw_NewFrame();
-  NewFrame();
+void Interface::RenderLauncher() {
+
   InterfaceButton open_project("interface_open_project", "Open Project");
   InterfaceButton new_project("interface_new_project", "New Project");
   InterfaceButton settings_button("interface_settings_button", "Settings");
@@ -254,12 +281,9 @@ void Interface::RenderLauncher()
   End();
 
   RenderDebugger();
-  Render();
-  ImGui_ImplOpenGL3_RenderDrawData(GetDrawData());
 }
 
-void Interface::CenteredText(String text)
-{
+void Interface::CenteredText(String text) {
   auto windowWidth = GetWindowSize().x;
   auto textWidth = CalcTextSize(text.c_str()).x;
 
@@ -267,17 +291,14 @@ void Interface::CenteredText(String text)
   Text(text.c_str());
 }
 
-void Interface::logButton(InterfaceButton button)
-{
+void Interface::logButton(InterfaceButton button) {
   VLOG_F(INFO, "%s button was pressed", button.m_name.c_str());
 }
-void Interface::StyleImGui()
-{
-  ImGuiStyle &style = ImGui::GetStyle();
+void Interface::StyleImGui() {
+  ImGuiStyle& style = ImGui::GetStyle();
   style.WindowRounding = 5.3f;
   style.FrameRounding = 2.3f;
   style.ScrollbarRounding = 0;
-
   style.Colors[ImGuiCol_Text] = ImVec4(0.90f, 0.90f, 0.90f, 0.90f);
   style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
   style.Colors[ImGuiCol_WindowBg] = ImVec4(0.09f, 0.09f, 0.15f, 1.00f);
@@ -320,8 +341,7 @@ void Interface::StyleImGui()
   style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.00f, 0.00f, 1.00f, 0.35f);
 }
 
-void Interface::RenderDebugger()
-{
+void Interface::RenderDebugger() {
   Begin("Application Debugger");
 
   Text("Frames %u", m_frames);
