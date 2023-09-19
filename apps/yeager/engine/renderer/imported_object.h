@@ -10,7 +10,9 @@
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
 
-class EngineTexture2D;
+class YeagerTexture2D;
+class ToolBoxObject;
+class Application;
 
 struct Vertex {
   Vector3 m_position;
@@ -64,5 +66,7 @@ class ImportedObject {
   std::vector<Mesh> meshes;
   String m_model_path;
   String m_name;
-  ToolBoxObject* m_toolbox_obj;
+  ToolBoxObject* m_toolbox_obj = nullptr;
+  uint m_num_vertices = 0;
+  uint m_num_indices = 0;
 };

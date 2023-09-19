@@ -1,11 +1,11 @@
 #include "texture.h"
-#include <string>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "../../../../libs/stb_image.h"
 
-uint EngineTexture2D::m_texture_count = 0;
+uint YeagerTexture2D::m_texture_count = 0;
 
-EngineTexture2D::~EngineTexture2D() {
+YeagerTexture2D::~YeagerTexture2D() {
   glDeleteTextures(1, &m_id);
 }
 
@@ -38,8 +38,6 @@ uint LoadTextureFromFile(String path) {
     glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format,
                  GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
-
-    // logMessage("Success! Texture created with success! ID: ", textureID);
     stbi_image_free(data);
   } else {
 
@@ -87,7 +85,7 @@ bool LoadTextureFromFile(const char* filename, GLuint* out_texture,
   return true;
 }
 
-void EngineTexture2D::GenerateTexture() {
+void YeagerTexture2D::GenerateTexture() {
   glGenTextures(1, &m_id);
   glBindTexture(GL_TEXTURE_2D, m_id);
 
@@ -98,7 +96,7 @@ void EngineTexture2D::GenerateTexture() {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
-void EngineTexture2D::ReadDataToTexture(const char* path) {
+void YeagerTexture2D::ReadDataToTexture(const char* path) {
   int width, height, channels;
   uint format;
   unsigned char* data = stbi_load(path, &width, &height, &channels, 0);
@@ -115,18 +113,20 @@ void EngineTexture2D::ReadDataToTexture(const char* path) {
     glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format,
                  GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
-    VLOG_F(INFO, "Create texture: %s, ID: %u", m_name.c_str(), m_texture_num);
+    YeagerLog(INFO, kSystemLog, "Create texture: {}, ID: {}",
+                     m_name.c_str(), m_texture_num);
     stbi_image_free(data);
   } else {
-    VLOG_F(ERROR, "Cannot read data from texture file %s", path);
+    YeagerLog(ERROR, kSystemLog, "Cannot read data from texture file {}",
+                     path);
   }
 
   glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-EngineTexture2D::EngineTexture2D(const char* texturePath, Application* app,
+YeagerTexture2D::YeagerTexture2D(const char* texturePath,
                                  String name)
-    : m_name(name), m_app(app) {
+    : m_name(name) {
   m_texture_num = m_texture_count++;
 
   if (name == "DEFAULT") {
@@ -143,9 +143,9 @@ EngineSkybox::~EngineSkybox() {
   glDeleteTextures(1, &m_id);
 }
 
-EngineSkybox::EngineSkybox(std::vector<String> faces, Application* app,
+EngineSkybox::EngineSkybox(std::vector<String> faces,
                            String name)
-    : m_name(name), m_app(app) {
+    : m_name(name) {
   glGenVertexArrays(1, &skyboxVAO);
   glGenBuffers(1, &skyboxVBO);
   glBindVertexArray(skyboxVAO);
@@ -183,11 +183,13 @@ void EngineSkybox::ReadDataToTexture(std::vector<String> faces) {
 
       stbi_image_free(data);
     } else {
-      VLOG_F(ERROR, "Cannot read data from skybox file %s", faces[i].c_str());
+      YeagerLog(ERROR, kSystemLog,
+                       "Cannot read data from skybox file {}",
+                       faces[i].c_str());
       stbi_image_free(data);
     }
   }
-  VLOG_F(INFO, "Create Skybox: %s ", m_name.c_str());
+  YeagerLog(INFO, kSystemLog, "Create Skybox: {}", m_name.c_str());
   glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 

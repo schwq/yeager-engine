@@ -1,3 +1,9 @@
+// Yaeger Engine 2023 - Present
+// Game and Rendering Engine written in C++
+// By: schwq
+// Git repo: https://github.com/schwq/yeager-engine
+// Feel free to mail a email to me about any issues encounter: schwz@protonmail.com
+
 #pragma once
 
 #include "application.h"
@@ -6,6 +12,7 @@
 #include "engine/renderer/texture.h"
 #include "engine/renderer/window.h"
 
+// Simple way to define ImGuiWindowFlags without having to repeat
 #define kWindowStatic                                       \
   ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | \
       ImGuiWindowFlags_NoMove
@@ -26,6 +33,7 @@ struct InterfaceWarningWindow {
   String warning;
   uint size_x, size_y;
   bool active = false;
+  bool first_log_warning = true;
   bool RenderWarning();
 };
 
@@ -39,7 +47,7 @@ struct InterfaceButton {
 };
 
 struct InterfaceImage {
-  InterfaceImage(const char* path);
+  InterfaceImage(const char* path, Application* m_app);
   void LoadInterfaceImage();
   void LoadInterfaceCenteredImage();
   int m_image_width = 0;
@@ -63,15 +71,21 @@ class Interface {
 
  private:
   bool m_initialize = false;
-  float size_pixels = 13.0f;
-  static uint m_frames;
-  InterfaceMode m_current_mode = InterfaceMode::kLauncherMode;
-  Application* m_app;
   bool m_dont_move_windows_editor = false;
   bool m_comment_window_open = false;
-  String comment;
 
+  float size_pixels = 11.0f;
+  static uint m_frames;
+
+  InterfaceMode m_current_mode = InterfaceMode::kLauncherMode;
+  Application* m_app;
+  String comment;
   InterfaceWarningWindow m_current_warning;
+
+  void LaunchImGui(Window* window);
+  void DrawExplorer();
+  void DrawToolbox();
+  void DrawEditorMenu();
 
   void RenderAwait();
   void RenderLauncher();

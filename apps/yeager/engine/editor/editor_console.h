@@ -9,15 +9,26 @@ enum class MessageOrigin {
   kGameOrigin
 };
 
+enum ConsoleLogSender { kUserLog, kSystemLog, kNoneLog };
+
+struct ConsoleMessageType {
+  String log;
+  int verbosity;
+  ImVec4 text_color;
+};
+
+extern constexpr String ConsoleLogSenderToString(ConsoleLogSender sender);
+extern ImVec4 VerbosityToColor(int verbosity);
+
 class EditorConsole {
  public:
   EditorConsole(){};
   ~EditorConsole(){};
 
-  void SetLogString(String log) { m_logs.push_back(log); }
+  void SetLogString(ConsoleMessageType message) { m_logs.push_back(message); }
 
   void ReadLog();
 
  private:
-  std::vector<String> m_logs;
+  std::vector<ConsoleMessageType> m_logs;
 };

@@ -2,12 +2,14 @@
 
 #include "../../application.h"
 #include "../../common/common.h"
+#include "../renderer/imported_object.h"
 #include "../renderer/shapes.h"
 #include "toolbox_object.h"
 
 class Application;
 class Interface;
 class ToolBoxObject;
+class ImportedObject;
 
 enum class ExplorerObjectType {
   kShapes = 0,
@@ -21,6 +23,7 @@ enum class ExplorerObjectType {
   kAudio,
   kSkybox,
   kImportedObject,
+  kPointLight,
   kNone,
   kNoChange
 };
@@ -50,12 +53,17 @@ class EditorExplorer {
 
  private:
   void AddCubeWindow();
+  void AddImportedObjectWindow();
+  void AddLightPointSource();
 
   std::vector<ExplorerObject> m_objects;
   bool m_first_time_toolbox = true;
   bool m_add_cube_window_open = false;
+  bool m_add_imported_object_window_open = false;
   bool m_everything_fine_to_create = true;
-  String m_new_cube_name;
-  String m_new_cube_texture_path;
+  bool m_add_light_point_source_window_open = false;
+  String m_new_object_name;
+  String m_new_object_path;
+  String m_new_object_texture_path;
   Application* m_app;
 };

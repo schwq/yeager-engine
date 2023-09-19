@@ -5,80 +5,42 @@
 #include "../editor/toolbox_object.h"
 #include "shader.h"
 #include "texture.h"
+#include "transformation.h"
 
-class EngineTexture2D;
+class YeagerTexture2D;
 class Application;
 class ToolBoxObject;
 
-class YeagerCube {
+enum class EngineShapeType { kCube, kSphere, kCone };
+
+class YeagerShape {
  public:
-  YeagerCube(String name, Application* app, EngineTexture2D* texture = nullptr,
-             const Vector3 position = Vector3(0.0f));
-  ~YeagerCube();
+  YeagerShape(String name, Application* app, YeagerTexture2D texture,
+              EngineShapeType type);
+  YeagerShape(String name, Application* app, String texturePath,
+              EngineShapeType type);
+  YeagerShape() {}
+  ~YeagerShape();
+
   void Draw(Shader* shader);
-  constexpr void SetPosition(Vector3 position) { m_position = position; }
-  constexpr Vector3 GetPosition() { return m_position; }
-  constexpr void SetRotation(Vector3 rotation) { m_rotation = rotation; }
-  constexpr Vector3 GetRotation() { return m_rotation; }
-  constexpr void SetScale(Vector3 scale) { m_scale = scale; }
-  constexpr Vector3 GetScale() { return m_scale; }
+  constexpr Transformation* Transform() { return &m_trans; }
 
  private:
   void Setup();
   void ProcessTransformation(Shader* shader);
-
-  String m_name;
-  Vector3 m_position = Vector3(1.0f);
-  Vector3 m_rotation = Vector3(0.0f);
-  Vector3 m_scale = Vector3(1.0f);
-  EngineTexture2D* m_texture = nullptr;
-  uint m_vbo, m_vao;
-  Application* m_app;
+  void ProcessShapeType();
+  String m_name = YEAGER_NULL_LITERAL;
+  EngineShapeType m_type;
+  uint m_vbo = 0, m_vao = 0, m_ebo = 0;
+  Application* m_app = nullptr;
+  YeagerTexture2D m_texture;
+  Transformation m_trans;
   ToolBoxObject* m_toolbox = nullptr;
-
-  // clang-format off
-  float vertices[288] = {
-      -0.5f, -0.5f, -0.5f, 0.0f,  0.0f, -1.0f, 0.0f, 0.0f, 
-      0.5f,  -0.5f, -0.5f, 0.0f,  0.0f, -1.0f, 1.0f, 0.0f,
-      0.5f,  0.5f,  -0.5f, 0.0f,  0.0f, -1.0f, 1.0f, 1.0f, 
-      0.5f,  0.5f,  -0.5f, 0.0f,  0.0f, -1.0f, 1.0f, 1.0f,
-      -0.5f, 0.5f,  -0.5f, 0.0f,  0.0f, -1.0f, 0.0f, 1.0f, 
-      -0.5f, -0.5f, -0.5f, 0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
-
-      -0.5f, -0.5f, 0.5f, 0.0f,  0.0f, 1.0f, 0.0f, 0.0f, 
-      0.5f,  -0.5f, 0.5f, 0.0f,  0.0f, 1.0f, 1.0f, 0.0f,
-      0.5f,  0.5f,  0.5f, 0.0f,  0.0f, 1.0f, 1.0f, 1.0f, 
-      0.5f,  0.5f,  0.5f, 0.0f,  0.0f, 1.0f, 1.0f, 1.0f,
-      -0.5f, 0.5f,  0.5f, 0.0f,  0.0f, 1.0f, 0.0f, 1.0f, 
-      -0.5f, -0.5f, 0.5f, 0.0f,  0.0f, 1.0f, 0.0f, 0.0f,
-
-      -0.5f, 0.5f,  0.5f,  -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, 
-      -0.5f, 0.5f,  -0.5f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
-      -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, 
-      -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
-      -0.5f, -0.5f, 0.5f,  -1.0f,  0.0f,  0.0f, 0.0f, 0.0f, 
-      -0.5f, 0.5f,  0.5f,  -1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
-
-      0.5f,  0.5f,  0.5f, 1.0f,  0.0f,  0.0f, 1.0f, 0.0f, 
-      0.5f,  0.5f,  -0.5f,1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
-      0.5f,  -0.5f, -0.5f,1.0f,  0.0f,  0.0f, 0.0f, 1.0f, 
-      0.5f,  -0.5f, -0.5f,1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
-      0.5f,  -0.5f, 0.5f, 1.0f,  0.0f,  0.0f, 0.0f, 0.0f, 
-      0.5f,  0.5f,  0.5f, 1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
-
-      -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, 
-      0.5f,  -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f,
-      0.5f,  -0.5f, 0.5f,   0.0f, -1.0f,  0.0f, 1.0f, 0.0f, 
-      0.5f,  -0.5f, 0.5f,   0.0f, -1.0f,  0.0f, 1.0f, 0.0f,
-      -0.5f, -0.5f, 0.5f,   0.0f, -1.0f,  0.0f, 0.0f, 0.0f, 
-      -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f,
-
-      -0.5f, 0.5f,  -0.5f,0.0f,  1.0f,  0.0f, 0.0f, 1.0f, 
-      0.5f,  0.5f,  -0.5f,0.0f,  1.0f,  0.0f, 1.0f, 1.0f,
-      0.5f,  0.5f,  0.5f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f, 
-      0.5f,  0.5f,  0.5f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
-      -0.5f, 0.5f,  0.5f, 0.0f,  1.0f,  0.0f, 0.0f, 0.0f, 
-      -0.5f, 0.5f,  -0.5f,0.0f,  1.0f,  0.0f, 0.0f, 1.0f
-      };
+  std::vector<GLfloat> m_vertices;
+  std::vector<uint> m_indices;
 };
+
+// clang-format off
+extern std::vector<GLfloat> GetCubeVertices();
+extern std::vector<uint> GetCubeIndices();
 // clang-format on

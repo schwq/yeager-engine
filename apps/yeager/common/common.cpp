@@ -25,5 +25,7 @@ String GetPath(String path) {
   }
 };
 
+String kDefaultTexturePath = GetPath("/assets/textures/default.jpg");
+
 unsigned int kWindowX = 1920;
 unsigned int kWindowY = 1080;

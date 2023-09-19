@@ -68,7 +68,6 @@ ImportedObject::ImportedObject(String path, Application* app, String name)
     : m_app(app), m_model_path(path), m_name(name) {
 
   LoadModel(path);
-  m_app->GetImportedObjects()->push_back(this);
 
   m_toolbox_obj = new ToolBoxObject();
   m_toolbox_obj->SetType(ExplorerObjectType::kImportedObject);
@@ -78,6 +77,7 @@ ImportedObject::ImportedObject(String path, Application* app, String name)
 
   m_app->GetExplorer()->AddObject(
       name.c_str(), ExplorerObjectType::kImportedObject, m_toolbox_obj);
+  m_app->GetRendererEngine()->GetUserImportedObjectVector()->push_back(this);
 }
 
 void ImportedObject::ProcessTransformation(Shader* shader) {
@@ -98,7 +98,6 @@ void ImportedObject::ProcessTransformation(Shader* shader) {
   shader->SetMat4("model", m_space_prop.m_model);
   m_space_prop.m_model = Matrix4(1.0f);
 }
-
 void ImportedObject::Draw(Shader* shader) {
   ProcessTransformation(shader);
   for (uint x = 0; x < meshes.size(); x++) {
@@ -112,6 +111,7 @@ ImportedObject::~ImportedObject() {
     glDeleteBuffers(1, meshes[x].GetVbo());
     glDeleteVertexArrays(1, meshes[x].GetVao());
   }
+  delete m_toolbox_obj;
 }
 
 void ImportedObject::LoadModel(String path) {
@@ -122,12 +122,18 @@ void ImportedObject::LoadModel(String path) {
       !scene->mRootNode) {
     m_app->GetInterface()->AddWarningWindow(
         "Cannot load imported model! Path: " + path);
-    VLOG_F(ERROR, "Cannot load imported model! Path: %s, Error: %s",
-           path.c_str(), imp.GetErrorString());
+    YeagerLog(ERROR, kSystemLog,
+                     "Cannot load imported model! Path: {}, Error: {}",
+                     path.c_str(), imp.GetErrorString());
     return;
   }
   ProcessNode(scene->mRootNode, scene);
-  VLOG_F(INFO, "Success in loading imported model: %s", path.c_str());
+  YeagerLog(INFO, kSystemLog, "Success in loading imported model: {}",
+                   path.c_str());
+  YeagerLog(
+      INFO, kSystemLog,
+      "Model information: Vertices {}, Indices {}, Textures loaded: {}",
+      m_num_vertices, m_num_indices, m_textures_loaded.size());
 }
 
 void ImportedObject::ProcessNode(aiNode* node, const aiScene* scene) {
@@ -145,6 +151,8 @@ Mesh ImportedObject::ProcessMesh(aiMesh* mesh, const aiScene* scene) {
   std::vector<Vertex> vertices;
   std::vector<uint> indices;
   std::vector<MeshTexture> textures;
+
+  m_num_vertices += mesh->mNumVertices;
 
   for (uint x = 0; x < mesh->mNumVertices; x++) {
     Vertex vertex;
@@ -173,6 +181,7 @@ Mesh ImportedObject::ProcessMesh(aiMesh* mesh, const aiScene* scene) {
 
   for (uint x = 0; x < mesh->mNumFaces; x++) {
     aiFace face = mesh->mFaces[x];
+    m_num_indices += face.mNumIndices;
     for (uint y = 0; y < face.mNumIndices; y++) {
       indices.push_back(face.mIndices[y]);
     }

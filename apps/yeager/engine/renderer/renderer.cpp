@@ -2,6 +2,8 @@
 #include "shapes.h"
 #include "texture.h"
 
+using namespace irrklang;
+
 RendererEngine::RendererEngine(RendererEngineName name, Application* app)
     : m_app(app) {
   m_handle.name = name;
@@ -11,8 +13,21 @@ void RendererEngine::Render() {
   RendererOpenGL();
 }
 
+void RendererEngine::LaunchMusicEngineThread() {
+  engine = createIrrKlangDevice();
+
+  if (!engine) {
+    YeagerLog(ERROR, kSystemLog, "Cannot create music engine!");
+    return;
+  } else {
+    YeagerLog(INFO, kSystemLog, "Playing aot music bitch");
+  }
+
+  //engine->play2D(GetPath("/assets/sound/mac.wav").c_str(), true);
+}
+
 void RendererEngine::RendererOpenGL() {
-  VLOG_F(INFO, "Rendering OpenGL");
+  YeagerLog(INFO, kSystemLog, "Rendering OpenGL");
 
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
@@ -30,27 +45,28 @@ void RendererEngine::RendererOpenGL() {
   }
   Shader skyboxShader(GetPath("/assets/shaders/skybox_fg.glsl").c_str(),
                       GetPath("/assets/shaders/skybox_vt.glsl").c_str(),
-                      "Skybox Shader", m_app);
+                      "Skybox Shader");
   Shader commonShader(GetPath("/assets/shaders/common_fg.glsl").c_str(),
                       GetPath("/assets/shaders/common_vt.glsl").c_str(),
-                      "Common Shader", m_app);
+                      "Common Shader");
   Shader imp_objectShader(GetPath("/assets/shaders/imp_object_fg.glsl").c_str(),
                           GetPath("/assets/shaders/imp_object_vt.glsl").c_str(),
-                          "Imported Object Shader", m_app);
-  EngineTexture2D wall_texture(GetPath("/assets/textures/neco.jpg").c_str(),
-                               m_app, "Wall texture");
-  EngineTexture2D bocchi_texture(GetPath("/assets/textures/bocchi.jpg").c_str(),
-                                 m_app, "Bocchi texture");
-  YeagerCube cube("YaegerCube01", m_app, &wall_texture);
-  YeagerCube bocchi("Bocchi", m_app, &bocchi_texture,
-                    Vector3(2.0f, 2.0f, 2.0f));
-  EngineSkybox skybox(faces, m_app);
+                          "Imported Object Shader");
+  Shader light_shader(GetPath("/assets/shaders/lighting_fg.glsl").c_str(),
+                      GetPath("/assets/shaders/lighting_vt.glsl").c_str(),
+                      "Lighting Shader");
+  YeagerTexture2D wall_texture(GetPath("/assets/textures/neco.jpg").c_str()
+                             , "Wall texture");
+  YeagerTexture2D bocchi_texture(GetPath("/assets/textures/bocchi.jpg").c_str(),
+                                "Bocchi texture");
+  EngineSkybox skybox(faces, "Skybox");
+  m_app->GetLighting()->AddLightSource("test light", &commonShader,
+                                       &commonShader, m_app);
+  std::thread musicEngine(&RendererEngine::LaunchMusicEngineThread, this);
 
-  ImportedObject backpack(
-      GetPath("/assets/imported_models/backpack/backpack.obj"), m_app,
-      "Backpack");
-
-  m_app->YeagerLog(INFO, ConsoleLogSender::kSystemLog, "FUCKKKKK {}", 0);
+  LightingManager light_manager;
+  light_manager.AddLightSource("Light cube", &light_shader, &commonShader,
+                               m_app);
 
   while (m_app->ShouldRendererActive()) {
     float currentFrame = static_cast<float>(glfwGetTime());
@@ -68,37 +84,43 @@ void RendererEngine::RendererOpenGL() {
     Matrix4 view = m_app->GetEditorCamera()->ReturnViewMatrix();
     skybox.Draw(&skyboxShader, Matrix3(view), projection);
 
+    light_shader.UseShader();
+    light_shader.SetMat4("view", view);
+    light_shader.SetMat4("projection", projection);
+    light_manager.DrawLights();
+
     commonShader.UseShader();
     commonShader.SetMat4("view", view);
     commonShader.SetMat4("projection", projection);
-    cube.Draw(&commonShader);
-    bocchi.Draw(&commonShader);
+    commonShader.SetVec3("viewPos", m_app->GetEditorCamera()->GetPosition());
     for (uint cubes = 0; cubes < m_app->GetVectorUserCube()->size(); cubes++) {
-      m_app->GetVectorUserCube()->at(cubes)->Draw(&commonShader);
+      m_app->GetVectorUserCube()->at(cubes).Draw(&commonShader);
     }
+
+    m_app->GetLighting()->DrawLights();
 
     imp_objectShader.UseShader();
     imp_objectShader.SetMat4("view", view);
     imp_objectShader.SetMat4("projection", projection);
+    imp_objectShader.SetVec3("viewPos",
+                             m_app->GetEditorCamera()->GetPosition());
 
     for (uint imported_objects = 0;
-         imported_objects < m_app->GetImportedObjects()->size();
+         imported_objects < m_user_imported_objects.size();
          imported_objects++) {
-      m_app->GetImportedObjects()
-          ->at(imported_objects)
-          ->Draw(&imp_objectShader);
+      m_user_imported_objects.at(imported_objects)->Draw(&imp_objectShader);
     }
 
     m_app->GetInterface()->RenderUI();
     m_app->GetInput()->ProcessInputRender(m_app->GetWindowManager(), deltaTime);
     glfwSwapBuffers(m_app->GetWindowManager()->getWindow());
   }
-
+  engine->drop();
   glfwTerminate();
 }
 
 void ::RendererEngine::checkGLAD() {
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-    VLOG_F(ERROR, "Cannot load GLAD!");
+    YeagerLog(ERROR, kSystemLog, "Cannot load GLAD!");
   }
 }

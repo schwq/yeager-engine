@@ -1,10 +1,8 @@
 #pragma once
 
-#include "../../application.h"
 #include "../../common/common.h"
 #include "shader.h"
 
-class Application;
 class Shader;
 
 // Assimp model loading
@@ -14,12 +12,12 @@ uint LoadTextureFromFile(String path);
 bool LoadTextureFromFile(const char* filename, GLuint* out_texture,
                          int* out_width, int* out_height);
 
-class EngineTexture2D {
+class YeagerTexture2D {
  public:
-  EngineTexture2D(const char* texturePath, Application* app,
+  YeagerTexture2D(const char* texturePath,
                   String name = "DEFAULT");
-  EngineTexture2D(){};
-  ~EngineTexture2D();
+  YeagerTexture2D(){};
+  ~YeagerTexture2D();
 
   constexpr GLuint GetID() const { return m_id; }
 
@@ -36,7 +34,6 @@ class EngineTexture2D {
   GLuint m_id = 0;
   String m_name;
   uint m_texture_num = 0;
-  Application* m_app = nullptr;
   static uint m_texture_count;
   // Imported object use
   String m_texture_path;
@@ -45,7 +42,7 @@ class EngineTexture2D {
 
 class EngineSkybox {
  public:
-  EngineSkybox(std::vector<String> faces, Application* app,
+  EngineSkybox(std::vector<String> faces,
                String name = "DEFAULT");
   ~EngineSkybox();
 
@@ -58,7 +55,6 @@ class EngineSkybox {
 
   GLuint m_id;
   String m_name;
-  Application* m_app = nullptr;
   unsigned int skyboxVAO, skyboxVBO;
 
   float skyboxVertices[108] = {

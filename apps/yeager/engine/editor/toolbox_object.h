@@ -3,11 +3,13 @@
 #include <cassert>
 #include "../../application.h"
 #include "../../common/common.h"
+#include "../lighting/lighting.h"
 #include "../renderer/texture.h"
 #include "editor_explorer.h"
 
 enum class ExplorerObjectType;
-class EngineTexture2D;
+class YeagerTexture2D;
+struct PointLight;
 
 class ToolBoxObject {
  public:
@@ -22,7 +24,7 @@ class ToolBoxObject {
     return m_rotation;
   }
   constexpr void SetRotation(Vector3* rotation) { m_rotation = rotation; }
-  constexpr EngineTexture2D* GetTexture() noexcept {
+  constexpr YeagerTexture2D* GetTexture() noexcept {
     assert(m_texture == nullptr);
     return m_texture;
   }
@@ -31,7 +33,9 @@ class ToolBoxObject {
     assert(m_scale == nullptr);
     return m_scale;
   }
-  constexpr void SetTexture(EngineTexture2D* texture) { m_texture = texture; }
+  constexpr void SetPointLight(PointLight* prop) { m_pt_light_prop = prop; }
+  constexpr PointLight* GetPointLightProp() noexcept { return m_pt_light_prop; }
+  constexpr void SetTexture(YeagerTexture2D* texture) { m_texture = texture; }
   void DrawObject();
   constexpr void SetType(ExplorerObjectType type) { m_type = type; }
 
@@ -40,7 +44,8 @@ class ToolBoxObject {
   Vector3* m_position = nullptr;
   Vector3* m_rotation = nullptr;
   Vector3* m_scale = nullptr;
+  PointLight* m_pt_light_prop = nullptr;
 
-  EngineTexture2D* m_texture = nullptr;
+  YeagerTexture2D* m_texture = nullptr;
   bool m_random_rotation_checkbox = false;
 };

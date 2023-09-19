@@ -25,9 +25,17 @@ class RendererEngine {
   void Render();
   void checkGLAD();
 
+  constexpr std::vector<ImportedObject*>* GetUserImportedObjectVector() {
+    return &m_user_imported_objects;
+  }
+
  private:
   RendererEngineHandle m_handle;
   Application* m_app;
 
   void RendererOpenGL();
+  void LaunchMusicEngineThread();
+  irrklang::ISoundEngine* engine = nullptr;
+
+  std::vector<ImportedObject*> m_user_imported_objects;
 };

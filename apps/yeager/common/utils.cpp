@@ -1,5 +1,7 @@
 #include "utils.h"
 
+EditorConsole kConsole;
+
 constexpr String RemoveSuffixUntilCharacter(String expression,
                                             char characterToStop) {
   bool finished = false;

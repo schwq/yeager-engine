@@ -30,11 +30,17 @@ void Interface::DisplayWarningWindow() {
     Begin("Warning!");
     CenteredWindow(m_current_warning.size_x, m_current_warning.size_y);
     CenteredText(m_current_warning.warning);
-    VLOG_F(WARNING, "%s", m_current_warning.warning.c_str());
+    if (m_current_warning
+            .first_log_warning) {  // Doesnt loop various warning forever, crashes if so
+      YeagerLog(WARNING, kSystemLog, "{}",
+                       m_current_warning.warning.c_str());
+      m_current_warning.first_log_warning = false;
+    }
     Spacing();
-    if (Button("Understood")) {
+    if (Button("Understood")) {  // Reset for next warning window
       m_current_warning.active = false;
       m_current_warning.warning.clear();
+      m_current_warning.first_log_warning = true;
     }
     End();
   }
@@ -56,10 +62,10 @@ float InterfaceButton::TextWidth() {
   return CalcTextSize(m_text.c_str()).x;
 }
 
-InterfaceImage::InterfaceImage(const char* path) {
+InterfaceImage::InterfaceImage(const char* path, Application* m_app) {
   bool ret = LoadTextureFromFile(path, &m_image_texture, &m_image_width,
                                  &m_image_height);
-  VLOG_F(INFO, "%s", path);
+  YeagerLog(INFO, kSystemLog, "{}", path);
   IM_ASSERT(ret);
 }
 
@@ -82,24 +88,37 @@ void Interface::AlignForWidth(float width, float alignment) {
     SetCursorPosX(GetCursorPosX() + off);
 }
 
-Interface::Interface(Window* window, Application* app) : m_app(app) {
+void Interface::LaunchImGui(Window* window) {
+
   IMGUI_CHECKVERSION();
   CreateContext();
+
   ImGuiIO& m_imgui_io = GetIO();
   (void)m_imgui_io;
-  m_imgui_io.ConfigFlags |=
-      ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-  m_imgui_io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+
+      ImGuiConfigFlags_NavEnableKeyboard |
+      ImGuiConfigFlags_NavEnableGamepad;  // Enable Keyboard Controls
+
   StyleColorsDark();
-  ImGuiStyle& m_imgui_style = GetStyle();
 
   ImGui_ImplGlfw_InitForOpenGL(window->getWindow(), true);
   ImGui_ImplOpenGL3_Init("#version 330");
-  VLOG_F(INFO, "Initialize ImGui");
-  VLOG_F(INFO, "%s", GetPath("/assets/fonts/big_blue_term.ttf").c_str());
+}
+
+Interface::Interface(Window* window, Application* app) : m_app(app) {
+
+  LaunchImGui(window);
+
+  YeagerLog(INFO, kSystemLog, "Initialize ImGui");
+  YeagerLog(INFO, kSystemLog, "{}",
+                   GetPath("/assets/fonts/big_blue_term.ttf").c_str());
+
+  ImGuiIO& m_imgui_io = GetIO();
   m_imgui_io.Fonts->AddFontFromFileTTF(
       GetPath("/assets/fonts/big_blue_term.ttf").c_str(), size_pixels);
+
   StyleImGui();
+
   m_initialize = true;
 }
 
@@ -137,8 +156,7 @@ void Interface::RenderUI() {
 
 void Interface::RenderAwait() {}
 
-void Interface::RenderEditor() {
-
+void Interface::DrawExplorer() {
   Begin("Explorer", NULL,
         m_dont_move_windows_editor ? kWindowStatic : kWindowMoveable);
 
@@ -162,7 +180,7 @@ void Interface::RenderEditor() {
 
     if (Button("ADD") || m_app->EnterKeyPressed()) {
       m_comment_window_open = false;
-      m_app->GetConsole()->SetLogString(comment);
+      YeagerLog(INFO, ConsoleLogSender::kUserLog, "{}", comment.c_str());
       comment.clear();
       m_app->GetEditorCamera()->SetShouldMove(true);
       m_app->GetInput()->SetCursorCanDisappear(true);
@@ -172,7 +190,9 @@ void Interface::RenderEditor() {
   m_app->GetConsole()->ReadLog();
 
   End();
+}
 
+void Interface::DrawToolbox() {
   Begin("Toolbox", NULL,
         m_dont_move_windows_editor
             ? ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
@@ -188,9 +208,9 @@ void Interface::RenderEditor() {
   }
 
   End();
+}
 
-  RenderDebugger();
-
+void Interface::DrawEditorMenu() {
   InterfaceButton file_button("editor_file_button", "FILE");
   InterfaceButton edit_button("editor_edit_button", "EDIT");
   InterfaceButton help_button("editor_help_button", "HELP");
@@ -219,6 +239,13 @@ void Interface::RenderEditor() {
   }
 
   End();
+}
+
+void Interface::RenderEditor() {
+  DrawExplorer();
+  DrawToolbox();
+  RenderDebugger();
+  DrawEditorMenu();
 }
 
 void Interface::RenderLauncher() {
@@ -292,16 +319,17 @@ void Interface::CenteredText(String text) {
 }
 
 void Interface::logButton(InterfaceButton button) {
-  VLOG_F(INFO, "%s button was pressed", button.m_name.c_str());
+  YeagerLog(INFO, kSystemLog, "{} button was pressed",
+                   button.m_name.c_str());
 }
 void Interface::StyleImGui() {
   ImGuiStyle& style = ImGui::GetStyle();
   style.WindowRounding = 5.3f;
   style.FrameRounding = 2.3f;
-  style.ScrollbarRounding = 0;
+  style.ScrollbarRounding = 3;
   style.Colors[ImGuiCol_Text] = ImVec4(0.90f, 0.90f, 0.90f, 0.90f);
   style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
-  style.Colors[ImGuiCol_WindowBg] = ImVec4(0.09f, 0.09f, 0.15f, 1.00f);
+  style.Colors[ImGuiCol_WindowBg] = ImVec4(0.09f, 0.09f, 0.09f, 1.00f);
   style.Colors[ImGuiCol_ChildBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
   style.Colors[ImGuiCol_PopupBg] = ImVec4(0.05f, 0.05f, 0.10f, 0.85f);
   style.Colors[ImGuiCol_Border] = ImVec4(0.70f, 0.70f, 0.70f, 0.65f);
@@ -351,6 +379,13 @@ void Interface::RenderDebugger() {
   Text("Camera world position: x: %f y: %f z: %f", cameraPos.x, cameraPos.y,
        cameraPos.z);
   Checkbox("Windows dont move", &m_dont_move_windows_editor);
+  if (Button("Throw Console Error")) {
+    YeagerLog(ERROR, kSystemLog, "Test Error");
+  }
+  SameLine();
+  if (Button("Throw Console Warning")) {
+    YeagerLog(WARNING, kSystemLog, "Test Warning");
+  }
 
   End();
 }

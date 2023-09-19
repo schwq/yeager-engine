@@ -1,34 +1,11 @@
 #include "application.h"
 #include "input.h"
 
-constexpr String ConsoleLogSenderToString(ConsoleLogSender sender) {
-  switch (sender) {
-    case ConsoleLogSender::kUserLog:
-      return "USER";
-    case ConsoleLogSender::kSystemLog:
-      return "SYSTEM";
-    case ConsoleLogSender::kNoneLog:
-    default:
-      return "ERROR_SENDER";
-  }
-}
-
 Application::Application() {
   YeagerLog(INFO, ConsoleLogSender::kSystemLog, "Start program");
 }
 
 Application::~Application() {
-  for (uint x = 0; x < m_cubes_user_created.size(); x++) {
-    delete m_cubes_user_created[x];
-  }
-  for (uint x = 0; x < m_textures_2d_user_created.size(); x++) {
-    delete m_textures_2d_user_created[x];
-  }
-  for (uint x = 0; x < m_imported_objects.size(); x++) {
-    if (!(m_imported_objects[x] == nullptr)) {
-      delete m_imported_objects[x];
-    }
-  }
 }
 
 bool Application::EnterKeyPressed() {
@@ -47,6 +24,7 @@ void Application::SetupApplication(ApplicationSetup setup) {
   m_interface = setup.ptr_interface;
   m_console = setup.ptr_console;
   m_explorer = setup.ptr_explorer;
+  m_lighting = setup.ptr_lighting;
 }
 
 const void Application::SetCurrentMode(ApplicationCurrentMode mode) {

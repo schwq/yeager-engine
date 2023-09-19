@@ -75,6 +75,8 @@
 #include <cassert>
 #include <thread>
 #include <filesystem>
+#include <fstream>
+#include <ios>
 
 #if defined(_WIN32)
 #include <Windows.h>
@@ -98,9 +100,12 @@
 #include "../../../libs/fmt/core.h"
 #include "../../../libs/fmt/format.h"
 
+#include <irrKlang/irrKlang.h>
+
 extern unsigned int kWindowX;
 extern unsigned int kWindowY;
 extern const char* kOperatingSystem;
+extern std::string kDefaultTexturePath;
 extern std::string GetPath(std::string path);
 
 typedef unsigned int uint;
@@ -121,5 +126,12 @@ typedef glm::vec3 Vector3;
 #define INFO 0
 #define WARNING -1
 #define ERROR -2
+
+// Yeager defines
+#define SYSTEM_SD 0
+#define USER_SD 1
+#define IMGUI_RED_ERROR_COLOR ImVec4(1.0f, 0.0f, 0.0f, 1.0f)
+#define IMGUI_YELLOW_WARNING_COLOR ImVec4(1.0f, 1.0f, 0.0f, 1.0f)
+#define IMGUI_WHITE_COMMON_COLOR ImVec4(1.0f, 1.0f, 1.0f, 1.0f)
 
 // clang-format on

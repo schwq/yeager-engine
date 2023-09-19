@@ -21,6 +21,7 @@ int main(int argc, char* argv[]) {
   EditorCamera* camera = new EditorCamera(app);
   EditorConsole* console = new EditorConsole();
   EditorExplorer* explorer = new EditorExplorer(app);
+  LightingManager* lighting = new LightingManager();
 
   ApplicationSetup setup;
   setup.ptr_camera = camera;
@@ -30,6 +31,7 @@ int main(int argc, char* argv[]) {
   setup.ptr_explorer = explorer;
   setup.ptr_window = window;
   setup.ptr_engine = engine;
+  setup.ptr_lighting = lighting;
 
   app->SetupApplication(setup);
   app->GetRendererEngine()->Render();
@@ -41,5 +43,6 @@ int main(int argc, char* argv[]) {
   delete engine;
   delete interfaceUI;
   delete camera;
+  delete lighting;
   return EXIT_SUCCESS;
 }
