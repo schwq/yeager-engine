@@ -36,4 +36,6 @@ x64/
 build/
 .cache/
 .vscode/
-apps/yaeger/yaeger_engine
+Apps/yaeger/yaeger_engine
+yeager
+imgui.ini
