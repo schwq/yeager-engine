@@ -59,6 +59,7 @@ void Log(int verbosity, LogSource sender, fmt::format_string<T...> fmt, T&&... a
 
   kConsole.SetLogString(console_message);
   yg_string terminal_prefix;
+  char color;
   if (verbosity == INFO) {
     terminal_prefix = "(-) ";
   } else if (verbosity == WARNING) {

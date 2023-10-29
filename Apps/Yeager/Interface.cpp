@@ -8,6 +8,7 @@ yg_uint Interface::m_frames = 0;
 
 Interface::~Interface()
 {
+  Yeager::Log(INFO, kSystem, "Destrorying Interface!");
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   DestroyContext();
@@ -120,7 +121,7 @@ Interface::Interface(Window* window, Application* app) : m_app(app)
   ImGuiIO& m_imgui_io = GetIO();
   m_imgui_io.Fonts->AddFontFromFileTTF(GetPath("/Assets/fonts/big_blue_term.ttf").c_str(), size_pixels);
 
-  StyleImGui();
+  LoadColorscheme();
 
   m_initialize = true;
 }
@@ -205,10 +206,10 @@ void Interface::DrawToolbox()
   if (m_app->GetExplorer()->toolbox_selected == nullptr) {
     Text("None");
   } else {
-    ExplorerObject* obj = m_app->GetExplorer()->toolbox_selected;
-    yg_cchar text = obj->m_object_toolbox.GetEntity()->GetName().c_str();
+    Yeager::ToolBoxObject* obj = m_app->GetExplorer()->toolbox_selected;
+    yg_cchar text = obj->GetEntity()->GetName().c_str();
     Text(text);
-    obj->m_object_toolbox.DrawObject();
+    obj->DrawObject();
   }
 
   End();
@@ -326,49 +327,48 @@ void Interface::logButton(InterfaceButton button)
 {
   Yeager::Log(INFO, kSystem, "{} button was pressed", button.m_name.c_str());
 }
-void Interface::StyleImGui()
+void Interface::LoadColorscheme()
 {
   ImGuiStyle& style = ImGui::GetStyle();
-  style.WindowRounding = 5.3f;
-  style.FrameRounding = 2.3f;
-  style.ScrollbarRounding = 3;
-  style.Colors[ImGuiCol_Text] = ImVec4(0.90f, 0.90f, 0.90f, 0.90f);
-  style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
-  style.Colors[ImGuiCol_WindowBg] = ImVec4(0.09f, 0.09f, 0.09f, 1.00f);
-  style.Colors[ImGuiCol_ChildBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-  style.Colors[ImGuiCol_PopupBg] = ImVec4(0.05f, 0.05f, 0.10f, 0.85f);
-  style.Colors[ImGuiCol_Border] = ImVec4(0.70f, 0.70f, 0.70f, 0.65f);
-  style.Colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-  style.Colors[ImGuiCol_FrameBg] = ImVec4(0.00f, 0.00f, 0.01f, 1.00f);
-  style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.90f, 0.80f, 0.80f, 0.40f);
-  style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.90f, 0.65f, 0.65f, 0.45f);
-  style.Colors[ImGuiCol_TitleBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.83f);
-  style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.40f, 0.40f, 0.80f, 0.20f);
-  style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.00f, 0.00f, 0.00f, 0.87f);
-  style.Colors[ImGuiCol_MenuBarBg] = ImVec4(0.01f, 0.01f, 0.02f, 0.80f);
-  style.Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.20f, 0.25f, 0.30f, 0.60f);
-  style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.55f, 0.53f, 0.55f, 0.51f);
-  style.Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.56f, 0.56f, 0.56f, 1.00f);
-  style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.56f, 0.56f, 0.56f, 0.91f);
-  style.Colors[ImGuiCol_CheckMark] = ImVec4(0.90f, 0.90f, 0.90f, 0.83f);
-  style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.70f, 0.70f, 0.70f, 0.62f);
-  style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.30f, 0.30f, 0.30f, 0.84f);
-  style.Colors[ImGuiCol_Button] = ImVec4(0.48f, 0.72f, 0.89f, 0.49f);
-  style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.50f, 0.69f, 0.99f, 0.68f);
-  style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.80f, 0.50f, 0.50f, 1.00f);
-  style.Colors[ImGuiCol_Header] = ImVec4(0.30f, 0.69f, 1.00f, 0.53f);
-  style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.44f, 0.61f, 0.86f, 1.00f);
-  style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.38f, 0.62f, 0.83f, 1.00f);
+  style.WindowRounding = m_colorscheme.WindowRounding;
+  style.FrameRounding = m_colorscheme.FrameRounding;
+  style.ScrollbarRounding = m_colorscheme.ScrollbarRounding;
+  style.Colors[ImGuiCol_Text] = m_colorscheme.Colors_ImGuiCol_Text;
+  style.Colors[ImGuiCol_TextDisabled] = m_colorscheme.Colors_ImGuiCol_TextDisabled;
+  style.Colors[ImGuiCol_WindowBg] = m_colorscheme.Colors_ImGuiCol_WindowBg;
+  style.Colors[ImGuiCol_ChildBg] = m_colorscheme.Colors_ImGuiCol_ChildBg;
+  style.Colors[ImGuiCol_PopupBg] = m_colorscheme.Colors_ImGuiCol_PopupBg;
+  style.Colors[ImGuiCol_Border] = m_colorscheme.Colors_ImGuiCol_Border;
+  style.Colors[ImGuiCol_BorderShadow] = m_colorscheme.Colors_ImGuiCol_BorderShadow;
+  style.Colors[ImGuiCol_FrameBg] = m_colorscheme.Colors_ImGuiCol_FrameBg;
+  style.Colors[ImGuiCol_FrameBgHovered] = m_colorscheme.Colors_ImGuiCol_FrameBgHovered;
+  style.Colors[ImGuiCol_FrameBgActive] = m_colorscheme.Colors_ImGuiCol_FrameBgActive;
+  style.Colors[ImGuiCol_TitleBg] = m_colorscheme.Colors_ImGuiCol_TitleBg;
+  style.Colors[ImGuiCol_TitleBgCollapsed] = m_colorscheme.Colors_ImGuiCol_TitleBgCollapsed;
+  style.Colors[ImGuiCol_TitleBgActive] = m_colorscheme.Colors_ImGuiCol_TitleBgActive;
+  style.Colors[ImGuiCol_MenuBarBg] = m_colorscheme.Colors_ImGuiCol_MenuBarBg;
+  style.Colors[ImGuiCol_ScrollbarBg] = m_colorscheme.Colors_ImGuiCol_ScrollbarBg;
+  style.Colors[ImGuiCol_ScrollbarGrab] = m_colorscheme.Colors_ImGuiCol_ScrollbarGrab;
+  style.Colors[ImGuiCol_ScrollbarGrabHovered] = m_colorscheme.Colors_ImGuiCol_ScrollbarGrabHovered;
+  style.Colors[ImGuiCol_ScrollbarGrabActive] = m_colorscheme.Colors_ImGuiCol_ScrollbarGrabActive;
+  style.Colors[ImGuiCol_CheckMark] = m_colorscheme.Colors_ImGuiCol_CheckMark;
+  style.Colors[ImGuiCol_SliderGrab] = m_colorscheme.Colors_ImGuiCol_SliderGrab;
+  style.Colors[ImGuiCol_SliderGrabActive] = m_colorscheme.Colors_ImGuiCol_SliderGrabActive;
+  style.Colors[ImGuiCol_Button] = m_colorscheme.Colors_ImGuiCol_Button;
+  style.Colors[ImGuiCol_ButtonHovered] = m_colorscheme.Colors_ImGuiCol_ButtonHovered;
+  style.Colors[ImGuiCol_ButtonActive] = m_colorscheme.Colors_ImGuiCol_ButtonActive;
+  style.Colors[ImGuiCol_Header] = m_colorscheme.Colors_ImGuiCol_Header;
+  style.Colors[ImGuiCol_HeaderHovered] = m_colorscheme.Colors_ImGuiCol_HeaderHovered;
+  style.Colors[ImGuiCol_HeaderActive] = m_colorscheme.Colors_ImGuiCol_HeaderActive;
 
-  style.Colors[ImGuiCol_ResizeGrip] = ImVec4(1.00f, 1.00f, 1.00f, 0.85f);
-  style.Colors[ImGuiCol_ResizeGripHovered] = ImVec4(1.00f, 1.00f, 1.00f, 0.60f);
-  style.Colors[ImGuiCol_ResizeGripActive] = ImVec4(1.00f, 1.00f, 1.00f, 0.90f);
-
-  style.Colors[ImGuiCol_PlotLines] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-  style.Colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
-  style.Colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
-  style.Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
-  style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.00f, 0.00f, 1.00f, 0.35f);
+  style.Colors[ImGuiCol_ResizeGrip] = m_colorscheme.Colors_ImGuiCol_ResizeGrip;
+  style.Colors[ImGuiCol_ResizeGripHovered] = m_colorscheme.Colors_ImGuiCol_ResizeGripHovered;
+  style.Colors[ImGuiCol_ResizeGripActive] = m_colorscheme.Colors_ImGuiCol_ResizeGripActive;
+  style.Colors[ImGuiCol_PlotLines] = m_colorscheme.Colors_ImGuiCol_PlotLines;
+  style.Colors[ImGuiCol_PlotLinesHovered] = m_colorscheme.Colors_ImGuiCol_PlotHistogramHovered;
+  style.Colors[ImGuiCol_PlotHistogram] = m_colorscheme.Colors_ImGuiCol_PlotHistogram;
+  style.Colors[ImGuiCol_PlotHistogramHovered] = m_colorscheme.Colors_ImGuiCol_PlotHistogramHovered;
+  style.Colors[ImGuiCol_TextSelectedBg] = m_colorscheme.Colors_ImGuiCol_TextSelectedBg;
 }
 
 void Interface::RenderDebugger()
@@ -388,10 +388,6 @@ void Interface::RenderDebugger()
     Yeager::Log(WARNING, kSystem, "Test Warning");
   }
 
-  Text("Imported Objects Vector shared_ptr size: %u", yg_ImportedObjects.size());
-  if (Button("Polygon mode: FILL")) {
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-  }
   SameLine();
   if (Button("Polygon mode: POINT")) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);

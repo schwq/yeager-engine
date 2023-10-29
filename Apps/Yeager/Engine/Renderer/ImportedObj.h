@@ -54,6 +54,7 @@ class Mesh {
   constexpr yg_uint* GetVao() { return &m_vao; }
   constexpr yg_uint* GetVbo() { return &m_vbo; }
   constexpr yg_uint* GetEbo() { return &m_ebo; }
+  std::vector<MeshTexture>* GetTextures() { return &m_textures; }
 
  private:
   yg_uint m_vao, m_vbo, m_ebo;
@@ -68,6 +69,9 @@ class ImportedObject : public Yeager::GameEntity {
   ImportedObject(yg_string path, Application* app, yg_string name = "DEFAULT", bool flip = true);
   ~ImportedObject();
   void Draw(Yeager::Shader* shader);
+  void operator=(const ImportedObject& other);
+  yg_string GetPath() { return m_model_path; }
+  std::vector<MeshTexture>* GetTexturesLoaded() { return &m_textures_loaded; }
 
  private:
   void SetupVao();
@@ -87,4 +91,4 @@ class ImportedObject : public Yeager::GameEntity {
   yg_uint m_num_indices = 0;
 };
 
-extern std::vector<std::shared_ptr<ImportedObject>> yg_ImportedObjects;
+extern std::vector<std::shared_ptr<ImportedObject>> ygImportedObjects;

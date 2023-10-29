@@ -55,7 +55,7 @@ class GameEntity : public Entity {
   ~GameEntity();
   constexpr Yeager::Texture2D* GetTexture();
   constexpr Yeager::Shader* GetShader();
-  constexpr Transformation GetTransformation();
+  Transformation GetTransformation();
   Transformation* GetTransformationPtr();
   void SetPosition(yg_vec3 pos);
   void ProcessTransformation(Shader* Shader);

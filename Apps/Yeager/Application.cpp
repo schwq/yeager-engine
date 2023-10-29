@@ -7,7 +7,11 @@ Application::Application()
   Yeager::Log(INFO, kSystem, "Start program");
 }
 
-Application::~Application() {}
+Application::~Application()
+{
+
+  Yeager::Log(INFO, kSystem, "Destrorying Application!");
+}
 
 bool Application::EnterKeyPressed()
 {

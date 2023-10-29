@@ -30,6 +30,7 @@ namespace Yeager {
 class EntityPhysics {
  public:
   EntityPhysics(Yeager::GameEntity* entity, float weight = 1.0f, float gravity_const = 1.0f);
+  ~EntityPhysics();
 
   void ApplyGravity();
   void ChangeGravity(float gravity_const, float weight)

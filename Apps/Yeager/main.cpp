@@ -16,44 +16,33 @@
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// clang-format off
-#include "Common/Common.h"
 #include "Application.h"
+#include "Common/Common.h"
 #include "Engine/Renderer/Render.h"
 #include "Engine/Renderer/Window.h"
 
-// clang-format on 
-static void glfwErrorCallback(int error, yg_cchar description) {
-  VLOG_F(ERROR, description);
-}
-
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
   loguru::init(argc, argv);
-  static Application* app = new Application();
-  Input* input = new Input(app);
-  Window* window = new Window(kWindowX, kWindowY, glfwErrorCallback,
-                              app->GetInput()->MouseCallback);
+  auto app = std::make_shared<Application>();
+  auto input = std::make_shared<Input>(app.get());
 
-  RendererEngine* engine = new RendererEngine(RendererEngineName::kOpenGL, app);
+  auto window = std::make_shared<Window>(kWindowX, kWindowY, app->GetInput()->MouseCallback);
+
+  auto engine = std::make_shared<RendererEngine>(RendererEngineName::kOpenGL, app.get());
   app->GetRendererEngine()->checkGLAD();
-  Interface* interfaceUI = new Interface(window, app);
-  EditorCamera* camera = new EditorCamera(app);
-  EditorExplorer* explorer = new EditorExplorer(app);
+  auto interfaceUI = std::make_shared<Interface>(window.get(), app.get());
+  auto camera = std::make_shared<EditorCamera>(app.get());
+  auto explorer = std::make_shared<EditorExplorer>(app.get());
   ApplicationSetup setup;
-  setup.ptr_camera = camera;
-  setup.ptr_input = input;
-  setup.ptr_interface = interfaceUI;
-  setup.ptr_explorer = explorer;
-  setup.ptr_window = window;
-  setup.ptr_engine = engine;
+  setup.ptr_camera = camera.get();
+  setup.ptr_input = input.get();
+  setup.ptr_interface = interfaceUI.get();
+  setup.ptr_explorer = explorer.get();
+  setup.ptr_window = window.get();
+  setup.ptr_engine = engine.get();
   app->SetupApplication(setup);
   app->GetRendererEngine()->Render();
   VLOG_F(INFO, "Shutdown program");
-  delete input;
-  delete engine;
-  delete camera;
-  delete window;
-  delete interfaceUI;
-  delete app;
   return EXIT_SUCCESS;
 }

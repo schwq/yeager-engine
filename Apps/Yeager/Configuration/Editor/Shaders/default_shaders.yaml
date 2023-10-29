@@ -1,0 +1,29 @@
+SceneShader: Default 
+Shaders: 
+  - Shader: Skybox Shader
+    VarName: Skybox 
+    FragmentPath: /Assets/shaders/skybox_fg.glsl
+    VertexPath: /Assets/shaders/skybox_vt.glsl
+  - Shader: Common Shader
+    VarName: Common 
+    FragmentPath: /Assets/shaders/common_fg.glsl
+    VertexPath: /Assets/shaders/common_vt.glsl
+  - Shader: ImportedObject Shader
+    VarName: ImportedObject 
+    FragmentPath: /Assets/shaders/imp_object_fg.glsl
+    VertexPath: /Assets/shaders/imp_object_vt.glsl
+  - Shader: Light Shader
+    VarName: Light 
+    FragmentPath: /Assets/shaders/lighting_fg.glsl
+    VertexPath: /Assets/shaders/lighting_vt.glsl
+  - Shader: Simple Shader
+    VarName: Simple 
+    FragmentPath: /Assets/shaders/simple_fg.glsl
+    VertexPath: /Assets/shaders/simple_vt.glsl
+  - Shader: Geometry Shader
+    VarName: Geometry 
+    FragmentPath: /Assets/shaders/geometry_fg.glsl
+    VertexPath: /Assets/shaders/geometry_vt.glsl
+  
+
+

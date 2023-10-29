@@ -74,10 +74,14 @@
 #define YEAGER_NODISCARD
 #endif
 
+#define YEAGER_NOT_IMPLEMENTED(func)                                     \
+  {                                                                      \
+    printf("(??) Function not implemented as been called [%s]\n", func); \
+  }
 #define YEAGER_NULL_LITERAL "NULL"
 #define _ERROR(...)              \
   \ 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  \
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        \
   {                              \
     printf(stderr, __VA_ARGS__); \
   }  // Use this macro for debugging sections or some low level control

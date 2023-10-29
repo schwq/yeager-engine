@@ -29,7 +29,7 @@ enum class InputCurrentMode { kEditorMode, kCeaseMode, kLauncherMode, kSettingsM
 class Input {
  public:
   Input(Application* app);
-  ~Input(){};
+  ~Input();
 
   void ProcessInputRender(Window* window, float delta);
   static void MouseCallback(GLFWwindow* window, double xpos, double ypos);

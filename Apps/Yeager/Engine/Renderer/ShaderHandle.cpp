@@ -1,6 +1,17 @@
 #include "ShaderHandle.h"
 using namespace Yeager;
 yg_uint Shader::m_shader_count = 0;
+std::vector<ShaderFromYaml> Yeager::ygConfigShaders;
+Yeager::Shader* Yeager::ShaderFromVarName(yg_string var)
+{
+  for (auto shader : ygConfigShaders) {
+    if (shader.m_varName == var) {
+      return shader.m_shader.get();
+    }
+  }
+  Yeager::Log(ERROR, kSystem, "Cannot find shader from var name!");
+  return nullptr;
+}
 
 Shader::Shader(yg_cchar fragmentPath, yg_cchar vertexPath, yg_string name) : m_name(name)
 {
@@ -17,7 +28,8 @@ Shader::Shader(yg_cchar fragmentPath, yg_cchar vertexPath, yg_string name) : m_n
 
 Shader::~Shader()
 {
-  glDeleteProgram(m_id);
+  // TODO here causing seg fault
+  //glDeleteProgram(m_id);
 }
 
 yg_uint Shader::CreateVertexGL(yg_cchar vertexPath)

@@ -39,6 +39,7 @@ enum class ExplorerObjectType {
   kImage,
   kVideo,
   kAudio,
+  k3DAudio,
   kSkybox,
   kImportedObject,
   kPointLight,
@@ -62,19 +63,23 @@ class ToolBoxObject {
   void SetPhysics(Yeager::EntityPhysics* physics) { m_physics = physics; }
   Yeager::EntityPhysics* GetPhysics() { return m_physics; }
   void SetAudio(Yeager::AudioHandle* audio);
+  void Set3DAudio(Yeager::Audio3DHandle* audio);
+
   bool m_selected = false;
 
  private:
   ExplorerObjectType m_type;
   Yeager::GameEntity* m_entity = nullptr;
   Yeager::EntityPhysics* m_physics = nullptr;
-  Yeager::AudioHandle* m_audio = nullptr;
+  Yeager::Audio3DHandle* m_audio = nullptr;
 
   float obj_weight = 1.0f;
   float obj_gravity_const = 1.0f;
+  float m_random_rotation_pow = 1.0f;
   bool m_random_rotation_checkbox = false;
   bool m_gravity_checkbox = true;
   bool m_reverse_gravity_checkbox = false;
+  float m_3d_audio_position[3];
   irrklang::ik_f32 m_sound_volume = 0.5f;
 };
 }  // namespace Yeager

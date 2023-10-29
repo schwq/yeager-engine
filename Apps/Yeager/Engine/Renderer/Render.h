@@ -38,7 +38,7 @@ struct RendererEngineHandle {
 class RendererEngine {
  public:
   RendererEngine(RendererEngineName name, Application* app);
-  ~RendererEngine(){};
+  ~RendererEngine();
 
   void Render();
   void checkGLAD();

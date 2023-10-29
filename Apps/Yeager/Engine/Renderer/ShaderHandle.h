@@ -50,4 +50,12 @@ class Shader {
   YEAGER_NODISCARD yg_uint CreateFragmentGL(yg_cchar fragmentPath);
   void LinkShaders(yg_uint vertexShader, yg_uint fragmentShader);
 };
+
+struct ShaderFromYaml {
+  std::shared_ptr<Yeager::Shader> m_shader = nullptr;
+  yg_string m_varName;
+};
+
+extern std::vector<ShaderFromYaml> ygConfigShaders;
+Yeager::Shader* ShaderFromVarName(yg_string var);
 }  // namespace Yeager

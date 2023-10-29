@@ -18,11 +18,17 @@
 
 #pragma once
 #include "../../Common/Common.h"
+#include "../../Common/LogEngine.h"
 #include "../../Common/Utilities.h"
+
+static void glfwErrorCallback(int error, yg_cchar description)
+{
+  VLOG_F(ERROR, description);
+}
 
 class Window {
  public:
-  Window(yg_uint window_x, yg_uint window_y, GLFWerrorfun error, GLFWcursorposfun cursor);
+  Window(yg_uint window_x, yg_uint window_y, GLFWcursorposfun cursor);
   ~Window();
   YEAGER_NODISCARD GLFWwindow* getWindow() { return m_window; }
   static void FramebufferSizeCallback(GLFWwindow* window, int width, int height);

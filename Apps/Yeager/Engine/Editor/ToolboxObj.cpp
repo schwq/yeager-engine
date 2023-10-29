@@ -32,6 +32,8 @@ yg_string ExplorerTypeToString(ExplorerObjectType type)
       return "Point Light";
     case ExplorerObjectType::kImportedObject:
       return "Imported Object";
+    case ExplorerObjectType::k3DAudio:
+      return "3D Audio";
     case ExplorerObjectType::kNone:
     case ExplorerObjectType::kNoChange:
     default:
@@ -39,9 +41,15 @@ yg_string ExplorerTypeToString(ExplorerObjectType type)
   }
 }
 
+void ToolBoxObject::Set3DAudio(Yeager::Audio3DHandle* audio)
+{
+  m_entity = audio;
+  m_audio = audio;
+}
+
 void ToolBoxObject::SetAudio(Yeager::AudioHandle* audio)
 {
-  m_audio = audio;
+  m_audio = (Yeager::Audio3DHandle*)audio;
   m_entity = audio;
 }
 
@@ -71,11 +79,12 @@ void ToolBoxObject::DrawObject()
         Text("Rotation");
         SameLine();
         Checkbox("Random Rotation", &m_random_rotation_checkbox);
+        InputFloat("Random Rotation Power", &m_random_rotation_pow);
         if (m_random_rotation_checkbox) {
           float angles = glfwGetTime();
-          trans->rotation.x = 10.0f * angles;
-          trans->rotation.y = 20.0f * angles;
-          trans->rotation.z = 15.0f * angles;
+          trans->rotation.x = 10.0f * angles * m_random_rotation_pow;
+          trans->rotation.y = 20.0f * angles * m_random_rotation_pow;
+          trans->rotation.z = 15.0f * angles * m_random_rotation_pow;
         }
         InputFloat("Rot X", &trans->rotation.x);
         InputFloat("Rot Y", &trans->rotation.y);
@@ -98,7 +107,12 @@ void ToolBoxObject::DrawObject()
         m_physics->ChangeGravity(obj_gravity_const, obj_weight);
 
         break;
+      case ExplorerObjectType::k3DAudio:
       case ExplorerObjectType::kAudio:
+        if (!m_audio) {
+          Yeager::Log(ERROR, kSystem, "Toolbox draw obj, AudioHandle pointer is invalid!");
+          break;
+        }
         Text("Driver name %s", m_audio->GetEngine()->getDriverName());
         if (Button("Play")) {
           m_audio->Play();
@@ -125,8 +139,7 @@ void ToolBoxObject::DrawObject()
         SliderFloat("Volume", &m_sound_volume, 0.0f, 1.0f);
         m_audio->SetVolume(m_sound_volume);
 
-        yg_uint time_reimander =
-            (m_audio->GetLenght() - m_audio->GetSoundPos()) / 1000;
+        yg_uint time_reimander = (m_audio->GetLenght() - m_audio->GetSoundPos()) / 1000;
         yg_uint seconds = time_reimander % 60;
         yg_uint minutes = time_reimander / 60;
         if (seconds < 10) {
@@ -134,6 +147,16 @@ void ToolBoxObject::DrawObject()
         } else {
           Text("Time reimander: %u:%u", minutes, seconds);
         }
+        if (m_type == ExplorerObjectType::k3DAudio) {
+          InputFloat3("Audio Position", m_3d_audio_position);
+          irrklang::vec3df position =
+              irrklang::vec3df(m_3d_audio_position[0], m_3d_audio_position[1], m_3d_audio_position[2]);
+          m_audio->SetAudioPos(position);
+        }
+        if (Button("Add Waves")) {
+          m_audio->EnableSoundEffect(Yeager::WavesReverb);
+        }
+
         break;
     }
   }

@@ -57,5 +57,5 @@ yg_string GetPath(yg_string path)
 
 yg_string kDefaultTexturePath = GetPath("/Assets/textures/default.jpg");
 
-unsigned int kWindowX = 1920;
-unsigned int kWindowY = 1080;
+unsigned int kWindowX = 1300;
+unsigned int kWindowY = 720;

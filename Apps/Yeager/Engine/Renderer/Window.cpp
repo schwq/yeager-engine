@@ -1,6 +1,5 @@
 #include "Window.h"
-Window::Window(yg_uint window_x, yg_uint window_y, GLFWerrorfun error,
-               GLFWcursorposfun cursor)
+Window::Window(yg_uint window_x, yg_uint window_y, GLFWcursorposfun cursor)
 {
   if (!glfwInit()) {
     VLOG_F(ERROR, "Cannot initialize glfw!");
@@ -18,7 +17,7 @@ Window::Window(yg_uint window_x, yg_uint window_y, GLFWerrorfun error,
     VLOG_F(ERROR, "Cannot created GLFW window!");
     glfwTerminate();
   }
-  glfwSetErrorCallback(error);
+  glfwSetErrorCallback(glfwErrorCallback);
   glfwSetCursorPosCallback(m_window, cursor);
   glfwMakeContextCurrent(m_window);
   glfwSetFramebufferSizeCallback(m_window, FramebufferSizeCallback);
@@ -41,8 +40,7 @@ void Window::LaunchEditor()
   GLFWmonitor* monitor = glfwGetPrimaryMonitor();
   const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 
-  m_window =
-      glfwCreateWindow(mode->width, mode->height, "Yeager Engine", NULL, NULL);
+  m_window = glfwCreateWindow(mode->width, mode->height, "Yeager Engine", NULL, NULL);
 
   if (m_window == NULL) {
     VLOG_F(ERROR, "Cannot created GLFW window!");
@@ -52,5 +50,6 @@ void Window::LaunchEditor()
 
 Window::~Window()
 {
+  Yeager::Log(INFO, kSystem, "Destrorying Window!");
   glfwTerminate();
 }

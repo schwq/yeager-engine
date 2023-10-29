@@ -27,10 +27,12 @@ set(LIBRARIES
 
 set(SOURCEFILES 
     ${LIBRARIES}
-    Apps/Yeager/main.cpp 
+    Apps/Yeager/main.cpp  
+    Apps/Yeager/Scene.cpp 
     Apps/Yeager/Interface.cpp 
     Apps/Yeager/Application.cpp 
     Apps/Yeager/InputHandle.cpp 
+    Apps/Yeager/Serialization.cpp
     Apps/Yeager/Common/Utilities.cpp 
     Apps/Yeager/Engine/Renderer/Render.cpp 
     Apps/Yeager/Engine/Renderer/ShaderHandle.cpp
@@ -48,5 +50,5 @@ set(SOURCEFILES
 )
 
 add_executable(${projectName} ${SOURCEFILES})
-target_link_libraries(${projectName} glfw GLU dl assimp IrrKlang)
+target_link_libraries(${projectName} glfw GLU dl assimp IrrKlang yaml-cpp)
 add_definitions(-w)

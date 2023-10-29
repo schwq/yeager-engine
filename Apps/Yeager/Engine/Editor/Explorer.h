@@ -28,38 +28,28 @@ class Application;
 class Interface;
 class ImportedObject;
 
-struct ExplorerObject {
-  ExplorerObject(Yeager::ToolBoxObject toolbox_object);
-  static yg_uint m_object_count;
-  yg_uint m_id;
-  bool m_selected = false;
-  Yeager::ToolBoxObject m_object_toolbox;
-};
-
 class EditorExplorer {
  public:
   EditorExplorer(Application* app);
-  void AddObject(ExplorerObject object);
-  void AddObject(Yeager::ToolBoxObject toolbox_object);
   void DrawExplorer();
-  ExplorerObject* toolbox_selected;
+
+  Yeager::ToolBoxObject* toolbox_selected;
 
  private:
-  void AddCubeWindow();
+  void AddGeometryObjectWindow();
   void AddImportedObjectWindow();
-  void AddLightPointSource();
   void AddAudioWindow();
   void WarningExplorer(yg_string msg);
-
-  std::vector<ExplorerObject> m_objects;
   bool m_first_time_toolbox = true;
-  bool m_add_cube_window_open = false;
   bool m_add_imported_object_window_open = false;
+  bool m_imported_object_flip_tex = true;
   bool m_everything_fine_to_create = true;
-  bool m_add_light_point_source_window_open = false;
   bool m_operation_canceled = false;
   bool m_add_audio_window_open = false;
+  bool m_add_geometry_window_open = false;
+  bool m_add_geometry_shape_cube = false;
   bool m_looped_audio = false;
+  bool m_add_audio_is_3d = false;
   yg_string m_new_object_name;
   yg_string m_new_object_path;
   yg_string m_new_object_texture_path;

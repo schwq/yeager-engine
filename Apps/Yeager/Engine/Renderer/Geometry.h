@@ -30,7 +30,7 @@ class Application;
 namespace Yeager {
 
 enum GeometryShape { kCube, kSphere, kTriangle };
-
+extern yg_string ShapeToString(GeometryShape shape);
 class Geometry : public GameEntity {
  public:
   Geometry(yg_string name, yg_vec3 color, GeometryShape shape, Application* app, bool is_color = true,
@@ -40,6 +40,10 @@ class Geometry : public GameEntity {
   void Draw(Shader* shader);
   void Setup();
   void ChangeColor(yg_vec3 color) { m_color = color; }
+  GeometryShape GetShape() { return m_shape; }
+  yg_vec3 GetColor() { return m_color; }
+  bool isColor() { return m_is_color; }
+  Yeager::Texture2D* GetTexture() { return m_texture; }
 
  private:
   GeometryShape m_shape;
@@ -57,3 +61,5 @@ class Geometry : public GameEntity {
   void GenerateVerticesIndices();
 };
 }  // namespace Yeager
+
+extern std::vector<std::shared_ptr<Yeager::Geometry>> yg_Shapes;
