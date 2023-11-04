@@ -15,34 +15,36 @@
 //
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-#include "Application.h"
+// clang-format off
 #include "Common/Common.h"
-#include "Engine/Renderer/Render.h"
-#include "Engine/Renderer/Window.h"
+#include "Application.h"
 
+// clang-format on 
 int main(int argc, char* argv[])
 {
-  loguru::init(argc, argv);
-  auto app = std::make_shared<Application>();
+  Yeager::ApplicationCoreSetup setup;
+  auto app = std::make_shared<Yeager::ApplicationCore>();
+
   auto input = std::make_shared<Input>(app.get());
-
-  auto window = std::make_shared<Window>(kWindowX, kWindowY, app->GetInput()->MouseCallback);
-
-  auto engine = std::make_shared<RendererEngine>(RendererEngineName::kOpenGL, app.get());
-  app->GetRendererEngine()->checkGLAD();
-  auto interfaceUI = std::make_shared<Interface>(window.get(), app.get());
+  auto window = std::make_shared<Window>(ygWindowWidth, ygWindowHeight, app->GetInput()->MouseCallback);
+  auto scene = std::make_shared<Yeager::Scene>("DefaultScene", Yeager::Scene3D, Yeager::OpenGL3_3, app.get());
+  auto renderer = std::make_shared<RendererEngine>(RendererEngineName::kOpenGL, app.get());
+  app->GetRenderer()->checkGLAD();
+  auto interface = std::make_shared<Interface>(window.get(), app.get());
   auto camera = std::make_shared<EditorCamera>(app.get());
   auto explorer = std::make_shared<EditorExplorer>(app.get());
-  ApplicationSetup setup;
-  setup.ptr_camera = camera.get();
-  setup.ptr_input = input.get();
-  setup.ptr_interface = interfaceUI.get();
-  setup.ptr_explorer = explorer.get();
-  setup.ptr_window = window.get();
-  setup.ptr_engine = engine.get();
-  app->SetupApplication(setup);
-  app->GetRendererEngine()->Render();
-  VLOG_F(INFO, "Shutdown program");
+
+
+  setup.m_input = input;
+  setup.m_window = window;
+  setup.m_renderer = renderer;
+  setup.m_scene = scene;
+  app->GetRenderer()->checkGLAD();
+  setup.m_interface = interface;
+  setup.m_camera = camera;
+  setup.m_explorer = explorer;
+  app->Setup(setup);
+  app->GetRenderer()->Render();
+  
   return EXIT_SUCCESS;
 }

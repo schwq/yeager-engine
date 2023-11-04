@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include "../../Application.h"
 #include "../../Common/Common.h"
 #include "../Editor/ToolboxObj.h"
 #include "../Physics/PhysicsHandle.h"
@@ -29,9 +28,11 @@
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
 
-class Yeager::Texture2D;
-class Yeager::ToolBoxObject;
-class Application;
+namespace Yeager {
+class Texture2D;
+class ToolBoxObject;
+class ApplicationCore;
+}  // namespace Yeager
 
 struct Vertex {
   yg_vec3 m_position;
@@ -66,7 +67,7 @@ class Mesh {
 
 class ImportedObject : public Yeager::GameEntity {
  public:
-  ImportedObject(yg_string path, Application* app, yg_string name = "DEFAULT", bool flip = true);
+  ImportedObject(yg_string path, Yeager::ApplicationCore* app, yg_string name = "DEFAULT", bool flip = true);
   ~ImportedObject();
   void Draw(Yeager::Shader* shader);
   void operator=(const ImportedObject& other);
@@ -80,7 +81,7 @@ class ImportedObject : public Yeager::GameEntity {
   Mesh ProcessMesh(aiMesh* mesh, const aiScene* scene);
   void ProcessTransformation(Yeager::Shader* shader);
   std::vector<MeshTexture> LoadMaterialTexture(aiMaterial* mat, aiTextureType type, yg_string typeName);
-  Application* m_app;
+  Yeager::ApplicationCore* m_app;
   std::vector<MeshTexture> m_textures_loaded;
   std::vector<Mesh> meshes;
   yg_string m_model_path;
@@ -90,5 +91,3 @@ class ImportedObject : public Yeager::GameEntity {
   yg_uint m_num_vertices = 0;
   yg_uint m_num_indices = 0;
 };
-
-extern std::vector<std::shared_ptr<ImportedObject>> ygImportedObjects;

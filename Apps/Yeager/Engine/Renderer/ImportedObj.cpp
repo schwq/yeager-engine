@@ -1,6 +1,5 @@
 #include "ImportedObj.h"
-
-std::vector<std::shared_ptr<ImportedObject>> ygImportedObjects;
+#include "../../Application.h"
 
 Mesh::Mesh(std::vector<Vertex> vertices, std::vector<yg_uint> indices, std::vector<MeshTexture> textures)
 {
@@ -63,7 +62,7 @@ void Mesh::Draw(Yeager::Shader* shader)
   glActiveTexture(GL_TEXTURE0);
 }
 
-ImportedObject::ImportedObject(yg_string path, Application* app, yg_string name, bool flip)
+ImportedObject::ImportedObject(yg_string path, Yeager::ApplicationCore* app, yg_string name, bool flip)
     : m_app(app), m_model_path(path), Yeager::GameEntity(name), m_physics(Yeager::EntityPhysics(this)), m_flip(flip)
 {
 
@@ -72,7 +71,7 @@ ImportedObject::ImportedObject(yg_string path, Application* app, yg_string name,
   toolbox->SetType(ExplorerObjectType::kImportedObject);
   toolbox->SetTransformation(this);
   toolbox->SetPhysics(&m_physics);
-  m_toolboxs.push_back(toolbox);
+  m_app->GetScene()->GetToolboxs()->push_back(toolbox);
 }
 
 void ImportedObject::ProcessTransformation(Yeager::Shader* shader)
@@ -113,13 +112,13 @@ void ImportedObject::LoadModel(yg_string path)
   const aiScene* scene = imp.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
   if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
     m_app->GetInterface()->AddWarningWindow("Cannot load imported model! Path: " + path);
-    Yeager::Log(ERROR, kSystem, "Cannot load imported model! Path: {}, Error: {}", path.c_str(), imp.GetErrorString());
+    Yeager::Log(ERROR, "Cannot load imported model! Path: {}, Error: {}", path.c_str(), imp.GetErrorString());
     return;
   }
   ProcessNode(scene->mRootNode, scene);
-  Yeager::Log(INFO, kSystem, "Success in loading imported model: {}", path.c_str());
-  Yeager::Log(INFO, kSystem, "Model information: Vertices {}, Indices {}, Textures loaded: {}", m_num_vertices,
-              m_num_indices, m_textures_loaded.size());
+  Yeager::Log(INFO, "Success in loading imported model: {}", path.c_str());
+  Yeager::Log(INFO, "Model information: Vertices {}, Indices {}, Textures loaded: {}", m_num_vertices, m_num_indices,
+              m_textures_loaded.size());
 }
 
 void ImportedObject::ProcessNode(aiNode* node, const aiScene* scene)

@@ -1,9 +1,9 @@
 #include "Camera.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/geometric.hpp>
+#include "../../Application.h"
 
-EditorCamera::EditorCamera(Application* app, yg_vec3 cameraPosition,
-                           yg_vec3 cameraFront, yg_vec3 cameraUp)
+EditorCamera::EditorCamera(Yeager::ApplicationCore* app, yg_vec3 cameraPosition, yg_vec3 cameraFront, yg_vec3 cameraUp)
     : m_app(app)
 {
   m_position = cameraPosition;
@@ -48,12 +48,10 @@ void EditorCamera::UpdatePosition(CameraPosition position, float delta)
       m_position -= m_cameraSpeed * m_cameraFront;
       break;
     case CameraPosition::kRight:
-      m_position +=
-          glm::normalize(glm::cross(m_cameraFront, m_cameraUp)) * m_cameraSpeed;
+      m_position += glm::normalize(glm::cross(m_cameraFront, m_cameraUp)) * m_cameraSpeed;
       break;
     case CameraPosition::kLeft:
-      m_position -=
-          glm::normalize(glm::cross(m_cameraFront, m_cameraUp)) * m_cameraSpeed;
+      m_position -= glm::normalize(glm::cross(m_cameraFront, m_cameraUp)) * m_cameraSpeed;
       break;
   }
 }
@@ -74,11 +72,9 @@ void EditorCamera::UpdateDirection(float xoffset, float yoffset)
     m_cameraPitch = -89.0f;
   }
 
-  m_cameraDirection.x =
-      cos(glm::radians(m_cameraYaw)) * cos(glm::radians(m_cameraPitch));
+  m_cameraDirection.x = cos(glm::radians(m_cameraYaw)) * cos(glm::radians(m_cameraPitch));
   m_cameraDirection.y = sin(glm::radians(m_cameraPitch));
-  m_cameraDirection.z =
-      sin(glm::radians(m_cameraYaw)) * cos(glm::radians(m_cameraPitch));
+  m_cameraDirection.z = sin(glm::radians(m_cameraYaw)) * cos(glm::radians(m_cameraPitch));
   m_cameraFront = glm::normalize(m_cameraDirection);
 }
 
@@ -102,11 +98,9 @@ void EditorCamera::SetShouldMove(bool move)
   m_cameraShouldMove = move;
 }
 
-void EditorCamera::MouseCallback(bool& firstMouse, float& lastX, float& lastY,
-                                 double xpos, double ypos)
+void EditorCamera::MouseCallback(bool& firstMouse, float& lastX, float& lastY, double xpos, double ypos)
 {
-  if (m_cameraShouldMove &&
-      m_app->GetCurrentMode() == ApplicationCurrentMode::kEditorMode) {
+  if (m_cameraShouldMove && m_app->GetMode() == Yeager::AppEditor) {
     if (firstMouse) {
       lastX = static_cast<float>(xpos);
       lastY = static_cast<float>(ypos);

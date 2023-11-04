@@ -110,7 +110,7 @@ void ToolBoxObject::DrawObject()
       case ExplorerObjectType::k3DAudio:
       case ExplorerObjectType::kAudio:
         if (!m_audio) {
-          Yeager::Log(ERROR, kSystem, "Toolbox draw obj, AudioHandle pointer is invalid!");
+          Yeager::Log(ERROR, "Toolbox draw obj, AudioHandle pointer is invalid!");
           break;
         }
         Text("Driver name %s", m_audio->GetEngine()->getDriverName());

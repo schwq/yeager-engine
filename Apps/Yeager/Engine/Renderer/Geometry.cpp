@@ -1,6 +1,6 @@
 #include "Geometry.h"
+#include "../../Application.h"
 using namespace Yeager;
-std::vector<std::shared_ptr<Geometry>> yg_Shapes;
 
 yg_string ShapeToString(GeometryShape shape)
 {
@@ -49,7 +49,7 @@ std::vector<GLuint> Geometry::GenerateCubeIndices()
                              4, 0, 7, 7, 0, 3, 3, 2, 7, 7, 2, 6, 4, 5, 0, 0, 5, 1};
 }
 
-Geometry::Geometry(yg_string name, yg_vec3 color, GeometryShape shape, Application* app, bool is_color,
+Geometry::Geometry(yg_string name, yg_vec3 color, GeometryShape shape, Yeager::ApplicationCore* app, bool is_color,
                    Yeager::Texture2D* texture)
     : m_color(color),
       m_shape(shape),
@@ -63,7 +63,7 @@ Geometry::Geometry(yg_string name, yg_vec3 color, GeometryShape shape, Applicati
   toolbox->SetType(ExplorerObjectType::kShapes);
   toolbox->SetTransformation(this);
   toolbox->SetPhysics(&m_physics);
-  m_toolboxs.push_back(toolbox);
+  m_app->GetScene()->GetToolboxs()->push_back(toolbox);
   glGenVertexArrays(1, &m_vao);
   glGenBuffers(1, &m_vbo);
   glGenBuffers(1, &m_ebo);
@@ -77,7 +77,7 @@ Geometry::~Geometry()
   glDeleteVertexArrays(1, &m_vao);
   glDeleteBuffers(1, &m_vbo);
   glDeleteBuffers(1, &m_ebo);
-  Yeager::Log(INFO, kSystem, "Destrorying geometry shape name: {} ID: {}", m_name, m_id);
+  Yeager::Log(INFO, "Destrorying geometry shape name: {} ID: {}", m_name, m_id);
 }
 
 void Geometry::Setup()
@@ -128,6 +128,6 @@ void Geometry::GenerateVerticesIndices()
       m_indices = GenerateCubeIndices();
       break;
     default:
-      Yeager::Log(ERROR, kSystem, "Invalid geometry shape! Name {} Id {}", m_name, m_id);
+      Yeager::Log(ERROR, "Invalid geometry shape! Name {} Id {}", m_name, m_id);
   }
 }

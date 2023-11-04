@@ -18,6 +18,9 @@
 
 #pragma once
 
+// Operating system detection
+#include "SystemDetect.h"
+
 #include <cstddef>
 #include <cstdint>
 #if !defined(__cplusplus)
@@ -25,7 +28,10 @@
 #endif
 
 // Version is written as (major version * 100 + minor version)
-#define YEAGER_VERSION 1000
+#define YEAGER_VERSION 100
+#define YEAGER_BETA_VERSION true
+#define YEAGER_ALPHA_VERSION false
+#define YEAGER_SNAPSHOT_VERSION false
 
 #if defined(__clang__) && !defined(__ibmxl__)
 #define YEAGER_CLANG_VERSION (__clang_major__ * 100 + __clang_minor)
@@ -79,43 +85,31 @@
     printf("(??) Function not implemented as been called [%s]\n", func); \
   }
 #define YEAGER_NULL_LITERAL "NULL"
-#define _ERROR(...)              \
-  \ 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        \
-  {                              \
-    printf(stderr, __VA_ARGS__); \
-  }  // Use this macro for debugging sections or some low level control
-#define _CTIRICAL()                             \
-  {                                             \
-    _ERROR("Critical error have been thrown!"); \
-    exit(-5);                                   \
-  }
-// clang-format off
 
 #include <math.h>
 #include <string.h>
 #include <algorithm>
-#include <climits>
-#include <filesystem>
-#include <iostream>
-#include <vector>
 #include <cassert>
-#include <thread>
+#include <climits>
 #include <filesystem>
 #include <fstream>
 #include <ios>
+#include <iostream>
 #include <memory>
+#include <thread>
+#include <vector>
 
 #if defined(_WIN32)
 #include <Windows.h>
 #endif
-
+// clang-format off
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
+//clang-format on
 
 #include "../../../Libraries/imgui/imgui.h"
 #include "../../../Libraries/imgui/imgui_impl_glfw.h"

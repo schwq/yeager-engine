@@ -15,12 +15,12 @@ yg_uint Entity::m_entityCountId = 0;
 
 Entity::Entity(yg_string name) : m_name(name), m_id(m_entityCountId++)
 {
-  Yeager::Log(INFO, kSystem, "Creating Entity name {}, ID {}", m_name, m_id);
+  Yeager::Log(INFO, "Creating Entity name {}, ID {}", m_name, m_id);
 }
 
 Entity::~Entity()
 {
-  Yeager::Log(INFO, kSystem, "Destroying Entity name {}, ID {}", m_name, m_id);
+  Yeager::Log(INFO, "Destroying Entity name {}, ID {}", m_name, m_id);
 }
 
 yg_string Entity::GetName()
@@ -35,13 +35,13 @@ yg_uint Entity::GetId()
 GameEntity::GameEntity(yg_string name, Yeager::Texture2D* texture, Yeager::Shader* shader)
     : Entity(name), m_texture(texture), m_shader(shader)
 {
-  Yeager::Log(INFO, kSystem, "Creating GameEntity name {} ID {}", m_name, m_id);
+  Yeager::Log(INFO, "Creating GameEntity name {} ID {}", m_name, m_id);
   m_transformation = GetDefaultTransformation();
 }
 
 GameEntity::~GameEntity()
 {
-  Yeager::Log(INFO, kSystem, "Destrorying GameEntity name {} ID {}", m_name, m_id);
+  Yeager::Log(INFO, "Destrorying GameEntity name {} ID {}", m_name, m_id);
 }
 
 constexpr Yeager::Texture2D* GameEntity::GetTexture()

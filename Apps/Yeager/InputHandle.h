@@ -18,30 +18,52 @@
 
 #pragma once
 
-#include "Application.h"
 #include "Common/Common.h"
+#include "Engine/Editor/Camera.h"
 #include "Engine/Renderer/Window.h"
 
-class Application;
-
-enum class InputCurrentMode { kEditorMode, kCeaseMode, kLauncherMode, kSettingsMode, kErrorMode, kAwaitMode };
-
+namespace Yeager {
+class ApplicationCore;
+}
+/// @brief Class that handles all keyboard and mouse inputs and process them into the respective requests
 class Input {
  public:
-  Input(Application* app);
+  /// @brief Constructor of the Input, assign the ApplicationCore pointer given to the class
+  /// @param app The current application pointer
+  Input(Yeager::ApplicationCore* app);
   ~Input();
 
+  /// @brief Process all input registed by the GLFW library loaded
+  /// @param window The current GLFW window been used
+  /// @param delta Delta time for handling delays
   void ProcessInputRender(Window* window, float delta);
+
+  /// @brief GLFW mouse callback, this is called everytime the mouse is moved, and register the current position
+  /// @param window The current GLFW window been used
+  /// @param xpos The X position of the mouse
+  /// @param ypos The Y position of the mouse
   static void MouseCallback(GLFWwindow* window, double xpos, double ypos);
-  InputCurrentMode GetCurrentMode() { return m_current_mode; }
-  const void SetCurrentMode(InputCurrentMode mode) { m_current_mode = mode; };
+
+  /// @brief Sets if the cursor can disappear in the current state, like when moving around the settings windows, the cursor should not disappear
+  /// @param should True if the mouse can disappear, false if not
   const void SetCursorCanDisappear(bool should);
 
+  /// @brief Returns a boolean representing if the GLFW_KEY (key) have been pressed
+  /// @param key The GLFW macro representing the key, something like GLFW_KEY_X (heres X is the key)
+  /// @return True if the key have been pressed, false if not
+  bool GetKeyPressed(int key);
+
+  /// @brief Went set to true, the cursor is forced to appear, and does dissapear until the function is set to false after
+  /// @param make True if the cursor should appear, false if not
+  void MakeCursorStaticAppear(bool make);
+
  private:
-  InputCurrentMode m_current_mode = InputCurrentMode::kAwaitMode;
-  static Application* m_app;
+  static Yeager::ApplicationCore* m_app;
+  /// @brief The last y mouse position
   static float lastY;
+  /// @brief The last x mouse position
   static float lastX;
+  /// @brief  Used for handling the first time the mouse is called, and the camera makes a quickly weird movement, kinda annoying
   static bool firstMouse;
   static yg_uint m_framesCount;
   bool m_cursor_can_disappear = true;

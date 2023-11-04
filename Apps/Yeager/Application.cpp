@@ -1,63 +1,75 @@
 #include "Application.h"
-#include "Common/LogEngine.h"
-#include "InputHandle.h"
+using namespace Yeager;
 
-Application::Application()
+ApplicationCore::ApplicationCore()
 {
-  Yeager::Log(INFO, kSystem, "Start program");
+  Log(INFO, "Application running");
 }
 
-Application::~Application()
+void ApplicationCore::Setup(ApplicationCoreSetup setup)
 {
-
-  Yeager::Log(INFO, kSystem, "Destrorying Application!");
+  m_interface = setup.m_interface;
+  m_input = setup.m_input;
+  m_window = setup.m_window;
+  m_explorer = setup.m_explorer;
+  m_camera = setup.m_camera;
+  m_scene = setup.m_scene;
+  m_renderer = setup.m_renderer;
 }
 
-bool Application::EnterKeyPressed()
-{
-  return glfwGetKey(m_window->getWindow(), GLFW_KEY_ENTER) == GLFW_PRESS;
-}
-
-bool Application::ShouldRendererActive()
+bool ApplicationCore::ShouldRender()
 {
   return (glfwWindowShouldClose(m_window->getWindow())) ? false : true;
 }
 
-void Application::SetupApplication(ApplicationSetup setup)
+ApplicationCore::~ApplicationCore()
 {
-  m_camera = setup.ptr_camera;
-  m_window = setup.ptr_window;
-  m_engine = setup.ptr_engine;
-  m_input = setup.ptr_input;
-  m_interface = setup.ptr_interface;
-  m_explorer = setup.ptr_explorer;
+  Log(INFO, "Application shutdown");
 }
 
-const void Application::SetCurrentMode(ApplicationCurrentMode mode)
+Interface* ApplicationCore::GetInterface()
 {
-  switch (mode) {
-    case ApplicationCurrentMode::kEditorMode:
-      m_input->SetCurrentMode(InputCurrentMode::kEditorMode);
-      m_interface->SetCurrentMode(InterfaceMode::kEditorMode);
-      break;
-    case ApplicationCurrentMode::kAwaitMode:
-      m_input->SetCurrentMode(InputCurrentMode::kAwaitMode);
-      m_interface->SetCurrentMode(InterfaceMode::kAwaitMode);
-      break;
-    case ApplicationCurrentMode::kLauncherMode:
-      m_input->SetCurrentMode(InputCurrentMode::kLauncherMode);
-      m_interface->SetCurrentMode(InterfaceMode::kLauncherMode);
-      break;
-    case ApplicationCurrentMode::kSettingsMode:
-      m_input->SetCurrentMode(InputCurrentMode::kSettingsMode);
-      m_interface->SetCurrentMode(InterfaceMode::kSettingsMode);
-      break;
-    case ApplicationCurrentMode::kErrorMode:
-      m_input->SetCurrentMode(InputCurrentMode::kErrorMode);
-      m_interface->SetCurrentMode(InterfaceMode::kErrorMode);
-      break;
-    case ApplicationCurrentMode::kCeaseMode:
-      m_input->SetCurrentMode(InputCurrentMode::kCeaseMode);
-      m_interface->SetCurrentMode(InterfaceMode::kCeaseMode);
-  }
+  return m_interface.get();
+}
+Input* ApplicationCore::GetInput()
+{
+  return m_input.get();
+}
+Window* ApplicationCore::GetWindow()
+{
+  return m_window.get();
+}
+EditorExplorer* ApplicationCore::GetExplorer()
+{
+  return m_explorer.get();
+}
+EditorCamera* ApplicationCore::GetCamera()
+{
+  return m_camera.get();
+}
+Yeager::Scene* ApplicationCore::GetScene()
+{
+  return m_scene.get();
+}
+RendererEngine* ApplicationCore::GetRenderer()
+{
+  return m_renderer.get();
+}
+
+ApplicationMode ApplicationCore::GetMode() noexcept
+{
+  return m_mode;
+}
+ApplicationState ApplicationCore::GetState() noexcept
+{
+  return m_state;
+}
+
+void ApplicationCore::SetMode(ApplicationMode mode) noexcept
+{
+  m_mode = mode;
+}
+void ApplicationCore::SetState(ApplicationState state) noexcept
+{
+  m_state = state;
 }

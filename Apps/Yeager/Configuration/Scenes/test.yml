@@ -1,0 +1,34 @@
+Scene: DefaultScene
+Renderer: OpenGL3_3
+SceneType: Scene3D
+SceneEntities:
+  - Entity: 1
+    Name: SSSSSSS
+    Type: AudioHandle
+    Path: /home/schwz/projects/yeager-engine/Apps/Yeager/Assets/sound/aot01.wav
+  - Entity: 2
+    Name: AAS
+    Type: Audio3DHandle
+    Path: /home/schwz/projects/yeager-engine/Apps/Yeager/Assets/sound/pizza.wav
+    Position: [1, 1, 1]
+  - Entity: 0
+    Name: SSSS
+    Type: ImportedObject
+    Path: /home/schwz/projects/yeager-engine/Apps/Yeager/Assets/imported_models/neco_arc/neco.obj
+    Position: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+    TexturesLoaded: 1
+    Textures:
+      Name: texture_diffuse
+      Path: /home/schwz/projects/yeager-engine/Apps/Yeager/Assets/imported_models/neco_arc/necoarctposefeettilt_None_BaseColor.png
+      ID: 5
+  - Entity: 3
+    Name: SSSSS
+    Type: Geometry
+    Shape: 0
+    Position: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+    IsColor: true
+    Color: [1, 1, 1]

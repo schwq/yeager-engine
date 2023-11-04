@@ -111,10 +111,10 @@ void Texture2D::ReadDataToTexture(yg_cchar path)
 
     glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
-    Yeager::Log(INFO, kSystem, "Create texture: {}, ID: {}", m_name.c_str(), m_texture_num);
+    Yeager::Log(INFO, "Create texture: {}, ID: {}", m_name.c_str(), m_texture_num);
     stbi_image_free(data);
   } else {
-    Yeager::Log(ERROR, kSystem, "Cannot read data from texture file {}", path);
+    Yeager::Log(ERROR, "Cannot read data from texture file {}", path);
   }
 
   glBindTexture(GL_TEXTURE_2D, 0);
@@ -177,11 +177,11 @@ void Skybox::ReadDataToTexture(std::vector<yg_string> faces)
 
       stbi_image_free(data);
     } else {
-      Yeager::Log(ERROR, kSystem, "Cannot read data from skybox file {}", faces[i].c_str());
+      Yeager::Log(ERROR, "Cannot read data from skybox file {}", faces[i].c_str());
       stbi_image_free(data);
     }
   }
-  Yeager::Log(INFO, kSystem, "Create Skybox: {}", m_name.c_str());
+  Yeager::Log(INFO, "Create Skybox: {}", m_name.c_str());
   glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 

@@ -1,4 +1,5 @@
 #include "Serialization.h"
+#include "Application.h"
 #include "Scene.h"
 using namespace Yeager;
 
@@ -8,6 +9,19 @@ YAML::Emitter& Yeager::operator<<(YAML::Emitter& out, const yg_vec3& vector)
   out << YAML::BeginSeq << vector.x << vector.y << vector.z << YAML::EndSeq;
   return out;
 }
+
+template <typename _T>
+void inline Serialization::SerialObj(YAML::Emitter& out, const char* key, _T obj)
+{
+  out << YAML::Key << key << YAML::Value << obj;
+}
+
+void inline Serialization::SerialBegin(YAML::Emitter& out, const char* key, YAML::EMITTER_MANIP manip)
+{
+  out << YAML::Key << key << YAML::Value << manip;
+}
+
+Serialization::Serialization(Yeager::ApplicationCore* app) : m_app(app) {}
 
 ImVec4 NodeVec4ToImVec4(const YAML::Node& node, const char* item)
 {
@@ -29,61 +43,65 @@ void inline Serialization::SerialBasicEntity(YAML::Emitter& out, yg_string name,
 void Serialization::SerializeScene(Yeager::Scene* scene, yg_string path)
 {
   YAML::Emitter out;
+
   out << YAML::BeginMap;
-  out << YAML::Key << "Scene" << YAML::Value << scene->GetContext().m_name;
-  out << YAML::Key << "Renderer" << YAML::Value << scene->GetContext().m_renderer;
-  out << YAML::Key << "SceneType" << YAML::Value << scene->GetContext().m_type;
-  out << YAML::Key << "SceneEntities" << YAML::Value << YAML::BeginSeq;
-  for (yg_uint x = 0; x < ygAudioHandles.size(); x++) {
-    AudioHandle* audio = ygAudioHandles[x].get();
+  SerialObj(out, "Scene", scene->GetContext().m_name);
+  SerialObj(out, "Renderer", SceneRendererToString(scene->GetContext().m_renderer));
+  SerialObj(out, "SceneType", SceneTypeToString(scene->GetContext().m_type));
+  SerialBegin(out, "SceneEntities", YAML::BeginSeq);
+
+  for (yg_uint x = 0; x < scene->GetAudios()->size(); x++) {
+    AudioHandle* audio = scene->GetAudios()->at(x).get();
     out << YAML::BeginMap;
     SerialBasicEntity(out, audio->GetName(), audio->GetId(), "AudioHandle");
-    out << YAML::Key << "Path" << YAML::Value << audio->GetPath();
+    SerialObj(out, "Path", audio->GetPath());
     out << YAML::EndMap;
   }
-  for (yg_uint x = 0; x < ygAudio3DHandles.size(); x++) {
-    Audio3DHandle* audio = ygAudio3DHandles[x].get();
+
+  for (yg_uint x = 0; x < scene->GetAudios3D()->size(); x++) {
+    Audio3DHandle* audio = scene->GetAudios3D()->at(x).get();
     out << YAML::BeginMap;
     SerialBasicEntity(out, audio->GetName(), audio->GetId(), "Audio3DHandle");
-    out << YAML::Key << "Path" << YAML::Value << audio->GetPath();
-    out << YAML::Key << "Position" << YAML::Value << audio->GetVector3Position();
+    SerialObj(out, "Path", audio->GetPath());
+    SerialObj(out, "Position", audio->GetVector3Position());
     out << YAML::EndMap;
   }
-  for (yg_uint x = 0; x < ygImportedObjects.size(); x++) {
-    ImportedObject* obj = ygImportedObjects[x].get();
+
+  for (yg_uint x = 0; x < scene->GetImportedObjects()->size(); x++) {
+    ImportedObject* obj = scene->GetImportedObjects()->at(x).get();
     out << YAML::BeginMap;
     SerialBasicEntity(out, obj->GetName(), obj->GetId(), "ImportedObject");
-    out << YAML::Key << "Path" << YAML::Value << obj->GetPath();
-    out << YAML::Key << "Position" << YAML::Value << obj->GetTransformation().position;
-    out << YAML::Key << "Rotation" << YAML::Value << obj->GetTransformation().rotation;
-    out << YAML::Key << "Scale" << YAML::Value << obj->GetTransformation().scale;
-    out << YAML::Key << "TexturesLoaded" << YAML::Value << obj->GetTexturesLoaded()->size();
-    out << YAML::Key << "Textures" << YAML::Value << YAML::BeginMap;
+    SerialObj(out, "Path", obj->GetPath());
+    SerialObj(out, "Position", obj->GetTransformation().position);
+    SerialObj(out, "Rotation", obj->GetTransformation().rotation);
+    SerialObj(out, "Scale", obj->GetTransformation().scale);
+    SerialObj(out, "TexturesLoaded", obj->GetTexturesLoaded()->size());
+    SerialBegin(out, "Textures", YAML::BeginMap);
     for (yg_uint y = 0; y < obj->GetTexturesLoaded()->size(); y++) {
-      out << YAML::Key << "Name" << YAML::Value << obj->GetTexturesLoaded()->at(y).m_name;
-      out << YAML::Key << "Path" << YAML::Value << obj->GetTexturesLoaded()->at(y).m_path;
-      out << YAML::Key << "ID" << YAML::Value << obj->GetTexturesLoaded()->at(y).m_id;
+      SerialObj(out, "Name", obj->GetTexturesLoaded()->at(y).m_name);
+      SerialObj(out, "Path", obj->GetTexturesLoaded()->at(y).m_path);
+      SerialObj(out, "ID", obj->GetTexturesLoaded()->at(y).m_id);
     }
     out << YAML::EndMap;
     out << YAML::EndMap;
   }
-  for (yg_uint x = 0; x < yg_Shapes.size(); x++) {
-    Yeager::Geometry* geometry = yg_Shapes[x].get();
+  for (yg_uint x = 0; x < scene->GetGeometry()->size(); x++) {
+    Yeager::Geometry* geometry = scene->GetGeometry()->at(x).get();
     out << YAML::BeginMap;
     SerialBasicEntity(out, geometry->GetName(), geometry->GetId(), "Geometry");
-    out << YAML::Key << "Shape" << YAML::Value << geometry->GetShape();
-    out << YAML::Key << "Position" << YAML::Value << geometry->GetTransformation().position;
-    out << YAML::Key << "Rotation" << YAML::Value << geometry->GetTransformation().rotation;
-    out << YAML::Key << "Scale" << YAML::Value << geometry->GetTransformation().scale;
-    out << YAML::Key << "IsColor" << YAML::Value << (geometry->isColor() == true ? "true" : "false");
+    SerialObj(out, "Shape", geometry->GetShape());
+    SerialObj(out, "Position", geometry->GetTransformation().position);
+    SerialObj(out, "Rotation", geometry->GetTransformation().rotation);
+    SerialObj(out, "Scale", geometry->GetTransformation().scale);
+    SerialObj(out, "IsColor", geometry->isColor());
     if (geometry->isColor()) {
-      out << YAML::Key << "Color" << YAML::Value << geometry->GetColor();
+      SerialObj(out, "Color", geometry->GetColor());
     } else {
       Yeager::Texture2D* tex = geometry->GetTexture();
-      out << YAML::Key << "Texture" << YAML::Value << YAML::BeginMap;
-      out << YAML::Key << "Path" << YAML::Value << tex->GetPath();
-      out << YAML::Key << "ID" << YAML::Value << tex->GetID();
-      out << YAML::Key << "Type" << YAML::Value << tex->GetTypeName();
+      SerialBegin(out, "Texture", YAML::BeginMap);
+      SerialObj(out, "Path", tex->GetPath());
+      SerialObj(out, "ID", tex->GetID());
+      SerialObj(out, "Type", tex->GetTypeName());
       out << YAML::EndMap;
     }
     out << YAML::EndMap;
@@ -91,7 +109,14 @@ void Serialization::SerializeScene(Yeager::Scene* scene, yg_string path)
   out << YAML::EndSeq;
   out << YAML::EndMap;
   std::ofstream fout(path.c_str());
-  fout << out.c_str();
+
+  if (fout.is_open()) {
+    fout << out.c_str();
+  } else {
+    Yeager::Log(ERROR, "Cannot write to configuration file! {}", path.c_str());
+  }
+
+  fout.close();
 }
 
 ColorschemeConfig Serialization::ReadColorschemeConfig()
@@ -255,7 +280,7 @@ void Serialization::ReadSceneShadersConfig(yg_string path)
   YAML::Node node = YAML::LoadFile(path);
 
   if (node["SceneShader"]) {
-    Yeager::Log(INFO, kSystem, "Reading shader configuration {}", node["SceneShader"].as<yg_string>());
+    Yeager::Log(INFO, "Reading shader configuration {}", node["SceneShader"].as<yg_string>());
   }
   auto shaders = node["Shaders"];
   if (shaders) {
@@ -271,8 +296,88 @@ void Serialization::ReadSceneShadersConfig(yg_string path)
         yaml_shader.m_varName = var;
         ygConfigShaders.push_back(yaml_shader);
       } catch (YAML::BadConversion exc) {
-        Yeager::Log(ERROR, kSystem, "Exception thrown at reading shaders from config {}", exc.msg);
+        Yeager::Log(ERROR, "Exception thrown at reading shaders from config {}", exc.msg);
       }
     }
+  }
+}
+
+void Serialization::DeserializeScene(Yeager::Scene* scene, yg_string path)
+{
+  YAML::Node node = YAML::LoadFile(path);
+
+  DeserializeSceneInfo(scene, node);
+
+  auto entities = node["SceneEntities"];
+  for (auto entity : entities) {
+    try {
+      DeserializeEntity(scene, node, entity);
+    } catch (YAML::BadConversion exc) {
+      Yeager::Log(ERROR,
+                  "Something went wrong at reading the Scene Entities configuration! Have the user change itself?");
+    }
+  }
+}
+
+void inline Serialization::DeserializeSceneInfo(Yeager::Scene* scene, YAML::Node& node)
+{
+  if (node) {
+    if (node["Scene"]) {
+      scene->GetContext().m_name = node["Scene"].as<yg_string>();
+    }
+    if (node["Renderer"]) {
+      scene->SetContextRenderer(StringToSceneRenderer(node["Renderer"].as<yg_string>()));
+    }
+    if (node["SceneType"]) {
+      scene->SetContextType(StringToScreneType(node["SceneType"].as<yg_string>()));
+    }
+  }
+}
+
+void inline Serialization::DeserializeEntity(Yeager::Scene* scene, YAML::Node& node,
+                                             YAML::detail::iterator_value& entity)
+{
+  /// All entities have theses values, name, id and type, if for some reason, one of them is missing, them the user have change something in the configuration file itself
+  /// or someone implemented a new type of entity without the proper configuration in the serialization class for saving it correctly
+  yg_uint id = entity["Entity"].as<yg_uint>();
+  yg_string name = entity["Name"].as<yg_string>();
+  yg_string type = entity["Type"].as<yg_string>();
+
+  if (type == "AudioHandle" || type == "Audio3DHandle") {
+
+    /// Both 3d audio and 2d audio have a pat, we group them here because in the future, both will have more common variables
+    yg_string path = entity["Path"].as<yg_string>();
+
+    /// 3d Audio processing goes here
+    if (type == "Audio3DHandle") {
+      yg_vec3 position = entity["Position"].as<yg_vec3>();
+      auto audio = std::make_shared<Yeager::Audio3DHandle>(path, name, false, YgVec3_to_Vec3df(position));
+      scene->GetAudios3D()->push_back(audio);
+      auto toolbox = std::make_shared<Yeager::ToolBoxObject>();
+      toolbox->Set3DAudio(audio.get());
+      toolbox->SetType(ExplorerObjectType::k3DAudio);
+      scene->GetToolboxs()->push_back(toolbox);
+
+      /// Normal Audio goes here
+    } else {
+      auto audio = std::make_shared<Yeager::AudioHandle>(path, name, false);
+      scene->GetAudios()->push_back(audio);
+      auto toolbox = std::make_shared<Yeager::ToolBoxObject>();
+      toolbox->SetAudio(audio.get());
+      toolbox->SetType(ExplorerObjectType::kAudio);
+      scene->GetToolboxs()->push_back(toolbox);
+    }
+
+  } else if (type == "ImportedObject") {
+
+    yg_string path = entity["Path"].as<yg_string>();
+    yg_vec3 position = entity["Position"].as<yg_vec3>();
+    yg_vec3 rotation = entity["Rotation"].as<yg_vec3>();
+    yg_vec3 scale = entity["Scale"].as<yg_vec3>();
+    auto obj = std::make_shared<ImportedObject>(path, m_app, name, true);
+    obj->GetTransformationPtr()->position = position;
+    obj->GetTransformationPtr()->rotation = rotation;
+    obj->GetTransformationPtr()->scale = scale;
+    scene->GetImportedObjects()->push_back(obj);
   }
 }

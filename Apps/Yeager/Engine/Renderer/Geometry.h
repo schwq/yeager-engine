@@ -18,14 +18,15 @@
 
 #pragma once
 
-#include "../../Application.h"
 #include "../../Common/Common.h"
 #include "../../Common/LogEngine.h"
 #include "../Editor/ToolboxObj.h"
 #include "../Physics/PhysicsHandle.h"
 #include "Entity.h"
 
-class Application;
+namespace Yeager {
+class ApplicationCore;
+}
 
 namespace Yeager {
 
@@ -33,7 +34,7 @@ enum GeometryShape { kCube, kSphere, kTriangle };
 extern yg_string ShapeToString(GeometryShape shape);
 class Geometry : public GameEntity {
  public:
-  Geometry(yg_string name, yg_vec3 color, GeometryShape shape, Application* app, bool is_color = true,
+  Geometry(yg_string name, yg_vec3 color, GeometryShape shape, Yeager::ApplicationCore* app, bool is_color = true,
            Yeager::Texture2D* texture = nullptr);
   ~Geometry();
 
@@ -47,7 +48,7 @@ class Geometry : public GameEntity {
 
  private:
   GeometryShape m_shape;
-  Application* m_app;
+  Yeager::ApplicationCore* m_app;
   Yeager::Texture2D* m_texture;
   yg_vec3 m_color;
   bool m_is_color = true;
@@ -61,5 +62,3 @@ class Geometry : public GameEntity {
   void GenerateVerticesIndices();
 };
 }  // namespace Yeager
-
-extern std::vector<std::shared_ptr<Yeager::Geometry>> yg_Shapes;

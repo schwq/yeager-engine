@@ -2,9 +2,7 @@
 using namespace irrklang;
 using namespace Yeager;
 
-std::vector<std::shared_ptr<Yeager::AudioHandle>> ygAudioHandles;
 irrklang::ISoundEngine* ygAudioEngine;
-std::vector<std::shared_ptr<Yeager::Audio3DHandle>> ygAudio3DHandles;
 
 void AudioHandle::EnableSoundEffect(AudioHandleSoundEffects effect)
 {
@@ -12,54 +10,54 @@ void AudioHandle::EnableSoundEffect(AudioHandleSoundEffects effect)
     switch (effect) {
       case Chorus:
         if (!m_sound_effects->enableChorusSoundEffect()) {
-          Yeager::Log(ERROR, kSystem, "Cannot Enabled Chorus effect on AudioHandle name {}, ID {}", m_name, m_id);
+          Yeager::Log(ERROR, "Cannot Enabled Chorus effect on AudioHandle name {}, ID {}", m_name, m_id);
         }
         break;
       case Compressor:
         if (!m_sound_effects->enableCompressorSoundEffect()) {
-          Yeager::Log(ERROR, kSystem, "Cannot Enabled Compressor effect on AudioHandle name {}, ID {}", m_name, m_id);
+          Yeager::Log(ERROR, "Cannot Enabled Compressor effect on AudioHandle name {}, ID {}", m_name, m_id);
         }
         break;
       case Distortion:
         if (!m_sound_effects->enableDistortionSoundEffect()) {
-          Yeager::Log(ERROR, kSystem, "Cannot Enabled Distorsion effect on AudioHandle name {}, ID {}", m_name, m_id);
+          Yeager::Log(ERROR, "Cannot Enabled Distorsion effect on AudioHandle name {}, ID {}", m_name, m_id);
         }
         break;
       case Echo:
         if (!m_sound_effects->enableEchoSoundEffect()) {
-          Yeager::Log(ERROR, kSystem, "Cannot Enabled Echo effect on AudioHandle name {}, ID {}", m_name, m_id);
+          Yeager::Log(ERROR, "Cannot Enabled Echo effect on AudioHandle name {}, ID {}", m_name, m_id);
         }
         break;
       case Flanger:
         if (!m_sound_effects->enableFlangerSoundEffect()) {
-          Yeager::Log(ERROR, kSystem, "Cannot Enabled Flanger effect on AudioHandle name {}, ID {}", m_name, m_id);
+          Yeager::Log(ERROR, "Cannot Enabled Flanger effect on AudioHandle name {}, ID {}", m_name, m_id);
         }
         break;
       case Gargle:
         if (!m_sound_effects->enableGargleSoundEffect()) {
-          Yeager::Log(ERROR, kSystem, "Cannot Enabled Gargle effect on AudioHandle name {}, ID {}", m_name, m_id);
+          Yeager::Log(ERROR, "Cannot Enabled Gargle effect on AudioHandle name {}, ID {}", m_name, m_id);
         }
         break;
       case I3DL2Reverb:
         if (!m_sound_effects->enableI3DL2ReverbSoundEffect()) {
-          Yeager::Log(ERROR, kSystem, "Cannot Enabled I3DL2Reverb effect on AudioHandle name {}, ID {}", m_name, m_id);
+          Yeager::Log(ERROR, "Cannot Enabled I3DL2Reverb effect on AudioHandle name {}, ID {}", m_name, m_id);
         }
         break;
       case ParamEq:
         if (!m_sound_effects->enableParamEqSoundEffect()) {
-          Yeager::Log(ERROR, kSystem, "Cannot Enabled ParamEq effect on AudioHandle name {}, ID {}", m_name, m_id);
+          Yeager::Log(ERROR, "Cannot Enabled ParamEq effect on AudioHandle name {}, ID {}", m_name, m_id);
         }
         break;
       case WavesReverb:
         if (!m_sound_effects->enableWavesReverbSoundEffect()) {
-          Yeager::Log(ERROR, kSystem, "Cannot Enabled WavesReverb effect on AudioHandle name {}, ID {}", m_name, m_id);
+          Yeager::Log(ERROR, "Cannot Enabled WavesReverb effect on AudioHandle name {}, ID {}", m_name, m_id);
         }
         break;
       default:
-        Yeager::Log(ERROR, kSystem, "Something goes so wrong here! :( invalid sound effect enum!");
+        Yeager::Log(ERROR, "Something goes so wrong here! :( invalid sound effect enum!");
     }
   } else {
-    Yeager::Log(WARNING, kSystem,
+    Yeager::Log(WARNING,
                 "Cannot enable sound effect for AudioHandle name {} ID {}, no m_sound or m_sound_effect initialized "
                 "correctly!",
                 m_name, m_id);
@@ -97,10 +95,10 @@ void AudioHandle::DisableSoundEffect(AudioHandleSoundEffects effect)
         m_sound_effects->disableWavesReverbSoundEffect();
         break;
       default:
-        Yeager::Log(ERROR, kSystem, "Something goes so wrong here! :( invalid sound effect enum!");
+        Yeager::Log(ERROR, "Something goes so wrong here! :( invalid sound effect enum!");
     }
   } else {
-    Yeager::Log(WARNING, kSystem,
+    Yeager::Log(WARNING,
                 "Cannot disable sound effect for AudioHandle name {} ID {}, no m_sound or m_sound_effect initialized "
                 "correctly!",
                 m_name, m_id);
@@ -139,10 +137,10 @@ bool AudioHandle::IsSoundEffectEnable(AudioHandleSoundEffects effect)
         return m_sound_effects->isWavesReverbSoundEffectEnabled();
         break;
       default:
-        Yeager::Log(ERROR, kSystem, "Something goes so wrong here! :( invalid sound effect enum!");
+        Yeager::Log(ERROR, "Something goes so wrong here! :( invalid sound effect enum!");
     }
   } else {
-    Yeager::Log(WARNING, kSystem,
+    Yeager::Log(WARNING,
                 "Cannot check sound effect for AudioHandle name {} ID {}, no m_sound or m_sound_effect initialized "
                 "correctly!",
                 m_name, m_id);
@@ -154,14 +152,14 @@ bool InitAudioEngine()
   if (!ygAudioEngine) {
     if ((ygAudioEngine = createIrrKlangDevice()) == 0) {
       ygAudioEngine->setSoundVolume(1.0f);
-      Yeager::Log(ERROR, kSystem, "Cannot create the main Audio Engine!");
+      Yeager::Log(ERROR, "Cannot create the main Audio Engine!");
       return false;
     } else {
-      Yeager::Log(INFO, kSystem, "Success in creating the main Audio Engine!");
+      Yeager::Log(INFO, "Success in creating the main Audio Engine!");
       return true;
     }
   } else {
-    Yeager::Log(WARNING, kSystem, "Audio Engine already created!");
+    Yeager::Log(WARNING, "Audio Engine already created!");
     return true;
   }
 }
@@ -180,9 +178,9 @@ AudioHandle::AudioHandle(yg_string path, yg_string name, bool looped) : GameEnti
 {
   m_sound_source = ygAudioEngine->addSoundSourceFromFile(path.c_str(), ESM_AUTO_DETECT, false);
   if (!m_sound_source) {
-    Yeager::Log(ERROR, kSystem, "Cannot Create AudioHandle name {} ID {}", m_name, m_id);
+    Yeager::Log(ERROR, "Cannot Create AudioHandle name {} ID {}", m_name, m_id);
   } else {
-    Yeager::Log(INFO, kSystem, "Create AudioHandle name {} ID {}", m_name, m_id);
+    Yeager::Log(INFO, "Create AudioHandle name {} ID {}", m_name, m_id);
   }
 }
 
@@ -216,7 +214,7 @@ void AudioHandle::DisableAllSoundEffects()
 
 AudioHandle::~AudioHandle()
 {
-  Yeager::Log(INFO, kSystem, "Destroying AudioHandle name {} ID {}", m_name, m_id);
+  Yeager::Log(INFO, "Destroying AudioHandle name {} ID {}", m_name, m_id);
   if (m_sound_source) {  // The audio engine can drop the sounds at its termination !!
     //ygAudioEngine->removeSoundSource(m_sound_source);
     //m_sound->drop();
@@ -235,20 +233,19 @@ void AudioHandle::Play()
   if (m_stopped) {
     m_sound = ygAudioEngine->play2D(m_sound_source, m_looped, false, true, true);
     if (!m_sound) {
-      Yeager::Log(ERROR, kSystem, "Cannot play music! ISound* havent been initialized! Name {} ID {}", m_name, m_id);
+      Yeager::Log(ERROR, "Cannot play music! ISound* havent been initialized! Name {} ID {}", m_name, m_id);
     } else {
       SAudioStreamFormat format = m_sound_source->getAudioFormat();
       const char* formatSampleFormat = format.SampleFormat == ESF_U8 ? "ESF_U8" : "ESF_S16";
 
       Yeager::Log(
-          INFO, kSystem,
+          INFO,
           "AudioHandle name {} ID {}, Info: Sample size {}, Frame size {}, Sample data size {}, Bytes per seconds {} \n \
           Channel count {}, Frame count {}, Sample rate {}, Sample Format {}",
           m_name, m_id, format.getSampleSize(), format.getFrameSize(), format.getSampleDataSize(),
           format.getBytesPerSecond(), format.ChannelCount, format.FrameCount, format.SampleRate, formatSampleFormat);
       m_stopped = false;
       m_sound_effects = m_sound->getSoundEffectControl();
-      Yeager::Log(INFO, kSystem, "Hello wlrd");
     }
   }
 }
@@ -307,7 +304,7 @@ void AudioHandle::SetSoundPos(irrklang::ik_f32 pos)
     irrklang::ik_f32 tmp = GetSoundPos();
     m_sound->setPlayPosition(pos);
     irrklang::ik_f32 time_shift = tmp - pos;
-    Yeager::Log(INFO, kSystem, "AudioHandle name {} ID {}, had received a {}s time shift", m_name, m_id,
+    Yeager::Log(INFO, "AudioHandle name {} ID {}, had received a {}s time shift", m_name, m_id,
                 -(time_shift / 1000.0f));
   }
 }
@@ -324,14 +321,14 @@ Audio3DHandle::Audio3DHandle(yg_string path, yg_string name, bool looped, irrkla
     : AudioHandle(path, name, looped), m_audio_pos(position)
 {
   if (m_sound_source) {
-    Yeager::Log(INFO, kSystem, "Create Audio3DHandle name {} ID {} Position {} {} {}", m_name, m_id, position.X,
-                position.Y, position.Z);
+    Yeager::Log(INFO, "Create Audio3DHandle name {} ID {} Position {} {} {}", m_name, m_id, position.X, position.Y,
+                position.Z);
   }
 }
 
 Audio3DHandle::~Audio3DHandle()
 {
-  Yeager::Log(INFO, kSystem, "Destroying Audio3DHandle name {} ID {}", m_name, m_id);
+  Yeager::Log(INFO, "Destroying Audio3DHandle name {} ID {}", m_name, m_id);
 }
 
 void Audio3DHandle::Play()
@@ -339,13 +336,13 @@ void Audio3DHandle::Play()
   if (m_stopped) {
     m_sound = ygAudioEngine->play3D(m_sound_source, m_audio_pos, m_looped, false, true, true);
     if (!m_sound) {
-      Yeager::Log(ERROR, kSystem, "Cannot play music! ISound* havent been initialized! Name {} ID {}", m_name, m_id);
+      Yeager::Log(ERROR, "Cannot play music! ISound* havent been initialized! Name {} ID {}", m_name, m_id);
     } else {
       SAudioStreamFormat format = m_sound_source->getAudioFormat();
       const char* formatSampleFormat = format.SampleFormat == ESF_U8 ? "ESF_U8" : "ESF_S16";
 
       Yeager::Log(
-          INFO, kSystem,
+          INFO,
           "Audio3DHandle name {} ID {}, Info: Sample size {}, Frame size {}, Sample data size {}, Bytes per seconds {} \n \
           Channel count {}, Frame count {}, Sample rate {}, Sample Format {}",
           m_name, m_id, format.getSampleSize(), format.getFrameSize(), format.getSampleDataSize(),

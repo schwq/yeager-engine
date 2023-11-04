@@ -5,17 +5,13 @@ VideoPlayer::VideoPlayer(const yg_string& name, const yg_string& video_path)
     : GameEntity(name), m_video_path(video_path)
 {
 
-  if (avformat_open_input(&m_format_ctx, video_path.c_str(), nullptr, nullptr) <
-      0) {
-    Yeager::Log(ERROR, kSystem,
-                "VideoPlayer name {} ID {} cannot been created!", m_name, m_id);
+  if (avformat_open_input(&m_format_ctx, video_path.c_str(), nullptr, nullptr) < 0) {
+    Yeager::Log(ERROR, "VideoPlayer name {} ID {} cannot been created!", m_name, m_id);
     return;
   }
 
   if (avformat_find_stream_info(m_format_ctx, nullptr) < 0) {
-    Yeager::Log(ERROR, kSystem,
-                "VideoPlayer name {} ID {} cannot find stream info!", m_name,
-                m_id);
+    Yeager::Log(ERROR, "VideoPlayer name {} ID {} cannot find stream info!", m_name, m_id);
     return;
   }
 
@@ -27,9 +23,7 @@ VideoPlayer::VideoPlayer(const yg_string& name, const yg_string& video_path)
     }
   }
   if (video_stream_idx == -1) {
-    Yeager::Log(ERROR, kSystem,
-                "VideoPlayer name {} ID {} cannot find video stream!", m_name,
-                m_id);
+    Yeager::Log(ERROR, "VideoPlayer name {} ID {} cannot find video stream!", m_name, m_id);
     return;
   }
 
@@ -38,21 +32,18 @@ VideoPlayer::VideoPlayer(const yg_string& name, const yg_string& video_path)
   m_codec_ctx = avcodec_alloc_context3(m_codec);
   avcodec_parameters_to_context(m_codec_ctx, m_codec_par);
   if (avcodec_open2(m_codec_ctx, m_codec, nullptr) < 0) {
-    Yeager::Log(ERROR, kSystem, "VideoPlayer name {} ID {} cannot open codec!",
-                m_name, m_id);
+    Yeager::Log(ERROR, "VideoPlayer name {} ID {} cannot open codec!", m_name, m_id);
     return;
   }
 
   m_frame = av_frame_alloc();
   if (!m_frame) {
-    Yeager::Log(ERROR, kSystem, "VideoPlayer name {} ID {} cannot alloc frame!",
-                m_name, m_id);
+    Yeager::Log(ERROR, "VideoPlayer name {} ID {} cannot alloc frame!", m_name, m_id);
     return;
   }
   m_packet = av_packet_alloc();
   if (!m_packet) {
-    Yeager::Log(ERROR, kSystem,
-                "VideoHandle name {} ID {} cannot alloc packet!", m_name, m_id);
+    Yeager::Log(ERROR, "VideoHandle name {} ID {} cannot alloc packet!", m_name, m_id);
     return;
   }
 }

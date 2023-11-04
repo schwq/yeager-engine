@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include "../../Application.h"
 #include "../../Common/Common.h"
 #include "../../Common/Utilities.h"
 #include "../../InputHandle.h"
@@ -26,7 +25,9 @@
 #include "ShaderHandle.h"
 #include "TextureHandle.h"
 
-class Application;
+namespace Yeager {
+class ApplicationCore;
+}
 
 enum class RendererEngineName { kOpenGL = 0, kDirectX = 1, kVulkan = 2 };
 
@@ -37,7 +38,7 @@ struct RendererEngineHandle {
 
 class RendererEngine {
  public:
-  RendererEngine(RendererEngineName name, Application* app);
+  RendererEngine(RendererEngineName name, Yeager::ApplicationCore* app);
   ~RendererEngine();
 
   void Render();
@@ -45,7 +46,7 @@ class RendererEngine {
 
  private:
   RendererEngineHandle m_handle;
-  Application* m_app;
+  Yeager::ApplicationCore* m_app;
 
   void RendererOpenGL();
   void ManifestShaderProps(Yeager::Shader* shader, yg_mat4 view, yg_mat4 projection, yg_vec3 viewPos);

@@ -1,0 +1,28 @@
+Scene: DefaultScene
+Renderer: OpenGL3_3
+SceneType: Scene3D
+SceneEntities:
+  - Entity: 0
+    Name: DASDA
+    Type: AudioHandle
+    Path: /home/schwz/projects/yeager-engine/Apps/Yeager/Assets/sound/pizza.wav
+  - Entity: 1
+    Name: DASD
+    Type: Audio3DHandle
+    Path: /home/schwz/projects/yeager-engine/Apps/Yeager/Assets/sound/mac.wav
+    Position: [0, 0, 0]
+  - Entity: 2
+    Name: AA
+    Type: ImportedObject
+    Path: /home/schwz/projects/yeager-engine/Apps/Yeager/Assets/imported_models/backpack/backpack.obj
+    Position: [0, -6.72001553, 0]
+    Rotation: [147.982788, 295.965576, 221.974182]
+    Scale: [1, 1, 1]
+    TexturesLoaded: 2
+    Textures:
+      Name: texture_diffuse
+      Path: /home/schwz/projects/yeager-engine/Apps/Yeager/Assets/imported_models/backpack/diffuse.jpg
+      ID: 4
+      Name: texture_specular
+      Path: /home/schwz/projects/yeager-engine/Apps/Yeager/Assets/imported_models/backpack/specular.jpg
+      ID: 5

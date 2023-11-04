@@ -1,11 +1,12 @@
 #include "Explorer.h"
+#include "../../Application.h"
 #include "Camera.h"
 #include "ToolboxObj.h"
 using namespace ImGui;
 
-EditorExplorer::EditorExplorer(Application* app) : m_app(app)
+EditorExplorer::EditorExplorer(Yeager::ApplicationCore* app) : m_app(app)
 {
-  Yeager::Log(INFO, kSystem, "Creating Editor Explorer");
+  Yeager::Log(INFO, "Creating Editor Explorer");
 }
 
 void EditorExplorer::WarningExplorer(yg_string msg)
@@ -36,7 +37,7 @@ void EditorExplorer::AddAudioWindow()
     Checkbox("3D Audio", &m_add_audio_is_3d);
 
     Text("Path: %s", m_new_object_path.c_str());
-    m_app->GetEditorCamera()->SetShouldMove(false);
+    m_app->GetCamera()->SetShouldMove(false);
     m_app->GetInput()->SetCursorCanDisappear(false);
 
     if (Button("Create")) {
@@ -52,14 +53,14 @@ void EditorExplorer::AddAudioWindow()
           auto toolbox = std::make_shared<Yeager::ToolBoxObject>();
           toolbox->SetType(ExplorerObjectType::k3DAudio);
           toolbox->SetAudio(audio.get());
-          ygAudio3DHandles.push_back(audio);
+          m_app->GetScene()->GetAudios3D()->push_back(audio);
           m_toolboxs.push_back(toolbox);
         } else {
           auto audio = std::make_shared<Yeager::AudioHandle>(m_new_object_path, m_new_object_name, m_looped_audio);
           auto toolbox = std::make_shared<Yeager::ToolBoxObject>();
           toolbox->SetType(ExplorerObjectType::kAudio);
           toolbox->SetAudio(audio.get());
-          ygAudioHandles.push_back(audio);
+          m_app->GetScene()->GetAudios()->push_back(audio);
           m_toolboxs.push_back(toolbox);
         }
         m_new_object_name.clear();
@@ -67,7 +68,7 @@ void EditorExplorer::AddAudioWindow()
         m_looped_audio = false;
         m_add_audio_window_open = false;
         m_add_audio_is_3d = false;
-        m_app->GetEditorCamera()->SetShouldMove(true);
+        m_app->GetCamera()->SetShouldMove(true);
         m_app->GetInput()->SetCursorCanDisappear(true);
       }
       m_everything_fine_to_create = true;
@@ -78,7 +79,7 @@ void EditorExplorer::AddAudioWindow()
       m_new_object_path.clear();
       m_everything_fine_to_create = false;
       m_add_audio_window_open = false;
-      m_app->GetEditorCamera()->SetShouldMove(true);
+      m_app->GetCamera()->SetShouldMove(true);
       m_app->GetInput()->SetCursorCanDisappear(true);
     }
     End();
@@ -100,7 +101,7 @@ void EditorExplorer::AddGeometryObjectWindow()
     SameLine();
     Checkbox("Cube", &m_add_geometry_shape_cube);
 
-    m_app->GetEditorCamera()->SetShouldMove(false);
+    m_app->GetCamera()->SetShouldMove(false);
     m_app->GetInput()->SetCursorCanDisappear(false);
 
     if (Button("Create")) {
@@ -115,11 +116,11 @@ void EditorExplorer::AddGeometryObjectWindow()
           shape = Yeager::kCube;
         }
         auto geometry = std::make_shared<Yeager::Geometry>(m_new_object_name, yg_vec3(1.0f), shape, m_app);
-        yg_Shapes.push_back(geometry);
+        m_app->GetScene()->GetGeometry()->push_back(geometry);
         m_new_object_name.clear();
         m_add_geometry_shape_cube = false;
         m_add_imported_object_window_open = false;
-        m_app->GetEditorCamera()->SetShouldMove(true);
+        m_app->GetCamera()->SetShouldMove(true);
         m_app->GetInput()->SetCursorCanDisappear(true);
       }
       m_everything_fine_to_create = true;
@@ -130,7 +131,7 @@ void EditorExplorer::AddGeometryObjectWindow()
       m_add_geometry_shape_cube = false;
       m_everything_fine_to_create = false;
       m_add_geometry_window_open = false;
-      m_app->GetEditorCamera()->SetShouldMove(true);
+      m_app->GetCamera()->SetShouldMove(true);
       m_app->GetInput()->SetCursorCanDisappear(true);
     }
     End();
@@ -157,7 +158,7 @@ void EditorExplorer::AddImportedObjectWindow()
     }
 
     Text("Path: %s", m_new_object_path.c_str());
-    m_app->GetEditorCamera()->SetShouldMove(false);
+    m_app->GetCamera()->SetShouldMove(false);
     m_app->GetInput()->SetCursorCanDisappear(false);
 
     Checkbox("Flip texture", &m_imported_object_flip_tex);
@@ -171,11 +172,11 @@ void EditorExplorer::AddImportedObjectWindow()
       if (m_everything_fine_to_create) {
         auto object =
             std::make_shared<ImportedObject>(m_new_object_path, m_app, m_new_object_name, m_imported_object_flip_tex);
-        ygImportedObjects.push_back(object);
+        m_app->GetScene()->GetImportedObjects()->push_back(object);
         m_new_object_name.clear();
         m_new_object_path.clear();
         m_add_imported_object_window_open = false;
-        m_app->GetEditorCamera()->SetShouldMove(true);
+        m_app->GetCamera()->SetShouldMove(true);
         m_app->GetInput()->SetCursorCanDisappear(true);
       }
       m_everything_fine_to_create = true;
@@ -186,7 +187,7 @@ void EditorExplorer::AddImportedObjectWindow()
       m_new_object_path.clear();
       m_everything_fine_to_create = false;
       m_add_imported_object_window_open = false;
-      m_app->GetEditorCamera()->SetShouldMove(true);
+      m_app->GetCamera()->SetShouldMove(true);
       m_app->GetInput()->SetCursorCanDisappear(true);
     }
     End();
@@ -202,12 +203,12 @@ void EditorExplorer::DrawExplorer()
   AddGeometryObjectWindow();
 
   Text("Main Scene");
-  for (yg_uint x = 0; x < m_toolboxs.size(); x++) {
-    yg_string label =
-        "[" + ExplorerTypeToString(m_toolboxs[x]->GetType()) + "] " + m_toolboxs[x]->GetEntity()->GetName();
-    if (Selectable(label.c_str(), &m_toolboxs[x]->m_selected, ImGuiSelectableFlags_AllowDoubleClick)) {
+  for (yg_uint x = 0; x < m_app->GetScene()->GetToolboxs()->size(); x++) {
+    Yeager::ToolBoxObject* obj = m_app->GetScene()->GetToolboxs()->at(x).get();
+    yg_string label = "[" + ExplorerTypeToString(obj->GetType()) + "] " + obj->GetEntity()->GetName();
+    if (Selectable(label.c_str(), &obj->m_selected, ImGuiSelectableFlags_AllowDoubleClick)) {
       m_first_time_toolbox = false;
-      toolbox_selected = m_toolboxs[x].get();
+      toolbox_selected = m_app->GetScene()->GetToolboxs()->at(x).get();
     }
   }
   if (m_first_time_toolbox) {

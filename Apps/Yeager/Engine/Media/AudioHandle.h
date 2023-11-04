@@ -100,5 +100,3 @@ class Audio3DHandle : public AudioHandle {
 };
 
 }  // namespace Yeager
-extern std::vector<std::shared_ptr<Yeager::AudioHandle>> ygAudioHandles;
-extern std::vector<std::shared_ptr<Yeager::Audio3DHandle>> ygAudio3DHandles;

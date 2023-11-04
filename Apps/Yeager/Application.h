@@ -17,82 +17,78 @@
 //    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #pragma once
-// clang-format off
+
 #include "Common/Common.h"
-#include "Common/Utilities.h"
-#include "Engine/Renderer/Entity.h"
-#include "Engine/Renderer/TextureHandle.h"
-#include "Engine/Editor/ToolboxObj.h"
-#include "Engine/Editor/Camera.h"
 #include "Common/LogEngine.h"
+#include "Common/Utilities.h"
+#include "Engine/Editor/Camera.h"
 #include "Engine/Editor/Explorer.h"
-#include "Engine/Renderer/ImportedObj.h"
+#include "Engine/Interface/Interface.h"
 #include "Engine/Renderer/Render.h"
 #include "Engine/Renderer/Window.h"
 #include "InputHandle.h"
-#include "Interface.h"
+#include "Scene.h"
 
-class RendererEngine;
-class Window;
-class Input;
-class Interface;
-class EditorCamera;
-class EditorExplorer;
-class EditorConsole;
-class ImportedObject;
-class Yeager::GameEntity;
-struct ConsoleMessageType;
+namespace Yeager {
+/// @brief Represent the current state for the Application, if its running, paused, crashed ect
+enum ApplicationState { AppRunning, AppStopped, AppCrashed };
+/// @brief Represent the current mode of the Application, used most for control the current window to appear to the user
+enum ApplicationMode { AppEditor, AppLauncher, AppSettings, AppGame, AppLoading };
 
-// clang-format on
-
-struct ApplicationSetup {
-  Input* ptr_input;
-  Window* ptr_window;
-  RendererEngine* ptr_engine;
-  Interface* ptr_interface;
-  EditorCamera* ptr_camera;
-  EditorExplorer* ptr_explorer;
+/** @brief Struct to handle the constructor of the application 
+ * @param Interface @param Window @param Camera @param Scene @param Renderer
+ * @param Input @param Explorer
+ */
+struct ApplicationCoreSetup {
+  std::shared_ptr<Interface> m_interface;
+  std::shared_ptr<Input> m_input;
+  std::shared_ptr<Window> m_window;
+  std::shared_ptr<EditorExplorer> m_explorer;
+  std::shared_ptr<EditorCamera> m_camera;
+  std::shared_ptr<Yeager::Scene> m_scene;
+  std::shared_ptr<RendererEngine> m_renderer;
 };
 
-enum class ApplicationCurrentMode {
-  kEditorMode = 0,
-  kErrorMode = 1,
-  kAwaitMode = 2,
-  kSettingsMode = 3,
-  kLauncherMode = 4,
-  kCeaseMode = 5
-};
-
-class Application {
+///  @brief Class that handles the program
+///  @todo Make the EngineCore to handle launcher and editor
+class ApplicationCore {
  public:
-  Application();
-  ~Application();
+  ApplicationCore();
+  ~ApplicationCore();
+  ApplicationCore(ApplicationCore&&) = delete;
 
-  const void SetCurrentMode(ApplicationCurrentMode mode);
+  /// @brief Setup the current application
+  /// @param setup An ApplicationSetup already built
+  void Setup(ApplicationCoreSetup setup);
 
-  constexpr Window* GetWindowManager() const { return m_window; }
-  constexpr RendererEngine* GetRendererEngine() const { return m_engine; }
-  constexpr Input* GetInput() const { return m_input; }
-  constexpr Interface* GetInterface() const { return m_interface; }
-  constexpr ApplicationCurrentMode GetCurrentMode() const { return m_current_mode; }
-  constexpr EditorCamera* GetEditorCamera() const { return m_camera; }
-  void SetupApplication(ApplicationSetup setup);
-  bool ShouldRendererActive();
-  bool EnterKeyPressed();
+  /// @brief Get a boolean if the application or user have request for stop rendering, most likely to close the program
+  /// @return True if requested, false if not
+  bool ShouldRender();
 
-  constexpr EditorExplorer* GetExplorer() const { return m_explorer; }
-  constexpr std::vector<Yeager::Texture2D>* GetVectorUserTexture2D() { return &m_textures_2d_user_created; }
-  constexpr std::vector<ImportedObject>* GetImportedObjects() { return &m_imported_objects; }
+  Interface* GetInterface();
+  Input* GetInput();
+  Window* GetWindow();
+  EditorExplorer* GetExplorer();
+  EditorCamera* GetCamera();
+  Yeager::Scene* GetScene();
+  RendererEngine* GetRenderer();
+
+  ApplicationMode GetMode() noexcept;
+  ApplicationState GetState() noexcept;
+
+  void SetMode(ApplicationMode mode) noexcept;
+  void SetState(ApplicationState state) noexcept;
 
  private:
-  ApplicationCurrentMode m_current_mode = ApplicationCurrentMode::kEditorMode;
-  EditorCamera* m_camera = nullptr;
-  Window* m_window = nullptr;
-  RendererEngine* m_engine = nullptr;
-  Input* m_input = nullptr;
-  Interface* m_interface = nullptr;
-  EditorConsole* m_console = nullptr;
-  EditorExplorer* m_explorer = nullptr;
-  std::vector<Yeager::Texture2D> m_textures_2d_user_created;
-  std::vector<ImportedObject> m_imported_objects;
+  std::shared_ptr<Interface> m_interface = nullptr;
+  std::shared_ptr<Input> m_input = nullptr;
+  std::shared_ptr<Window> m_window = nullptr;
+  std::shared_ptr<EditorExplorer> m_explorer = nullptr;
+  std::shared_ptr<EditorCamera> m_camera = nullptr;
+  std::shared_ptr<Yeager::Scene> m_scene = nullptr;
+  std::shared_ptr<RendererEngine> m_renderer = nullptr;
+
+  ApplicationState m_state = AppRunning;
+  ApplicationMode m_mode = AppLauncher;
 };
+}  // namespace Yeager

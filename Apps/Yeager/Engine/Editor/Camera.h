@@ -18,19 +18,21 @@
 
 #pragma once
 
-#include "../../Application.h"
 #include "../../Common/Common.h"
 #include "../Renderer/ShaderHandle.h"
 
-class Application;
-class Yeager::Shader;
+namespace Yeager {
+class Shader;
+class ApplicationCore;
+}  // namespace Yeager
+
 class RendererEngine;
 
 enum class CameraPosition { kForward, kBackward, kRight, kLeft };
 
 class EditorCamera {
  public:
-  EditorCamera(Application* app, yg_vec3 cameraPosition = yg_vec3(0.0f, 0.0f, 0.0f),
+  EditorCamera(Yeager::ApplicationCore* app, yg_vec3 cameraPosition = yg_vec3(0.0f, 0.0f, 0.0f),
                yg_vec3 cameraFront = yg_vec3(0.0f, 0.0f, -1.0f), yg_vec3 cameraUp = yg_vec3(0.0f, 1.0f, 0.0f));
 
   void UpdatePosition(CameraPosition position, float delta);
@@ -54,7 +56,7 @@ class EditorCamera {
   float m_cameraYaw = 0.0f;
   float m_cameraPitch = 0.0f;
   float m_cameraSpeed = 0.2f;
-  Application* m_app;
+  Yeager::ApplicationCore* m_app;
   bool m_cameraShouldMove = false;
 };
 

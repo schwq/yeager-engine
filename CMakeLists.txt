@@ -29,7 +29,9 @@ set(SOURCEFILES
     ${LIBRARIES}
     Apps/Yeager/main.cpp  
     Apps/Yeager/Scene.cpp 
-    Apps/Yeager/Interface.cpp 
+    Apps/Yeager/Engine/Interface/Interface.cpp
+    Apps/Yeager/Engine/Interface/UIManagement.cpp 
+    Apps/Yeager/Engine/Interface/Notification.cpp  
     Apps/Yeager/Application.cpp 
     Apps/Yeager/InputHandle.cpp 
     Apps/Yeager/Serialization.cpp

@@ -20,8 +20,8 @@
 
 #include "Common.h"
 
-extern yg_uint kWindowX;
-extern yg_uint kWindowY;
+extern yg_uint ygWindowWidth;
+extern yg_uint ygWindowHeight;
 extern yg_cchar kOperatingSystem;
 extern yg_string kDefaultTexturePath;
 extern yg_string GetPath(yg_string path);

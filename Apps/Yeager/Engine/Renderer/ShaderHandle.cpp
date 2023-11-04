@@ -9,7 +9,7 @@ Yeager::Shader* Yeager::ShaderFromVarName(yg_string var)
       return shader.m_shader.get();
     }
   }
-  Yeager::Log(ERROR, kSystem, "Cannot find shader from var name!");
+  Yeager::Log(ERROR, "Cannot find shader from var name [{}]!", var);
   return nullptr;
 }
 
@@ -22,7 +22,7 @@ Shader::Shader(yg_cchar fragmentPath, yg_cchar vertexPath, yg_string name) : m_n
     LinkShaders(vt, fg);
     m_initialize = true;
   } else {
-    Yeager::Log(-2, kSystem, "Cannot link shaders! One of them have not initialized!");
+    Yeager::Log(-2, "Cannot link shaders! One of them have not initialized!");
   }
 }
 
@@ -55,16 +55,16 @@ yg_uint Shader::CreateVertexGL(yg_cchar vertexPath)
 
     if (!vertexShaderSuccess) {
       glGetShaderInfoLog(vertexShaderSource, 512, NULL, vertexInfoLog);
-      Yeager::Log(ERROR, kSystem, "Cannot create vertex shader: {}, ID: {}, Error: {}", m_name.c_str(), m_shader_num,
+      Yeager::Log(ERROR, "Cannot create vertex shader: {}, ID: {}, Error: {}", m_name.c_str(), m_shader_num,
                   vertexInfoLog);
     } else {
-      Yeager::Log(INFO, kSystem, "Success in creating vertex shader {}, ID {}", m_name.c_str(), m_shader_num);
+      Yeager::Log(INFO, "Success in creating vertex shader {}, ID {}", m_name.c_str(), m_shader_num);
       m_vertex_build = true;
     }
 
     vertexFile.close();
   } else {
-    Yeager::Log(ERROR, kSystem, "Cannot open vertex shader file: {}", vertexPath);
+    Yeager::Log(ERROR, "Cannot open vertex shader file: {}", vertexPath);
   }
 
   return vertexShaderSource;
@@ -93,16 +93,16 @@ yg_uint Shader::CreateFragmentGL(yg_cchar fragmentPath)
 
     if (!fragmentShaderSuccess) {
       glGetShaderInfoLog(fragmentShaderSource, 512, NULL, fragmentInfoLog);
-      Yeager::Log(ERROR, kSystem, "Cannot create fragment shader: {}, ID: {}, Error: {}", m_name.c_str(), m_shader_num,
+      Yeager::Log(ERROR, "Cannot create fragment shader: {}, ID: {}, Error: {}", m_name.c_str(), m_shader_num,
                   fragmentInfoLog);
     } else {
-      Yeager::Log(INFO, kSystem, "Success in creating fragment shader {}, ID {}", m_name.c_str(), m_shader_num);
+      Yeager::Log(INFO, "Success in creating fragment shader {}, ID {}", m_name.c_str(), m_shader_num);
       m_fragment_build = true;
     }
 
     fragmentFile.close();
   } else {
-    Yeager::Log(ERROR, kSystem, "Cannot open fragment shader file: {}", fragmentPath);
+    Yeager::Log(ERROR, "Cannot open fragment shader file: {}", fragmentPath);
   }
 
   return fragmentShaderSource;
@@ -121,9 +121,9 @@ void Shader::LinkShaders(yg_uint vertexShader, yg_uint fragmentShader)
   glGetProgramiv(m_id, GL_LINK_STATUS, &linkSuccess);
   if (!linkSuccess) {
     glGetProgramInfoLog(m_id, 512, NULL, linkInfo);
-    Yeager::Log(ERROR, kSystem, "Cannot link shaders: {}, ID: {}, Error: {}", m_name.c_str(), m_shader_num, linkInfo);
+    Yeager::Log(ERROR, "Cannot link shaders: {}, ID: {}, Error: {}", m_name.c_str(), m_shader_num, linkInfo);
   } else {
-    Yeager::Log(INFO, kSystem, "Success in linking shaders: {}, ID: {}", m_name.c_str(), m_shader_num);
+    Yeager::Log(INFO, "Success in linking shaders: {}, ID: {}", m_name.c_str(), m_shader_num);
   }
 
   glDeleteShader(vertexShader);

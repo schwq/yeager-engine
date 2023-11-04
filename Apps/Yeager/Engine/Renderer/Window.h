@@ -1,7 +1,7 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
 //    Repo : https://github.com/schwq/yeager-engine
-//    Copyright (C) 2023
+//    Copyright (C) 2023-present
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -32,8 +32,13 @@ class Window {
   ~Window();
   YEAGER_NODISCARD GLFWwindow* getWindow() { return m_window; }
   static void FramebufferSizeCallback(GLFWwindow* window, int width, int height);
-  void LaunchEditor();
+  static void WindowResizeCallback(GLFWwindow* window, int width, int height);
+  static void HandleError(int code, const char* description);
+  void GetWindowSize(int* width, int* height);
 
  private:
   GLFWwindow* m_window = nullptr;
+  GLFWmonitor* m_primary_monitor = nullptr;
+  const GLFWvidmode* m_vid_mode;
+  yg_uint m_window_monitor_x = 0, m_window_monitor_y = 0;
 };

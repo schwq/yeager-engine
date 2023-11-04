@@ -19,15 +19,12 @@
 #pragma once
 #include "Common.h"
 
-enum LogSource { kUser, kSystem, kNone };
-
 typedef struct {
   yg_string message;
   int verbosity;
   ImVec4 text_color;
 } ConsoleLogSender;
 
-extern yg_string ConsoleLogSenderToString(LogSource sender);
 extern ImVec4 VerbosityToColor(int verbosity);
 
 class EditorConsole {
@@ -42,24 +39,23 @@ class EditorConsole {
  private:
   std::vector<ConsoleLogSender> m_logs;
 };
+extern EditorConsole kConsole;
 
 namespace Yeager {
-static EditorConsole kConsole;
 
 template <typename... T>
-void Log(int verbosity, LogSource sender, fmt::format_string<T...> fmt, T&&... args)
+void Log(int verbosity, fmt::format_string<T...> fmt, T&&... args)
 {
   auto str = fmt::format(fmt, std::forward<T>(args)...);
   yg_string log(str);
 
   ConsoleLogSender console_message;
-  console_message.message = "[" + ConsoleLogSenderToString(sender) + "] " + log;
   console_message.text_color = VerbosityToColor(verbosity);
   console_message.verbosity = verbosity;
-
+  console_message.message = log;
   kConsole.SetLogString(console_message);
+
   yg_string terminal_prefix;
-  char color;
   if (verbosity == INFO) {
     terminal_prefix = "(-) ";
   } else if (verbosity == WARNING) {
@@ -68,8 +64,6 @@ void Log(int verbosity, LogSource sender, fmt::format_string<T...> fmt, T&&... a
     terminal_prefix = "(!!) ";
   }
 
-  if (!(sender == kUser)) {
-    std::cout << terminal_prefix << log << std::endl;
-  }
+  std::cout << terminal_prefix << log << std::endl;
 }
 }  // namespace Yeager

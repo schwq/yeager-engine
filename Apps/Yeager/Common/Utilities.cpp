@@ -25,9 +25,9 @@ yg_string RemovePreffixUntilCharacter(yg_string expression, char characterToStop
 
 yg_string kPath = std::filesystem::current_path().string();
 
-#ifdef _WIN32
+#ifdef YEAGER_SYSTEM_WINDOWS_x64
 yg_cchar kOperatingSystem = "WIN32";
-#elif __linux__
+#elif defined(YEAGER_SYSTEM_LINUX)
 yg_cchar kOperatingSystem = "LINUX";
 #endif
 yg_cchar GetShaderPath(yg_string shader)
@@ -57,5 +57,5 @@ yg_string GetPath(yg_string path)
 
 yg_string kDefaultTexturePath = GetPath("/Assets/textures/default.jpg");
 
-unsigned int kWindowX = 1300;
-unsigned int kWindowY = 720;
+unsigned int ygWindowWidth = 1300;
+unsigned int ygWindowHeight = 720;

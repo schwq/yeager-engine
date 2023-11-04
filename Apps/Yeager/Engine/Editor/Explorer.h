@@ -18,24 +18,28 @@
 
 #pragma once
 
-#include "../../Application.h"
 #include "../../Common/Common.h"
+#include "../../Engine/Interface/Interface.h"
 #include "../Media/AudioHandle.h"
 #include "../Renderer/ImportedObj.h"
 #include "ToolboxObj.h"
 
-class Application;
+namespace Yeager {
+class ApplicationCore;
+}
+
 class Interface;
 class ImportedObject;
 
 class EditorExplorer {
  public:
-  EditorExplorer(Application* app);
+  EditorExplorer(Yeager::ApplicationCore* app);
   void DrawExplorer();
 
   Yeager::ToolBoxObject* toolbox_selected;
 
  private:
+  Yeager::ApplicationCore* m_app = nullptr;
   void AddGeometryObjectWindow();
   void AddImportedObjectWindow();
   void AddAudioWindow();
@@ -53,5 +57,4 @@ class EditorExplorer {
   yg_string m_new_object_name;
   yg_string m_new_object_path;
   yg_string m_new_object_texture_path;
-  Application* m_app;
 };

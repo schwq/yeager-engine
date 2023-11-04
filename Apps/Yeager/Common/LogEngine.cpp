@@ -1,28 +1,18 @@
 #include "LogEngine.h"
+using namespace Yeager;
+
+EditorConsole kConsole;
 
 ImVec4 VerbosityToColor(int verbosity)
 {
   switch (verbosity) {
-    case -1:
+    case WARNING:
       return IMGUI_YELLOW_WARNING_COLOR;
-    case -2:
+    case ERROR:
       return IMGUI_RED_ERROR_COLOR;
-    case 0:
+    case INFO:
     default:
       return IMGUI_WHITE_COMMON_COLOR;
-  }
-}
-
-yg_string ConsoleLogSenderToString(LogSource sender)
-{
-  switch (sender) {
-    case ::kUser:
-      return "USER";
-    case kSystem:
-      return "SYSTEM";
-    case ::kNone:
-    default:
-      return "ERROR_SENDER";
   }
 }
 

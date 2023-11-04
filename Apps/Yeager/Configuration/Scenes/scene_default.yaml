@@ -2,18 +2,4 @@ Scene: DefaultScene
 SceneType: 3D 
 SceneRenderer: OpenGL_3_3
 SceneEntities: 
-  - Entity : 101010
-    Name: Audio 
-    Type: AudioHandle
-    Path: /path/
-    Textures : [
-      DiffuseTexture: /path,
-      SpecularTexture: /path
-    ]
-    Position: { 1.0, 0.0, 0.0 }
-    Rotation: {10.0, 20.0, 0.0}
-    Scale: {1.0, 1.0, 1.0}
-    
-
-
-
+ []
