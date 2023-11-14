@@ -3,36 +3,37 @@
 #include <glm/geometric.hpp>
 #include "../../Application.h"
 
-EditorCamera::EditorCamera(Yeager::ApplicationCore* app, yg_vec3 cameraPosition, yg_vec3 cameraFront, yg_vec3 cameraUp)
-    : m_app(app)
+EditorCamera::EditorCamera(Yeager::ApplicationCore* app, YgVector3 cameraPosition, YgVector3 cameraFront,
+                           YgVector3 cameraUp)
+    : m_Application(app)
 {
-  m_position = cameraPosition;
-  m_cameraFront = cameraFront;
-  m_cameraUp = cameraUp;
-  m_cameraDirection = yg_vec3(0.0f, 0.0f, 0.0f);
-  m_cameraPitch = 0.0f;
-  m_cameraYaw = 0.0f;
+  m_Position = cameraPosition;
+  m_CameraFront = cameraFront;
+  m_CameraUp = cameraUp;
+  m_CameraDirection = YgVector3(0.0f, 0.0f, 0.0f);
+  m_CameraPitch = 0.0f;
+  m_CameraYaw = 0.0f;
 }
 
 void EditorCamera::UpdateSpeed(float speed)
 {
-  m_cameraSpeed = speed;
+  m_CameraSpeed = speed;
 }
 
 bool EditorCamera::GetShouldMove()
 {
-  return m_cameraShouldMove;
+  return m_CameraShouldMove;
 }
 
-const yg_mat4 EditorCamera::ReturnViewMatrix()
+const YgMatrix4 EditorCamera::ReturnViewMatrix()
 {
-  return glm::lookAt(m_position, m_position + m_cameraFront, m_cameraUp);
+  return glm::lookAt(m_Position, m_Position + m_CameraFront, m_CameraUp);
 }
 
 void EditorCamera::Update(Yeager::Shader* shader)
 {
-  yg_mat4 view = yg_mat4(1.0f);
-  view = glm::lookAt(m_position, m_position + m_cameraFront, m_cameraUp);
+  YgMatrix4 view = YgMatrix4(1.0f);
+  view = glm::lookAt(m_Position, m_Position + m_CameraFront, m_CameraUp);
   shader->SetMat4("view", view);
 }
 
@@ -42,65 +43,65 @@ void EditorCamera::UpdatePosition(CameraPosition position, float delta)
 
   switch (position) {
     case CameraPosition::kForward:
-      m_position += m_cameraSpeed * m_cameraFront;
+      m_Position += m_CameraSpeed * m_CameraFront;
       break;
     case CameraPosition::kBackward:
-      m_position -= m_cameraSpeed * m_cameraFront;
+      m_Position -= m_CameraSpeed * m_CameraFront;
       break;
     case CameraPosition::kRight:
-      m_position += glm::normalize(glm::cross(m_cameraFront, m_cameraUp)) * m_cameraSpeed;
+      m_Position += glm::normalize(glm::cross(m_CameraFront, m_CameraUp)) * m_CameraSpeed;
       break;
     case CameraPosition::kLeft:
-      m_position -= glm::normalize(glm::cross(m_cameraFront, m_cameraUp)) * m_cameraSpeed;
+      m_Position -= glm::normalize(glm::cross(m_CameraFront, m_CameraUp)) * m_CameraSpeed;
       break;
   }
 }
 
 void EditorCamera::UpdateDirection(float xoffset, float yoffset)
 {
-  xoffset *= m_sensitivity;
-  yoffset *= m_sensitivity;
+  xoffset *= m_Sensitivity;
+  yoffset *= m_Sensitivity;
 
-  m_cameraYaw += xoffset;
-  m_cameraPitch += yoffset;
+  m_CameraYaw += xoffset;
+  m_CameraPitch += yoffset;
 
-  if (m_cameraPitch > 89.0f) {
-    m_cameraPitch = 89.0f;
+  if (m_CameraPitch > 89.0f) {
+    m_CameraPitch = 89.0f;
   }
 
-  if (m_cameraPitch < -89.0f) {
-    m_cameraPitch = -89.0f;
+  if (m_CameraPitch < -89.0f) {
+    m_CameraPitch = -89.0f;
   }
 
-  m_cameraDirection.x = cos(glm::radians(m_cameraYaw)) * cos(glm::radians(m_cameraPitch));
-  m_cameraDirection.y = sin(glm::radians(m_cameraPitch));
-  m_cameraDirection.z = sin(glm::radians(m_cameraYaw)) * cos(glm::radians(m_cameraPitch));
-  m_cameraFront = glm::normalize(m_cameraDirection);
+  m_CameraDirection.x = cos(glm::radians(m_CameraYaw)) * cos(glm::radians(m_CameraPitch));
+  m_CameraDirection.y = sin(glm::radians(m_CameraPitch));
+  m_CameraDirection.z = sin(glm::radians(m_CameraYaw)) * cos(glm::radians(m_CameraPitch));
+  m_CameraFront = glm::normalize(m_CameraDirection);
 }
 
-const yg_vec3 EditorCamera::GetPosition()
+const YgVector3 EditorCamera::GetPosition()
 {
-  return m_position;
+  return m_Position;
 }
 
-const yg_vec3 EditorCamera::GetDirection()
+const YgVector3 EditorCamera::GetDirection()
 {
-  return m_cameraDirection;
+  return m_CameraDirection;
 }
 
 const float& EditorCamera::GetSensitivity()
 {
-  return m_sensitivity;
+  return m_Sensitivity;
 }
 
 void EditorCamera::SetShouldMove(bool move)
 {
-  m_cameraShouldMove = move;
+  m_CameraShouldMove = move;
 }
 
 void EditorCamera::MouseCallback(bool& firstMouse, float& lastX, float& lastY, double xpos, double ypos)
 {
-  if (m_cameraShouldMove && m_app->GetMode() == Yeager::AppEditor) {
+  if (m_CameraShouldMove && m_Application->GetMode() == Yeager::AppEditor) {
     if (firstMouse) {
       lastX = static_cast<float>(xpos);
       lastY = static_cast<float>(ypos);

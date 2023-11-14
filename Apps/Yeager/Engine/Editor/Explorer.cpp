@@ -9,7 +9,7 @@ EditorExplorer::EditorExplorer(Yeager::ApplicationCore* app) : m_app(app)
   Yeager::Log(INFO, "Creating Editor Explorer");
 }
 
-void EditorExplorer::WarningExplorer(yg_string msg)
+void EditorExplorer::WarningExplorer(YgString msg)
 {
   m_everything_fine_to_create = false;
   m_app->GetInterface()->AddWarningWindow(msg);
@@ -23,6 +23,7 @@ void EditorExplorer::AddAudioWindow()
     }
   }
   if (m_add_audio_window_open) {
+    m_app->GetInput()->SetCameraCursorToWindowState(true);
     m_app->GetInterface()->CenteredWindow(400, 150);
     Begin("Add Audio", NULL, kWindowStatic);
     InputText("Audio's name", &m_new_object_name, 100);
@@ -68,8 +69,7 @@ void EditorExplorer::AddAudioWindow()
         m_looped_audio = false;
         m_add_audio_window_open = false;
         m_add_audio_is_3d = false;
-        m_app->GetCamera()->SetShouldMove(true);
-        m_app->GetInput()->SetCursorCanDisappear(true);
+        m_app->GetInput()->SetCameraCursorToWindowState(false);
       }
       m_everything_fine_to_create = true;
     }
@@ -79,8 +79,7 @@ void EditorExplorer::AddAudioWindow()
       m_new_object_path.clear();
       m_everything_fine_to_create = false;
       m_add_audio_window_open = false;
-      m_app->GetCamera()->SetShouldMove(true);
-      m_app->GetInput()->SetCursorCanDisappear(true);
+      m_app->GetInput()->SetCameraCursorToWindowState(false);
     }
     End();
   }
@@ -94,6 +93,7 @@ void EditorExplorer::AddGeometryObjectWindow()
     }
   }
   if (m_add_geometry_window_open) {
+    m_app->GetInput()->SetCameraCursorToWindowState(true);
     m_app->GetInterface()->CenteredWindow(400, 150);
     Begin("Add Geometry", NULL, kWindowStatic);
     InputText("Geometry's name", &m_new_object_name, 100);
@@ -115,13 +115,14 @@ void EditorExplorer::AddGeometryObjectWindow()
         if (m_add_geometry_shape_cube) {
           shape = Yeager::kCube;
         }
-        auto geometry = std::make_shared<Yeager::Geometry>(m_new_object_name, yg_vec3(1.0f), shape, m_app);
+        auto geometry = std::make_shared<Yeager::Geometry>(m_new_object_name, YgVector3(1.0f), shape, m_app);
         m_app->GetScene()->GetGeometry()->push_back(geometry);
         m_new_object_name.clear();
         m_add_geometry_shape_cube = false;
         m_add_imported_object_window_open = false;
         m_app->GetCamera()->SetShouldMove(true);
         m_app->GetInput()->SetCursorCanDisappear(true);
+        m_app->GetInput()->SetCameraCursorToWindowState(false);
       }
       m_everything_fine_to_create = true;
     }
@@ -133,6 +134,7 @@ void EditorExplorer::AddGeometryObjectWindow()
       m_add_geometry_window_open = false;
       m_app->GetCamera()->SetShouldMove(true);
       m_app->GetInput()->SetCursorCanDisappear(true);
+      m_app->GetInput()->SetCameraCursorToWindowState(false);
     }
     End();
   }
@@ -146,6 +148,7 @@ void EditorExplorer::AddImportedObjectWindow()
     }
   }
   if (m_add_imported_object_window_open) {
+    m_app->GetInput()->SetCameraCursorToWindowState(true);
     m_app->GetInterface()->CenteredWindow(400, 150);
     Begin("Add Imported Object", NULL, kWindowStatic);
     InputText("Object's name", &m_new_object_name, 100);
@@ -178,6 +181,7 @@ void EditorExplorer::AddImportedObjectWindow()
         m_add_imported_object_window_open = false;
         m_app->GetCamera()->SetShouldMove(true);
         m_app->GetInput()->SetCursorCanDisappear(true);
+        m_app->GetInput()->SetCameraCursorToWindowState(false);
       }
       m_everything_fine_to_create = true;
     }
@@ -189,6 +193,7 @@ void EditorExplorer::AddImportedObjectWindow()
       m_add_imported_object_window_open = false;
       m_app->GetCamera()->SetShouldMove(true);
       m_app->GetInput()->SetCursorCanDisappear(true);
+      m_app->GetInput()->SetCameraCursorToWindowState(false);
     }
     End();
   }
@@ -203,9 +208,9 @@ void EditorExplorer::DrawExplorer()
   AddGeometryObjectWindow();
 
   Text("Main Scene");
-  for (yg_uint x = 0; x < m_app->GetScene()->GetToolboxs()->size(); x++) {
+  for (unsigned int x = 0; x < m_app->GetScene()->GetToolboxs()->size(); x++) {
     Yeager::ToolBoxObject* obj = m_app->GetScene()->GetToolboxs()->at(x).get();
-    yg_string label = "[" + ExplorerTypeToString(obj->GetType()) + "] " + obj->GetEntity()->GetName();
+    YgString label = "[" + ExplorerTypeToString(obj->GetType()) + "] " + obj->GetEntity()->GetName();
     if (Selectable(label.c_str(), &obj->m_selected, ImGuiSelectableFlags_AllowDoubleClick)) {
       m_first_time_toolbox = false;
       toolbox_selected = m_app->GetScene()->GetToolboxs()->at(x).get();

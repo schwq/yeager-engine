@@ -24,7 +24,6 @@
 #include "Engine/Editor/Camera.h"
 #include "Engine/Editor/Explorer.h"
 #include "Engine/Interface/Interface.h"
-#include "Engine/Renderer/Render.h"
 #include "Engine/Renderer/Window.h"
 #include "InputHandle.h"
 #include "Scene.h"
@@ -46,7 +45,6 @@ struct ApplicationCoreSetup {
   std::shared_ptr<EditorExplorer> m_explorer;
   std::shared_ptr<EditorCamera> m_camera;
   std::shared_ptr<Yeager::Scene> m_scene;
-  std::shared_ptr<RendererEngine> m_renderer;
 };
 
 ///  @brief Class that handles the program
@@ -65,28 +63,31 @@ class ApplicationCore {
   /// @return True if requested, false if not
   bool ShouldRender();
 
+  void Render();
+
   Interface* GetInterface();
   Input* GetInput();
   Window* GetWindow();
   EditorExplorer* GetExplorer();
   EditorCamera* GetCamera();
   Yeager::Scene* GetScene();
-  RendererEngine* GetRenderer();
 
   ApplicationMode GetMode() noexcept;
   ApplicationState GetState() noexcept;
 
   void SetMode(ApplicationMode mode) noexcept;
   void SetState(ApplicationState state) noexcept;
+  void CheckGLAD();
 
  private:
-  std::shared_ptr<Interface> m_interface = nullptr;
-  std::shared_ptr<Input> m_input = nullptr;
-  std::shared_ptr<Window> m_window = nullptr;
-  std::shared_ptr<EditorExplorer> m_explorer = nullptr;
-  std::shared_ptr<EditorCamera> m_camera = nullptr;
-  std::shared_ptr<Yeager::Scene> m_scene = nullptr;
-  std::shared_ptr<RendererEngine> m_renderer = nullptr;
+  void ManifestShaderProps(Yeager::Shader* shader, YgMatrix4 view, YgMatrix4 projection, YgVector3 viewPos);
+
+  std::shared_ptr<Interface> m_interface = YEAGER_NULLPTR;
+  std::shared_ptr<Input> m_input = YEAGER_NULLPTR;
+  std::shared_ptr<Window> m_window = YEAGER_NULLPTR;
+  std::shared_ptr<EditorExplorer> m_explorer = YEAGER_NULLPTR;
+  std::shared_ptr<EditorCamera> m_camera = YEAGER_NULLPTR;
+  std::shared_ptr<Yeager::Scene> m_scene = YEAGER_NULLPTR;
 
   ApplicationState m_state = AppRunning;
   ApplicationMode m_mode = AppLauncher;

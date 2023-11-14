@@ -3,56 +3,68 @@
 #include "Common/Common.h"
 #include "Engine/Editor/Camera.h"
 
-float Input::lastX = ygWindowWidth / 2.0f;
-float Input::lastY = ygWindowHeight / 2.0f;
-bool Input::firstMouse = true;
-Yeager::ApplicationCore* Input::m_app = nullptr;
+float Input::m_LastMouseWidth = ygWindowWidth / 2.0f;
+float Input::m_LastMouseHeight = ygWindowHeight / 2.0f;
+bool Input::m_FirstMouse = true;
+CameraCursorLastState Input::m_LastState;
+
+Yeager::ApplicationCore* Input::m_Application = nullptr;
 Input::~Input()
 {
   Yeager::Log(INFO, "Destrorying InputHandle!");
 }
 
-yg_uint Input::m_framesCount = 0;
+unsigned int Input::m_FramesCount = 0;
 Input::Input(Yeager::ApplicationCore* app)
 {
-  m_app = app;
+  m_Application = app;
   Yeager::Log(INFO, "Input created");
 }
 
 void Input::MouseCallback(GLFWwindow* window, double xpos, double ypos)
 {
-  if (m_app->GetCamera()->GetShouldMove()) {
-    m_app->GetCamera()->MouseCallback(firstMouse, lastX, lastY, xpos, ypos);
+  if (m_Application->GetCamera()->GetShouldMove()) {
+    m_Application->GetCamera()->MouseCallback(m_FirstMouse, m_LastMouseWidth, m_LastMouseHeight, xpos, ypos);
   }
 }
 
-void Input::MakeCursorStaticAppear(bool make)
+void Input::SetCursorCanDisappear(bool should) noexcept
 {
-  if (make) {
-    glfwSetInputMode(m_app->GetWindow()->getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    SetCursorCanDisappear(false);
+  m_CursorCanDisappear = should;
+  if (!should) {
+    SetCursorAppear(true);
+  }
+}
+
+void Input::SetCursorAppear(bool appear) noexcept
+{
+  m_CursorShouldAppear = appear;
+  uint64_t cursor = appear ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED;
+  glfwSetInputMode(m_Application->GetWindow()->getWindow(), GLFW_CURSOR, cursor);
+}
+
+void Input::SetCameraCursorToWindowState(bool state)
+{
+  if (state) {
+    m_CursorCanDisappear = false;
+    SetCursorAppear(true);
+    m_Application->GetCamera()->SetShouldMove(false);
   } else {
-    SetCursorCanDisappear(true);
+    m_CursorCanDisappear = true;
+    SetCursorAppear(true);
+    m_Application->GetCamera()->SetShouldMove(false);
   }
 }
 
-const void Input::SetCursorCanDisappear(bool should)
+const inline bool Input::GetKeyPressed(int key) noexcept
 {
-  m_cursor_can_disappear = should;
-  if (should) {
-    glfwSetInputMode(m_app->GetWindow()->getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-  }
-}
-
-bool Input::GetKeyPressed(int key)
-{
-  return glfwGetKey(m_app->GetWindow()->getWindow(), key) == GLFW_PRESS;
+  return glfwGetKey(m_Application->GetWindow()->getWindow(), key) == GLFW_PRESS;
 }
 
 void Input::ProcessInputRender(Window* window, float delta)
 {
-  m_framesCount++;
-  Interface* intr = m_app->GetInterface();
+  m_FramesCount++;
+  Interface* intr = m_Application->GetInterface();
   if (glfwGetKey(window->getWindow(), GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 
     if (!intr->GetExitProgramWindowOpen()) {
@@ -63,33 +75,43 @@ void Input::ProcessInputRender(Window* window, float delta)
     glfwSetWindowShouldClose(window->getWindow(), true);
   }
 
-  if (m_app->GetMode() == Yeager::AppEditor && m_app->GetCamera()->GetShouldMove()) {
+  if (m_Application->GetMode() == Yeager::AppEditor && m_Application->GetCamera()->GetShouldMove()) {
     if (GetKeyPressed(GLFW_KEY_W)) {
-      m_app->GetCamera()->UpdatePosition(CameraPosition::kForward, delta);
+      m_Application->GetCamera()->UpdatePosition(CameraPosition::kForward, delta);
     }
     if (GetKeyPressed(GLFW_KEY_D)) {
-      m_app->GetCamera()->UpdatePosition(CameraPosition::kRight, delta);
+      m_Application->GetCamera()->UpdatePosition(CameraPosition::kRight, delta);
     }
     if (GetKeyPressed(GLFW_KEY_A)) {
-      m_app->GetCamera()->UpdatePosition(CameraPosition::kLeft, delta);
+      m_Application->GetCamera()->UpdatePosition(CameraPosition::kLeft, delta);
     }
     if (GetKeyPressed(GLFW_KEY_S)) {
-      m_app->GetCamera()->UpdatePosition(CameraPosition::kBackward, delta);
+      m_Application->GetCamera()->UpdatePosition(CameraPosition::kBackward, delta);
     }
   }
-  if (m_app->GetMode() == Yeager::AppEditor) {
-    if (((glfwGetKey(window->getWindow(), GLFW_KEY_E) == GLFW_PRESS) && m_framesCount % 5 == 0) &&
-        m_cursor_can_disappear) {
-      if (m_app->GetCamera()->GetShouldMove()) {
-        m_app->GetCamera()->SetShouldMove(false);
-        firstMouse = true;
-        glfwSetInputMode(m_app->GetWindow()->getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+  if (m_Application->GetMode() == Yeager::AppEditor) {
+    if (((glfwGetKey(window->getWindow(), GLFW_KEY_E) == GLFW_PRESS) && m_FramesCount % 5 == 0) &&
+        m_CursorCanDisappear) {
+      if (m_Application->GetCamera()->GetShouldMove()) {
+        m_Application->GetCamera()->SetShouldMove(false);
+        m_FirstMouse = true;
+        SetCursorAppear(true);
       } else {
-
-        m_app->GetCamera()->SetShouldMove(true);
-
-        glfwSetInputMode(m_app->GetWindow()->getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        m_Application->GetCamera()->SetShouldMove(true);
+        SetCursorAppear(false);
       }
     }
   }
+}
+void Input::RestoreCameraCursorLastState() noexcept
+{
+  SetCursorAppear(m_LastState.CursorShouldAppear);
+  m_Application->GetCamera()->SetShouldMove(m_LastState.CameraShouldMove);
+  m_CursorCanDisappear = m_LastState.CursorCanDissapear;
+}
+void Input::WriteCameraCursorLastState() noexcept
+{
+  m_LastState.CursorShouldAppear = m_CursorShouldAppear;
+  m_LastState.CameraShouldMove = m_Application->GetCamera()->GetShouldMove();
+  m_LastState.CursorCanDissapear = m_CursorCanDisappear;
 }

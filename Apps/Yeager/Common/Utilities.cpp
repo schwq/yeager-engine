@@ -1,6 +1,8 @@
 #include "Utilities.h"
 
-yg_string RemoveSuffixUntilCharacter(yg_string expression, char characterToStop)
+Yeager::MemoryManagement Yeager::s_MemoryManagement;
+
+YgString RemoveSuffixUntilCharacter(YgString expression, char characterToStop)
 {
   bool finished = false;
   while (!finished) {
@@ -11,7 +13,7 @@ yg_string RemoveSuffixUntilCharacter(yg_string expression, char characterToStop)
   }
   return expression;
 }
-yg_string RemovePreffixUntilCharacter(yg_string expression, char characterToStop)
+YgString RemovePreffixUntilCharacter(YgString expression, char characterToStop)
 {
   bool finished = false;
   while (!finished) {
@@ -23,21 +25,37 @@ yg_string RemovePreffixUntilCharacter(yg_string expression, char characterToStop
   return expression;
 }
 
-yg_string kPath = std::filesystem::current_path().string();
+YgString kPath = std::filesystem::current_path().string();
 
 #ifdef YEAGER_SYSTEM_WINDOWS_x64
-yg_cchar kOperatingSystem = "WIN32";
+YgCchar kOperatingSystem = "WIN32";
 #elif defined(YEAGER_SYSTEM_LINUX)
 yg_cchar kOperatingSystem = "LINUX";
 #endif
-yg_cchar GetShaderPath(yg_string shader)
+YgCchar GetShaderPath(YgString shader)
 {
-  yg_string path = GetPath("Assets/shader") + YG_PS + shader;
-  yg_cchar rt = path.c_str();
+  YgString path = GetPath("Assets/shader") + YG_PS + shader;
+  YgCchar rt = path.c_str();
   return rt;
 }
 
-yg_string GetPath(yg_string path)
+void* operator new(size_t s)
+{
+  Yeager::s_MemoryManagement.m_MemoryAllocatedSize += s;
+  return malloc(s);
+}
+
+void operator delete(void* ptr, size_t s)
+{
+  Yeager::s_MemoryManagement.m_MemoryFreedSize += s;
+  free(ptr);
+}
+uint32_t Yeager::MemoryManagement::GetMemortUsage()
+{
+  return m_MemoryAllocatedSize - m_MemoryFreedSize;
+}
+
+YgString GetPath(YgString path)
 {
   if (kOperatingSystem == "LINUX") {
     return kPath + "/Apps/Yeager" + path;
@@ -46,7 +64,7 @@ yg_string GetPath(yg_string path)
     std::replace(path.begin(), path.end(), '/', '\\');
     return kPath + "\\apps\\Yeager" + path;
   } else {
-    yg_string respond = kPath + path;
+    YgString respond = kPath + path;
     VLOG_F(ERROR,
            "GetPath function and this program does not support other OS that "
            "arent Windows and Linux system! Returing: %s",
@@ -55,7 +73,7 @@ yg_string GetPath(yg_string path)
   }
 };
 
-yg_string kDefaultTexturePath = GetPath("/Assets/textures/default.jpg");
+YgString kDefaultTexturePath = GetPath("/Assets/textures/default.jpg");
 
 unsigned int ygWindowWidth = 1300;
 unsigned int ygWindowHeight = 720;

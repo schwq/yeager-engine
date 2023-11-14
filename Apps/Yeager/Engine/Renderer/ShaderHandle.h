@@ -24,38 +24,38 @@
 namespace Yeager {
 class Shader {
  public:
-  Shader(yg_cchar fragmentPath, yg_cchar vertexPath, yg_string name);
+  Shader(YgCchar fragmentPath, YgCchar vertexPath, YgString name);
   ~Shader();
 
   void UseShader();
-  void SetInt(const yg_string& name, int value);
-  void SetBool(const yg_string& name, bool value);
-  void SetFloat(const yg_string& name, float value);
-  void SetMat4(const yg_string& name, yg_mat4 value);
-  void SetVec3(const yg_string& name, yg_vec3 value);
-  void SetVec2(const yg_string& name, glm::vec2 value);
-  void SetUniform1i(const yg_string& name, int value);
-  void SetVec4(const yg_string& name, glm::vec4 value);
+  void SetInt(const YgString& name, int value);
+  void SetBool(const YgString& name, bool value);
+  void SetFloat(const YgString& name, float value);
+  void SetMat4(const YgString& name, YgMatrix4 value);
+  void SetVec3(const YgString& name, YgVector3 value);
+  void SetVec2(const YgString& name, glm::vec2 value);
+  void SetUniform1i(const YgString& name, int value);
+  void SetVec4(const YgString& name, glm::vec4 value);
 
  private:
   GLuint m_id;
-  yg_string m_name;
+  YgString m_name;
   bool m_initialize = false;
   bool m_fragment_build = false;
   bool m_vertex_build = false;
-  static yg_uint m_shader_count;
-  yg_uint m_shader_num = 0;
+  static unsigned int m_shader_count;
+  unsigned int m_shader_num = 0;
 
-  YEAGER_NODISCARD yg_uint CreateVertexGL(yg_cchar vertexPath);
-  YEAGER_NODISCARD yg_uint CreateFragmentGL(yg_cchar fragmentPath);
-  void LinkShaders(yg_uint vertexShader, yg_uint fragmentShader);
+  YEAGER_NODISCARD unsigned int CreateVertexGL(YgCchar vertexPath);
+  YEAGER_NODISCARD unsigned int CreateFragmentGL(YgCchar fragmentPath);
+  void LinkShaders(unsigned int vertexShader, unsigned int fragmentShader);
 };
 
 struct ShaderFromYaml {
   std::shared_ptr<Yeager::Shader> m_shader = nullptr;
-  yg_string m_varName;
+  YgString m_varName;
 };
 
 extern std::vector<ShaderFromYaml> ygConfigShaders;
-Yeager::Shader* ShaderFromVarName(yg_string var);
+Yeager::Shader* ShaderFromVarName(YgString var);
 }  // namespace Yeager

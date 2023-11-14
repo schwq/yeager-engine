@@ -43,7 +43,7 @@ enum AudioHandleSoundEffects {
 
 class AudioHandle : public GameEntity {
  public:
-  AudioHandle(yg_string path, yg_string name, bool looped);
+  AudioHandle(YgString path, YgString name, bool looped);
   ~AudioHandle();
 
   void SetVolume(irrklang::ik_f32 volume);
@@ -63,15 +63,16 @@ class AudioHandle : public GameEntity {
   void DisableSoundEffect(AudioHandleSoundEffects effect);
   void DisableAllSoundEffects();
   bool IsSoundEffectEnable(AudioHandleSoundEffects effect);
+  bool CheckIfSoundEffectIsSupported();
 
-  yg_string GetPath() { return m_path; }
+  YgString GetPath() { return m_path; }
 
  protected:
   irrklang::ik_u32 m_paused_play_pos;
-  irrklang::ISound* m_sound = nullptr;
-  irrklang::ISoundSource* m_sound_source = nullptr;
-  irrklang::ISoundEffectControl* m_sound_effects = nullptr;
-  yg_string m_path;
+  irrklang::ISound* m_sound = YEAGER_NULLPTR;
+  irrklang::ISoundSource* m_sound_source = YEAGER_NULLPTR;
+  irrklang::ISoundEffectControl* m_sound_effects = YEAGER_NULLPTR;
+  YgString m_path;
   bool m_looped = false;
   bool m_paused = false;
   bool m_stopped = true;
@@ -81,18 +82,18 @@ static irrklang::vec3df ygAudioListernerPos;
 static irrklang::vec3df GetListernerPos();
 extern void SetListernerPos(irrklang::vec3df pos, irrklang::vec3df lookDir, irrklang::vec3df velocity,
                             irrklang::vec3df upVec);
-extern yg_vec3 Vec3df_to_YgVec3(irrklang::vec3df vec);
-extern irrklang::vec3df YgVec3_to_Vec3df(yg_vec3 vec);
+extern YgVector3 Vec3df_to_YgVec3(irrklang::vec3df vec);
+extern irrklang::vec3df YgVec3_to_Vec3df(YgVector3 vec);
 
 class Audio3DHandle : public AudioHandle {
  public:
-  Audio3DHandle(yg_string path, yg_string name, bool looped, irrklang::vec3df position);
+  Audio3DHandle(YgString path, YgString name, bool looped, irrklang::vec3df position);
   ~Audio3DHandle();
 
   void Play();
   void Resume();
   irrklang::vec3df GetIrrklangPosition();
-  yg_vec3 GetVector3Position();
+  YgVector3 GetVector3Position();
   void SetAudioPos(irrklang::vec3df pos);
 
  private:

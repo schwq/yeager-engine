@@ -2,7 +2,7 @@
 #include "Application.h"
 using namespace Yeager;
 
-SceneType Yeager::StringToScreneType(yg_string str)
+SceneType Yeager::StringToScreneType(YgString str)
 {
   if (str == "Scene2D") {
     return Scene2D;
@@ -13,7 +13,7 @@ SceneType Yeager::StringToScreneType(yg_string str)
   }
 }
 
-SceneRenderer Yeager::StringToSceneRenderer(yg_string str)
+SceneRenderer Yeager::StringToSceneRenderer(YgString str)
 {
   if (str == "OpenGL3_3") {
     return OpenGL3_3;
@@ -24,7 +24,7 @@ SceneRenderer Yeager::StringToSceneRenderer(yg_string str)
   }
 }
 
-yg_string Yeager::SceneTypeToString(SceneType type)
+YgString Yeager::SceneTypeToString(SceneType type)
 {
   switch (type) {
     case Scene2D:
@@ -35,7 +35,7 @@ yg_string Yeager::SceneTypeToString(SceneType type)
       return "Error_Invalid_Type";
   }
 }
-yg_string Yeager::SceneRendererToString(SceneRenderer renderer)
+YgString Yeager::SceneRendererToString(SceneRenderer renderer)
 {
   switch (renderer) {
     case OpenGL3_3:
@@ -47,7 +47,7 @@ yg_string Yeager::SceneRendererToString(SceneRenderer renderer)
   }
 }
 
-Scene::Scene(yg_string name, SceneType type, SceneRenderer renderer, Yeager::ApplicationCore* app) : m_app(app)
+Scene::Scene(YgString name, SceneType type, SceneRenderer renderer, Yeager::ApplicationCore* app) : m_app(app)
 {
   m_context.m_name = name;
   m_context.m_type = type;
@@ -63,10 +63,10 @@ Scene::~Scene()
   Log(INFO, "Destroring Scene name {}", m_context.m_name);
 }
 
-inline yg_string Scene::GetSceneFilePath()
+inline YgString Scene::GetSceneFilePath()
 {
-  yg_string conf = GetPath("/Configuration/Scenes/");
-  yg_string path = conf + m_context.m_name + ".yaml";
+  YgString conf = GetPath("/Configuration/Scenes/");
+  YgString path = conf + m_context.m_name + ".yaml";
   return path;
 }
 
@@ -75,12 +75,12 @@ void Scene::Save()
   m_serial.SerializeScene(this, m_context.m_file_path);
 }
 
-void Scene::LoadEditorColorscheme(Interface* interface)
+void Scene::LoadEditorColorscheme(Interface* intr)
 {
-  interface->ApplyColorscheme(m_serial.ReadColorschemeConfig());
+  intr->ApplyColorscheme(m_serial.ReadColorschemeConfig());
 }
 
-void Scene::Load(yg_string path)
+void Scene::Load(YgString path)
 {
   m_serial.DeserializeScene(this, path);
 }

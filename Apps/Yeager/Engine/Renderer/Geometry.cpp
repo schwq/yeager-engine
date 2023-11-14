@@ -2,7 +2,7 @@
 #include "../../Application.h"
 using namespace Yeager;
 
-yg_string ShapeToString(GeometryShape shape)
+YgString ShapeToString(GeometryShape shape)
 {
   switch (shape) {
     case kCube:
@@ -49,7 +49,7 @@ std::vector<GLuint> Geometry::GenerateCubeIndices()
                              4, 0, 7, 7, 0, 3, 3, 2, 7, 7, 2, 6, 4, 5, 0, 0, 5, 1};
 }
 
-Geometry::Geometry(yg_string name, yg_vec3 color, GeometryShape shape, Yeager::ApplicationCore* app, bool is_color,
+Geometry::Geometry(YgString name, YgVector3 color, GeometryShape shape, Yeager::ApplicationCore* app, bool is_color,
                    Yeager::Texture2D* texture)
     : m_color(color),
       m_shape(shape),

@@ -4,14 +4,14 @@
 
 using namespace Yeager;
 
-yg_uint Texture2D::m_texture_count = 0;
+unsigned int Texture2D::m_TextureEngineCount = 0;
 
 Texture2D::~Texture2D()
 {
-  glDeleteTextures(1, &m_id);
+  glDeleteTextures(1, &m_OpenGL_ID);
 }
 
-yg_uint LoadTextureFromFile(yg_string path, bool flip)
+unsigned int LoadTextureFromFile(YgString path, bool flip)
 {
   stbi_set_flip_vertically_on_load(flip);
 
@@ -20,7 +20,7 @@ yg_uint LoadTextureFromFile(yg_string path, bool flip)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-  yg_uint textureID;
+  unsigned int textureID;
   glGenTextures(1, &textureID);
   glBindTexture(GL_TEXTURE_2D, textureID);
 
@@ -47,7 +47,7 @@ yg_uint LoadTextureFromFile(yg_string path, bool flip)
   return textureID;
 }
 
-bool LoadTextureFromFile(yg_cchar filename, GLuint* out_texture, int* out_width, int* out_height)
+bool LoadTextureFromFile(YgCchar filename, GLuint* out_texture, int* out_width, int* out_height)
 {
   // Load from file
   int image_width = 0;
@@ -85,8 +85,8 @@ bool LoadTextureFromFile(yg_cchar filename, GLuint* out_texture, int* out_width,
 
 void Texture2D::GenerateTexture()
 {
-  glGenTextures(1, &m_id);
-  glBindTexture(GL_TEXTURE_2D, m_id);
+  glGenTextures(1, &m_OpenGL_ID);
+  glBindTexture(GL_TEXTURE_2D, m_OpenGL_ID);
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -94,11 +94,11 @@ void Texture2D::GenerateTexture()
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
-void Texture2D::ReadDataToTexture(yg_cchar path)
+void Texture2D::ReadDataToTexture(YgCchar path)
 {
-  int width, height, channels;
-  yg_uint format;
-  unsigned char* data = stbi_load(path, &width, &height, &channels, 0);
+  int channels;
+  unsigned int format;
+  unsigned char* data = stbi_load(path, &TextureWidth, &TextureHeight, &channels, 0);
 
   if (data) {
     if (channels == 1) {
@@ -109,9 +109,9 @@ void Texture2D::ReadDataToTexture(yg_cchar path)
       format = GL_RGBA;
     }
 
-    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, format, TextureWidth, TextureHeight, 0, format, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
-    Yeager::Log(INFO, "Create texture: {}, ID: {}", m_name.c_str(), m_texture_num);
+    Yeager::Log(INFO, "Create texture: {}, ID: {}", m_Name.c_str(), m_TextureNumber);
     stbi_image_free(data);
   } else {
     Yeager::Log(ERROR, "Cannot read data from texture file {}", path);
@@ -120,12 +120,12 @@ void Texture2D::ReadDataToTexture(yg_cchar path)
   glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-Texture2D::Texture2D(yg_cchar texturePath, yg_string name) : m_name(name)
+Texture2D::Texture2D(YgCchar texturePath, YgString name) : m_Name(name)
 {
-  m_texture_num = m_texture_count++;
+  m_TextureNumber = m_TextureEngineCount++;
 
   if (name == "DEFAULT") {
-    name += std::to_string(m_texture_count);
+    name += std::to_string(m_TextureEngineCount);
   }
 
   stbi_set_flip_vertically_on_load(false);
@@ -139,7 +139,7 @@ Skybox::~Skybox()
   glDeleteTextures(1, &m_id);
 }
 
-Skybox::Skybox(std::vector<yg_string> faces, yg_string name) : m_name(name)
+Skybox::Skybox(std::vector<YgString> faces, YgString name) : m_name(name)
 {
   glGenVertexArrays(1, &skyboxVAO);
   glGenBuffers(1, &skyboxVBO);
@@ -166,7 +166,7 @@ void Skybox::GenerateTexture()
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 }
 
-void Skybox::ReadDataToTexture(std::vector<yg_string> faces)
+void Skybox::ReadDataToTexture(std::vector<YgString> faces)
 {
   int width, height, channels;
   for (unsigned int i = 0; i < faces.size(); i++) {
@@ -185,7 +185,7 @@ void Skybox::ReadDataToTexture(std::vector<yg_string> faces)
   glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
-void Skybox::Draw(Yeager::Shader* shader, yg_mat4 view, yg_mat4 projection)
+void Skybox::Draw(Yeager::Shader* shader, YgMatrix4 view, YgMatrix4 projection)
 {
   glDepthFunc(GL_LEQUAL);
   shader->UseShader();

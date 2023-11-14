@@ -47,7 +47,7 @@ enum class ExplorerObjectType {
   kNoChange
 };
 
-extern yg_string ExplorerTypeToString(ExplorerObjectType type);
+extern YgString ExplorerTypeToString(ExplorerObjectType type);
 namespace Yeager {
 class ToolBoxObject {
  public:

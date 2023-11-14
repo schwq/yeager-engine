@@ -43,7 +43,7 @@ class EditorExplorer {
   void AddGeometryObjectWindow();
   void AddImportedObjectWindow();
   void AddAudioWindow();
-  void WarningExplorer(yg_string msg);
+  void WarningExplorer(YgString msg);
   bool m_first_time_toolbox = true;
   bool m_add_imported_object_window_open = false;
   bool m_imported_object_flip_tex = true;
@@ -54,7 +54,7 @@ class EditorExplorer {
   bool m_add_geometry_shape_cube = false;
   bool m_looped_audio = false;
   bool m_add_audio_is_3d = false;
-  yg_string m_new_object_name;
-  yg_string m_new_object_path;
-  yg_string m_new_object_texture_path;
+  YgString m_new_object_name;
+  YgString m_new_object_path;
+  YgString m_new_object_texture_path;
 };

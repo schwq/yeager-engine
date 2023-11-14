@@ -36,31 +36,34 @@ class ApplicationCore;
 namespace Yeager {
 enum SceneType { Scene2D, Scene3D, SceneError };
 enum SceneRenderer { OpenGL3_3, OpenGL4, RendererError };
-extern yg_string SceneTypeToString(SceneType type);
-extern yg_string SceneRendererToString(SceneRenderer renderer);
-extern SceneType StringToScreneType(yg_string str);
-extern SceneRenderer StringToSceneRenderer(yg_string str);
+extern YgString SceneTypeToString(SceneType type);
+extern YgString SceneRendererToString(SceneRenderer renderer);
+extern SceneType StringToScreneType(YgString str);
+extern SceneRenderer StringToSceneRenderer(YgString str);
 
 struct SceneContext {
-  yg_string m_name;
-  yg_string m_file_path;
+  YgString m_name;
+  YgString m_file_path;
   SceneType m_type;
   SceneRenderer m_renderer;
 };
 
 class Scene {
  public:
-  Scene(yg_string name, SceneType type, SceneRenderer renderer, Yeager::ApplicationCore* app);
+  Scene(YgString name, SceneType type, SceneRenderer renderer, Yeager::ApplicationCore* app);
+  //Scene(SceneContext context, Yeager::ApplicationCore* app);
   ~Scene();
 
   void Save();
-  void Load(yg_string path);
-  void LoadEditorColorscheme(Interface* interface);
+  void Load(YgString path);
+  void LoadEditorColorscheme(Interface* intr);
 
   SceneContext GetContext() { return m_context; }
   Serialization GetSerial() { return m_serial; }
   void SetContextType(SceneType type);
   void SetContextRenderer(SceneRenderer renderer);
+
+  std::thread SavedObjectsThread;
 
   std::vector<std::shared_ptr<Yeager::Audio3DHandle>>* GetAudios3D();
   std::vector<std::shared_ptr<Yeager::AudioHandle>>* GetAudios();
@@ -79,6 +82,6 @@ class Scene {
   std::vector<std::shared_ptr<ImportedObject>> m_imported_objs;
   std::vector<std::shared_ptr<ToolBoxObject>> m_toolboxs;
 
-  inline yg_string GetSceneFilePath();
+  inline YgString GetSceneFilePath();
 };
 }  // namespace Yeager

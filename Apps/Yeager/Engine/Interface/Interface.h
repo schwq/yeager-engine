@@ -79,15 +79,15 @@ struct ColorschemeConfig {
 /// @brief  its also have two booleans, active for holding just one warning at the time, and first log
 /// @brief  so it doesnt keep logging the same thing
 struct InterfaceWarningWindow {
-  yg_string warning;
-  yg_uint size_x, size_y;
-  bool active = false;
-  bool first_log_warning = true;
+  YgString Warning;
+  unsigned int SizeWidth, SizeHeight;
+  bool Active = false;
+  bool FirstLogWarning = true;
 };
 
 /// @brief Struct representing a Imgui Button, used for logging and debugging the pressed buttons
 struct InterfaceButton {
-  InterfaceButton(yg_string name, yg_string text) : m_text(text), m_name(name){};
+  InterfaceButton(YgString name, YgString text) : Text(text), Name(name){};
   /// @brief Centered a button in the ImGui Window
   /// @return True if the button have been clicked
   bool CenteredButton();
@@ -97,19 +97,35 @@ struct InterfaceButton {
   /// @brief Calculate the button label text width
   /// @return The text width in float notation
   float TextWidth();
-  yg_string m_text;
-  yg_string m_name;
+  YgString Text;
+  YgString Name;
 };
 
 /// @brief  Holds the Imgui Image, and makes quick loading, without having to make the same boring process, over and over
 struct InterfaceImage {
-  InterfaceImage(yg_cchar path);
+  InterfaceImage(YgCchar path);
+  InterfaceImage() {}
   void LoadInterfaceImage();
   void LoadInterfaceCenteredImage();
-  int m_image_width = 0;
-  int m_image_height = 0;
-  GLuint m_image_texture = 0;
+  void LoadObjectTextureImage(Yeager::Texture2D* texture);
+  int ImageWidth = 0;
+  int ImageHeight = 0;
+  GLuint ImageTexture = 0;
 };
+
+struct InterfaceControl {
+  bool Initialize = false;
+  bool DontMoveWindowsEditor = true;
+  bool CommentWindowIsOpen = false;
+  bool ExitProgramWindowIsOpen = false;
+  bool UserExitProgram = false;
+  bool LauncherDone = false;
+};
+
+struct InterfaceFonts {
+  float PixelSize = 14.0f;
+};
+
 /// @brief Class that holds the interface management, use ImGui as library, the current program must be running just one instance of this class
 /// @attention In the future, we need to write a self-custom GUI library in C for this Engine
 /// @attention so we can have more control over the drawing methods and increase performance
@@ -123,7 +139,7 @@ class Interface {
 
   /// @brief Return a boolean representing if the program have been initialize with success
   /// @return True if initialize, false if not
-  bool getInitStatus() { return m_initialize; }
+  bool getInitStatus() { return m_Control.Initialize; }
 
   /// @brief The main function to be called, it check switch current mode the program is at, and pass to the correct function for the GUI rendering
   void RenderUI();
@@ -131,54 +147,54 @@ class Interface {
   /// @brief ImGui have a function that let the user choice the next window position, this function does the same
   /// @param size_x Window width
   /// @param size_y Window height
-  void CenteredWindow(yg_uint size_x, yg_uint size_y);
+  void CenteredWindow(unsigned int size_x, unsigned int size_y);
   /// @brief Displays the current warning window stored in the Interface class
   void DisplayWarningWindow();
   /// @brief  Add a warning window to the Interface class, and waits to be display when the DisplayWarningWindow is called
-  void AddWarningWindow(const yg_string& warning, yg_uint size_x = 400, yg_uint size_y = 100);
+  void AddWarningWindow(const YgString& warning, unsigned int size_x = 400, unsigned int size_y = 100);
   /// @brief Self explain, apply the colorscheme given to the interface UI by calling LoadColorscheme
   /// @param colorscheme The colorscheme to be apply
   void ApplyColorscheme(ColorschemeConfig colorscheme)
   {
-    m_colorscheme = colorscheme;
+    m_Colorscheme = colorscheme;
     LoadColorscheme();
   }
   /// @brief Set a boolean value to the current interface, representing if the Exit Program window need to the rendered to the screen
   /// @param exit Boolean representing if the window should render
-  void SetExitProgramWindowOpen(bool exit) { m_exit_program_window_open = exit; }
+  void SetExitProgramWindowOpen(bool exit) { m_Control.ExitProgramWindowIsOpen = exit; }
   /// @brief Get a boolean value representing if the current interface have the Exit Program window set to be rendered or already been render
   /// @return True if the window is set to render, false if not
-  bool GetExitProgramWindowOpen() { return m_exit_program_window_open; }
+  bool GetExitProgramWindowOpen() { return m_Control.ExitProgramWindowIsOpen; }
   /// @brief In the Exit Program window, the user can choice to cancel the operation or exit, this function return a boolean representing if the user choice to exit the program or not
   /// @return True if the user set to Exit the Program, false if not
-  bool GetUserChoiceExitProgram() { return m_user_exit_program; }
+  bool GetUserChoiceExitProgram() { return m_Control.UserExitProgram; }
   /// @brief Display the Exit Program Window
   /// @return The user choice to exit the program or not
   bool WindowExitProgram();
 
+  bool GetLauncherDone() { return m_Control.LauncherDone; }
+
  private:
-  bool m_initialize = false;
-  bool m_dont_move_windows_editor = false;
-  bool m_comment_window_open = false;
-  bool m_exit_program_window_open = false;
-  bool m_user_exit_program = false;
+  InterfaceControl m_Control;
+  InterfaceFonts m_Fonts;
+  static unsigned int m_Frames;
 
-  float size_pixels = 14.0f;
-  static yg_uint m_frames;
-  ImVec2 m_menu_bar_size = ImVec2(0, 0);
+  Yeager::ApplicationCore* m_Application;
+  ColorschemeConfig m_Colorscheme;
+  YgString m_Comment;
+  InterfaceWarningWindow m_CurrentWarning;
+  Yeager::InterfaceWindow m_ConsoleWindow;
+  Yeager::InterfaceWindow m_ToolboxWindow;
+  Yeager::InterfaceWindow m_ExplorerWindow;
+  Yeager::InterfaceWindow m_DebuggerWindow;
 
-  Yeager::ApplicationCore* m_app;
-  ColorschemeConfig m_colorscheme;
-  yg_string comment;
-  InterfaceWarningWindow m_current_warning;
-  Yeager::InterfaceWindow m_console_window;
-  Yeager::InterfaceWindow m_toolbox_window;
   void NewProjectWindow();
 
   void LaunchImGui(Window* window);
   void DrawExplorer();
   void DrawToolbox();
   void DrawEditorMenu();
+  void DrawConsole();
 
   void RenderAwait();
   void RenderLauncher();
@@ -188,8 +204,8 @@ class Interface {
 
   void logButton(InterfaceButton button);
   void LoadColorscheme();
-  void CenteredText(yg_string text);
+  void CenteredText(YgString text);
   void AlignForWidth(float width, float alignment = 0.5f);
-  void CreateSpaceX(yg_uint count);
+  void CreateSpaceX(unsigned int count);
   void RenderDebugger();
 };

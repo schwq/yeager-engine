@@ -15,7 +15,7 @@
 //
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+/*
 #pragma once
 
 #include "../../Common/Common.h"
@@ -35,7 +35,9 @@ class Yeager::GameEntity;
 namespace Yeager {
 class VideoPlayer : public GameEntity {
  public:
-  VideoPlayer(const yg_string& name, const yg_string& video_path);
+  VideoPlayer(const 
+  
+  & name, const YgString& video_path);
   ~VideoPlayer();
 
   void Play();
@@ -54,6 +56,7 @@ class VideoPlayer : public GameEntity {
   AVCodecParameters* m_codec_par = nullptr;
   AVFrame* m_frame = nullptr;
   AVPacket* m_packet = nullptr;
-  const yg_string m_video_path;
+  const YgString m_video_path;
 };
 }  // namespace Yeager
+*/

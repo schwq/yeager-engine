@@ -21,24 +21,18 @@
 #include "../../Common/LogEngine.h"
 #include "../../Common/Utilities.h"
 
-static void glfwErrorCallback(int error, yg_cchar description)
-{
-  VLOG_F(ERROR, description);
-}
-
 class Window {
  public:
-  Window(yg_uint window_x, yg_uint window_y, GLFWcursorposfun cursor);
+  Window(unsigned int window_x, unsigned int window_y, YgString title, GLFWcursorposfun cursor);
   ~Window();
+
   YEAGER_NODISCARD GLFWwindow* getWindow() { return m_window; }
   static void FramebufferSizeCallback(GLFWwindow* window, int width, int height);
-  static void WindowResizeCallback(GLFWwindow* window, int width, int height);
-  static void HandleError(int code, const char* description);
+  static void HandleError(int code, YgCchar description);
   void GetWindowSize(int* width, int* height);
+  bool GenerateWindow(unsigned window_x, unsigned int window_y, YgString title);
 
  private:
   GLFWwindow* m_window = nullptr;
-  GLFWmonitor* m_primary_monitor = nullptr;
-  const GLFWvidmode* m_vid_mode;
-  yg_uint m_window_monitor_x = 0, m_window_monitor_y = 0;
+  unsigned int m_window_monitor_x = 0, m_window_monitor_y = 0;
 };

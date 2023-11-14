@@ -5,7 +5,7 @@ using namespace Yeager;
 
 std::vector<std::shared_ptr<Yeager::ToolBoxObject>> m_toolboxs;
 
-yg_string ExplorerTypeToString(ExplorerObjectType type)
+YgString ExplorerTypeToString(ExplorerObjectType type)
 {
   switch (type) {
     case ExplorerObjectType::kShapes:
@@ -73,7 +73,7 @@ void ToolBoxObject::DrawObject()
         InputFloat("Pos Y", &trans->position.y);
         InputFloat("Pos Z", &trans->position.z);
         if (Button("Reset Position")) {
-          trans->position = yg_vec3(0.0f);
+          trans->position = YgVector3(0.0f);
         }
 
         Text("Rotation");
@@ -139,9 +139,9 @@ void ToolBoxObject::DrawObject()
         SliderFloat("Volume", &m_sound_volume, 0.0f, 1.0f);
         m_audio->SetVolume(m_sound_volume);
 
-        yg_uint time_reimander = (m_audio->GetLenght() - m_audio->GetSoundPos()) / 1000;
-        yg_uint seconds = time_reimander % 60;
-        yg_uint minutes = time_reimander / 60;
+        unsigned int time_reimander = (m_audio->GetLenght() - m_audio->GetSoundPos()) / 1000;
+        unsigned int seconds = time_reimander % 60;
+        unsigned int minutes = time_reimander / 60;
         if (seconds < 10) {
           Text("Time reimander: %u:0%u", minutes, seconds);
         } else {

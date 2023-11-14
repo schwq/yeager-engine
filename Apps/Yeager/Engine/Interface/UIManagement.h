@@ -24,9 +24,9 @@
 #include "IconsFontAwesome6.h"
 
 // Simple way to define ImGuiWindowFlags without having to repeat
-#define kWindowStatic ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove
-#define kWindowMoveable ImGuiWindowFlags_None
-
+#define kWindowStatic \
+  ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize
+#define kWindowMoveable ImGuiWindowFlags_AlwaysAutoResize
 namespace Yeager {
 
 enum class WindowRelativePos {
@@ -54,18 +54,27 @@ enum EYGWindowRule {
   EWindowSameSizeParent,
   EWindowSameWidthParent,
   EWindowSameHeightParent,
-  EWindowRoundingCorner
+  EWindowRoundingCorner,
+  EWindowKeepBottomOnMiddle
 };
 
 struct WindowsRulesContext {
-  bool fullscreen = false;
-  bool follow_above = false;
-  bool follow_under = false;
-  bool same_size_parent = false;
-  bool same_width_parent = false;
-  bool same_height_parent = false;
-  bool rounding_corner = false;
+  bool Fullscreen = false;
+  bool FollowAbove = false;
+  bool FollowUnder = false;
+  bool SameSizeParent = false;
+  bool SameWidthParent = false;
+  bool SameHeightParent = false;
+  bool RoundingCorner = false;
+  bool KeepBottomOnMiddle = false;
 };
+
+struct WindowMenuBar {
+  bool HasMenuBar = true;
+  ImVec2 MenuBarSize = ImVec2(0.0f, 0.0f);
+};
+
+extern WindowMenuBar EngineEditorMenuBar;
 
 class InterfaceWindow {
  public:
@@ -75,7 +84,7 @@ class InterfaceWindow {
   /// @param parent_window The pointer to the parent window
   /// @param parent_relative_pos You can change the position the children window have from the parent window, like some space between them
   /// @param relative_pos Where the children window will appear in relation to the parent window (above the parent, under, left, and right)
-  InterfaceWindow(yg_string title, ImVec2 size, InterfaceWindow* parent_window,
+  InterfaceWindow(YgString title, ImVec2 size, InterfaceWindow* parent_window,
                   ImVec2 parent_relative_pos = ImVec2(0, 0), WindowRelativePos relative_pos = WindowRelativePos::LEFT);
   /// @brief Constructor for a ImGui interface window, this constructor is for a parent window (root), that will have multiple children following it
   /// @param title The window title to be display in the menu
@@ -83,12 +92,12 @@ class InterfaceWindow {
   /// @param position The window position relative to the screen (GLFW window)
   /// @param follow_glfw_window Boolean if set to true, went the user resize the GLFW window, the ImGui window will follow to stay at the place and dont dissapear or stay in the middle of the screen
   /// @param glfw_relative_pos A position enum that indicate the relative position to the glfw that the root window will follow
-  InterfaceWindow(yg_string title, ImVec2 size, ImVec2 position, bool follow_glfw_window = true,
+  InterfaceWindow(YgString title, ImVec2 size, ImVec2 position, bool follow_glfw_window = true,
                   WindowRelativePos glfw_relative_pos = WindowRelativePos::RIGHT);
   ~InterfaceWindow();
   InterfaceWindow() {}
 
-  void Begin();
+  void Begin(ImGuiWindowFlags flags = 0);
   void End();
 
   bool GetIsRoot();
@@ -97,39 +106,37 @@ class InterfaceWindow {
   /// @param x The x position of the element
   /// @param y The y position
   /// @return True if collision have been detected, false if not
-  bool GetCollision(yg_uint x, yg_uint y);
+  bool GetCollision(unsigned int x, unsigned int y);
   InterfaceWindow* GetParent();
   ImVec2 GetParentRelativePos();
   WindowRelativePos GetRelativePos();
   ImVec2 GetSize();
   ImVec2 GetScreenPos();
-  void SetMenuBarSize(ImVec2 size);
   void SetSize(ImVec2 size);
   void SetPos(ImVec2 pos);
   void SetRule(EYGWindowRule rule, bool value);
   bool GetRule(EYGWindowRule rule);
 
  private:
+  void CheckIfOffWindow();
   void CalcScreenPos();
   /// @brief Some rules must be processed before the window calculation screen is called
   void ProcessPreRules();
   /// @brief Some rules must be processed after the window calculation screen is called
   void ProcessPosRules();
 
-  bool m_root_window = false;
-  bool m_follow_glfw_window = true;
-  yg_string m_title = "default";
-  InterfaceWindow* m_parent_window = nullptr;
-  WindowRelativePos m_relative_pos;
-
-  WindowRelativePos m_glfw_relative_pos;
-  ImVec2 m_parent_relative_pos;
-  ImVec2 m_menu_bar_size = ImVec2(0, 0);
-  ImVec2 m_size = ImVec2(100, 100);
-  ImVec2 m_screen_position = ImVec2(0.0f, 0.0f);
-  ImVec2 temp_resize = ImVec2(0, 0);
-  WindowsRulesContext m_rules;
+  bool m_RootWindow = false;
+  bool m_FollowGlfwWindow = true;
+  YgString m_Title = "default";
+  InterfaceWindow* m_ParentWindow = YEAGER_NULLPTR;
+  WindowRelativePos m_RelativePosition;
+  WindowRelativePos m_GlfwRelativePosition;
+  ImVec2 m_ParentRelativePosition;
+  ImVec2 m_Size = ImVec2(100, 100);
+  ImVec2 m_ScreenPosition = ImVec2(0.0f, 0.0f);
+  ImVec2 m_TempSize = ImVec2(0, 0);
+  WindowsRulesContext m_WindowRules;
 };
 }  // namespace Yeager
 
-static inline void StringToWindowWidth(yg_string str, yg_uint window_x, yg_uint window_y);
+static inline void StringToWindowWidth(YgString str, unsigned int window_x, unsigned int window_y);

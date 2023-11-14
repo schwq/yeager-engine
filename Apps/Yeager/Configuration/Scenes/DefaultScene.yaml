@@ -1,28 +1,28 @@
+Operating System: Windows_x64
 Scene: DefaultScene
 Renderer: OpenGL3_3
 SceneType: Scene3D
 SceneEntities:
   - Entity: 0
-    Name: DASDA
+    Name: SADAS
     Type: AudioHandle
-    Path: /home/schwz/projects/yeager-engine/Apps/Yeager/Assets/sound/pizza.wav
+    Path: C:\Users\schwq\OneDrive\Documentos\GitHub\yeager-engine\Apps\Yeager\Assets\sound\mac.wav
   - Entity: 1
-    Name: DASD
-    Type: Audio3DHandle
-    Path: /home/schwz/projects/yeager-engine/Apps/Yeager/Assets/sound/mac.wav
-    Position: [0, 0, 0]
+    Name: SSSSS
+    Type: AudioHandle
+    Path: C:\Users\schwq\OneDrive\Documentos\GitHub\yeager-engine\Apps\Yeager\Assets\sound\aot01.wav
   - Entity: 2
-    Name: AA
+    Name: DASDA
     Type: ImportedObject
-    Path: /home/schwz/projects/yeager-engine/Apps/Yeager/Assets/imported_models/backpack/backpack.obj
-    Position: [0, -6.72001553, 0]
-    Rotation: [147.982788, 295.965576, 221.974182]
+    Path: C:\Users\schwq\OneDrive\Documentos\GitHub\yeager-engine\Apps\Yeager\Assets\Imported_Models\backpack\backpack.obj
+    Position: [0, -16.3499603, 0]
+    Rotation: [16582.6152, 33165.2305, 24873.9219]
     Scale: [1, 1, 1]
     TexturesLoaded: 2
     Textures:
       Name: texture_diffuse
-      Path: /home/schwz/projects/yeager-engine/Apps/Yeager/Assets/imported_models/backpack/diffuse.jpg
+      Path: C:\Users\schwq\OneDrive\Documentos\GitHub\yeager-engine\Apps\Yeager\Assets\Imported_Models\backpack\diffuse.jpg
       ID: 4
       Name: texture_specular
-      Path: /home/schwz/projects/yeager-engine/Apps/Yeager/Assets/imported_models/backpack/specular.jpg
+      Path: C:\Users\schwq\OneDrive\Documentos\GitHub\yeager-engine\Apps\Yeager\Assets\Imported_Models\backpack\specular.jpg
       ID: 5

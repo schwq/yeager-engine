@@ -25,6 +25,16 @@
 namespace Yeager {
 class ApplicationCore;
 }
+
+/// @brief Stores the last state of the camera and cursor before some modification
+struct CameraCursorLastState {
+  bool CursorShouldAppear = false;
+  bool CameraShouldMove = false;
+  bool CursorCanDissapear = false;
+  const inline bool CursorWasDissapearing() noexcept { return CursorCanDissapear; }
+  const inline bool WasMoving() noexcept { return CursorShouldAppear && CameraShouldMove; }
+};
+
 /// @brief Class that handles all keyboard and mouse inputs and process them into the respective requests
 class Input {
  public:
@@ -46,25 +56,32 @@ class Input {
 
   /// @brief Sets if the cursor can disappear in the current state, like when moving around the settings windows, the cursor should not disappear
   /// @param should True if the mouse can disappear, false if not
-  const void SetCursorCanDisappear(bool should);
+  void SetCursorCanDisappear(bool should) noexcept;
+  void SetCursorAppear(bool appear) noexcept;
+
+  /// @brief When a window popup in the engine editor, we dont want the camera moving around, and the cursor not appearing, so this function is set to true
+  ///  when the window is showing, and false when is closed
+  void SetCameraCursorToWindowState(bool state);
 
   /// @brief Returns a boolean representing if the GLFW_KEY (key) have been pressed
   /// @param key The GLFW macro representing the key, something like GLFW_KEY_X (heres X is the key)
   /// @return True if the key have been pressed, false if not
-  bool GetKeyPressed(int key);
+  const inline bool GetKeyPressed(int key) noexcept;
 
-  /// @brief Went set to true, the cursor is forced to appear, and does dissapear until the function is set to false after
-  /// @param make True if the cursor should appear, false if not
-  void MakeCursorStaticAppear(bool make);
+  void RestoreCameraCursorLastState() noexcept;
+
+  void WriteCameraCursorLastState() noexcept;
 
  private:
-  static Yeager::ApplicationCore* m_app;
+  static CameraCursorLastState m_LastState;
+  static Yeager::ApplicationCore* m_Application;
   /// @brief The last y mouse position
-  static float lastY;
+  static float m_LastMouseHeight;
   /// @brief The last x mouse position
-  static float lastX;
+  static float m_LastMouseWidth;
   /// @brief  Used for handling the first time the mouse is called, and the camera makes a quickly weird movement, kinda annoying
-  static bool firstMouse;
-  static yg_uint m_framesCount;
-  bool m_cursor_can_disappear = true;
+  static bool m_FirstMouse;
+  static unsigned int m_FramesCount;
+  bool m_CursorCanDisappear = true;
+  bool m_CursorShouldAppear = true;
 };

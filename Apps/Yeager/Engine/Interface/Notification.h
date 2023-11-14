@@ -26,23 +26,25 @@
 namespace Yeager {
 
 struct NotificationBody {
-  yg_string message;
-  yg_string title;
+  YgString message;
+  YgString title;
   ImVec4 text_color;
-  yg_string icon;
+  YgString icon;
 };
 
 class NotificationBox {
  public:
-  NotificationBox(yg_string title, yg_string message, ImVec4 text_color = IMGUI_WHITE_COMMON_COLOR,
-                  yg_string icon = ICON_FA_NOTE_STICKY, yg_uint time_appearing = 15);
+  NotificationBox(YgString title, YgString message, ImVec4 text_color = IMGUI_WHITE_COMMON_COLOR,
+                  YgString icon = ICON_FA_NOTE_STICKY,
+
+                  unsigned int time_appearing = 15);
   ~NotificationBox();
 
-  void Appear(yg_uint size_x, yg_uint size_y, yg_uint pos_x, yg_uint pos_y);
+  void Appear(unsigned int size_x, unsigned int size_y, unsigned int pos_x, unsigned int pos_y);
 
  private:
   NotificationBody m_body;
-  yg_uint m_time = 15;
+  unsigned int m_time = 15;
 };
 
 class NotificationEngine final {

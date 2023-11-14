@@ -1,7 +1,9 @@
 #include "VideoPlayer.h"
+/*
 using namespace Yeager;
 
-VideoPlayer::VideoPlayer(const yg_string& name, const yg_string& video_path)
+VideoPlayer::VideoPlayer(const 
+& name, const YgString& video_path)
     : GameEntity(name), m_video_path(video_path)
 {
 
@@ -16,9 +18,9 @@ VideoPlayer::VideoPlayer(const yg_string& name, const yg_string& video_path)
   }
 
   int video_stream_idx = -1;
-  for (yg_uint x = 0; x < m_format_ctx->nb_streams; x++) {
+  for (unsigned int  x = 0; x < m_format_ctx->nb_streams; x++) {
     if (m_format_ctx->streams[x]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-      video_stream_idx = x;
+      video_stream_idx = x;tion 
       break;
     }
   }
@@ -57,3 +59,4 @@ Yeager::Texture2D* VideoPlayer::GetGLTexture()
   return nullptr;
 }
 bool VideoPlayer::ReadFrame() {}
+*/

@@ -18,14 +18,13 @@
 
 #pragma once
 
-// Operating system detection
-#include "SystemDetect.h"
-
 #include <cstddef>
 #include <cstdint>
 #if !defined(__cplusplus)
 #error C++ needed to compile project!.
 #endif
+
+#include "SystemDetect.h"
 
 // Version is written as (major version * 100 + minor version)
 #define YEAGER_VERSION 100
@@ -86,6 +85,9 @@
   }
 #define YEAGER_NULL_LITERAL "NULL"
 
+#define YEAGER_NULLPTR nullptr
+#define YEAGER_NULLPTR_T nullptr_t
+
 #include <math.h>
 #include <string.h>
 #include <algorithm>
@@ -99,9 +101,6 @@
 #include <thread>
 #include <vector>
 
-#if defined(_WIN32)
-#include <Windows.h>
-#endif
 // clang-format off
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -124,26 +123,17 @@
 
 #include <irrKlang/irrKlang.h>
 
-typedef unsigned int yg_uint;
-typedef const char* yg_cchar;
-typedef uint64_t yg_u64;
-typedef uint32_t yg_u32;
-typedef uint16_t yg_u16;
-typedef uint8_t yg_u8;
-typedef int64_t yg_i64;
-typedef int32_t yg_i32;
-typedef int16_t yg_i16;
-typedef int8_t yg_i8;
-typedef std::string yg_string;
-typedef glm::mat4 yg_mat4;
-typedef glm::mat3 yg_mat3;
-typedef glm::vec2 yg_vec2;
-typedef glm::vec3 yg_vec3;
+typedef const char* YgCchar;
+typedef std::string YgString;
+typedef glm::mat4 YgMatrix4;
+typedef glm::mat3 YgMatrix3;
+typedef glm::vec2 YgVector2;
+typedef glm::vec3 YgVector3;
 
 // PS means Path separator, used in getting path from files and folders
-#if defined(_WIN32)
+#if defined(YEAGER_SYSTEM_WINDOWS_x64)
 #define YG_PS '\\'
-#elif defined(__linux__)
+#elif defined(YEAGER_SYSTEM_LINUX)
 #define YG_PS '/'
 #endif
 

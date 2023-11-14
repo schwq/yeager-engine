@@ -20,12 +20,24 @@
 
 #include "Common.h"
 
-extern yg_uint ygWindowWidth;
-extern yg_uint ygWindowHeight;
-extern yg_cchar kOperatingSystem;
-extern yg_string kDefaultTexturePath;
-extern yg_string GetPath(yg_string path);
-extern yg_cchar GetShaderPath(yg_string shader);
+extern unsigned int ygWindowWidth;
+extern unsigned int ygWindowHeight;
+extern YgCchar kOperatingSystem;
+extern YgString kDefaultTexturePath;
+extern YgString GetPath(YgString path);
+extern YgCchar GetShaderPath(YgString shader);
 
-extern yg_string RemoveSuffixUntilCharacter(yg_string expression, char characterToStop);
-extern yg_string RemovePreffixUntilCharacter(yg_string expression, char characterToStop);
+namespace Yeager {
+struct MemoryManagement {
+  uint32_t m_MemoryAllocatedSize = 0;
+  uint32_t m_MemoryFreedSize = 0;
+  uint32_t GetMemortUsage();
+};
+extern MemoryManagement s_MemoryManagement;
+}  // namespace Yeager
+
+extern void* operator new(size_t s);
+extern void operator delete(void* ptr, size_t s);
+
+extern YgString RemoveSuffixUntilCharacter(YgString expression, char characterToStop);
+extern YgString RemovePreffixUntilCharacter(YgString expression, char characterToStop);

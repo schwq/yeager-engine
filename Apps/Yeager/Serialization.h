@@ -32,8 +32,8 @@ class ApplicationCore;
 
 namespace YAML {
 template <>
-struct convert<yg_vec3> {
-  static Node encode(const yg_vec3& rhs)
+struct convert<YgVector3> {
+  static Node encode(const YgVector3& rhs)
   {
     Node node;
     node.push_back(rhs.x);
@@ -42,7 +42,7 @@ struct convert<yg_vec3> {
     return node;
   }
 
-  static bool decode(const Node& node, yg_vec3& rhs)
+  static bool decode(const Node& node, YgVector3& rhs)
   {
     if (!node.IsSequence() || node.size() != 3) {
       return false;
@@ -53,15 +53,37 @@ struct convert<yg_vec3> {
     return true;
   }
 };
+
+template <>
+struct convert<ImVec4> {
+  static Node encode(const ImVec4& rhs)
+  {
+    Node node;
+    node.push_back(rhs.x);
+    node.push_back(rhs.y);
+    node.push_back(rhs.z);
+    node.push_back(rhs.w);
+    return node;
+  }
+
+  static bool decode(const Node& node, ImVec4& rhs)
+  {
+    if (!node.IsSequence() || node.size() != 4) {
+      return false;
+    }
+    rhs.x = node[0].as<float>();
+    rhs.y = node[1].as<float>();
+    rhs.z = node[2].as<float>();
+    rhs.w = node[3].as<float>();
+    return true;
+  }
+};
 }  // namespace YAML
+
+extern YAML::Emitter& operator<<(YAML::Emitter& out, const YgVector3& vector);
 
 namespace Yeager {
 class Scene;
-}
-
-namespace Yeager {
-
-extern YAML::Emitter& operator<<(YAML::Emitter& out, const yg_vec3& vector);
 
 class Serialization {
  public:
@@ -69,21 +91,22 @@ class Serialization {
   Serialization() {}
   ~Serialization(){YEAGER_NOT_IMPLEMENTED("~Serialization")};
   ColorschemeConfig ReadColorschemeConfig();
-  void ReadSceneShadersConfig(yg_string path);
-
-  void SerializeScene(Yeager::Scene* scene, yg_string path);
-  void DeserializeScene(Yeager::Scene* scene, yg_string path);
-
-  void ReadConf(yg_string path){YEAGER_NOT_IMPLEMENTED("ReadConf")};
+  void ReadSceneShadersConfig(YgString path);
+  void SerializeScene(Yeager::Scene* scene, YgString path);
+  void DeserializeScene(Yeager::Scene* scene, YgString path);
+  void ReadConf(YgString path){YEAGER_NOT_IMPLEMENTED("ReadConf")};
   void SaveConf(){YEAGER_NOT_IMPLEMENTED("SaveConf")};
 
  private:
   Yeager::ApplicationCore* m_app = nullptr;
+  template <typename _Ty>
+  const void inline CheckAndDeserialize(YAML::Node& node, _Ty* obj, YgCchar key) noexcept;
   void inline DeserializeEntity(Yeager::Scene* scene, YAML::Node& node, YAML::detail::iterator_value& entity);
   void inline DeserializeSceneInfo(Yeager::Scene* scene, YAML::Node& node);
-  void inline SerialBasicEntity(YAML::Emitter& out, yg_string name, yg_uint id, yg_string type);
+  void inline SerializeBasicEntity(YAML::Emitter& out, YgString name, unsigned int id, YgString type);
   template <typename _T>
-  void inline SerialObj(YAML::Emitter& out, const char* key, _T obj);
-  void inline SerialBegin(YAML::Emitter& out, const char* key, YAML::EMITTER_MANIP manip);
+  void inline SerializeObject(YAML::Emitter& out, const char* key, _T obj);
+  void inline SerializeBegin(YAML::Emitter& out, const char* key, YAML::EMITTER_MANIP manip);
+  void inline SerializeSystemInfo(YAML::Emitter& out, Yeager::Scene* scene);
 };
 }  // namespace Yeager

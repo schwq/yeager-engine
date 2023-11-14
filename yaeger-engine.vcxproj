@@ -1,0 +1,251 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Apps\Yeager\Application.h" />
+    <ClInclude Include="Apps\Yeager\Common\Common.h" />
+    <ClInclude Include="Apps\Yeager\Common\LogEngine.h" />
+    <ClInclude Include="Apps\Yeager\Common\SystemDetect.h" />
+    <ClInclude Include="Apps\Yeager\Common\Utilities.h" />
+    <ClInclude Include="Apps\Yeager\Engine\Editor\Camera.h" />
+    <ClInclude Include="Apps\Yeager\Engine\Editor\Explorer.h" />
+    <ClInclude Include="Apps\Yeager\Engine\Editor\ToolboxObj.h" />
+    <ClInclude Include="Apps\Yeager\Engine\Interface\IconsFontAwesome6.h" />
+    <ClInclude Include="Apps\Yeager\Engine\Interface\Interface.h" />
+    <ClInclude Include="Apps\Yeager\Engine\Interface\Notification.h" />
+    <ClInclude Include="Apps\Yeager\Engine\Interface\UIManagement.h" />
+    <ClInclude Include="Apps\Yeager\Engine\Media\AudioHandle.h" />
+    <ClInclude Include="Apps\Yeager\Engine\Media\VideoPlayer.h" />
+    <ClInclude Include="Apps\Yeager\Engine\Physics\PhysicsHandle.h" />
+    <ClInclude Include="Apps\Yeager\Engine\Renderer\Entity.h" />
+    <ClInclude Include="Apps\Yeager\Engine\Renderer\Geometry.h" />
+    <ClInclude Include="Apps\Yeager\Engine\Renderer\ImportedObj.h" />
+    <ClInclude Include="Apps\Yeager\Engine\Renderer\RendererEngine.h" />
+    <ClInclude Include="Apps\Yeager\Engine\Renderer\ShaderHandle.h" />
+    <ClInclude Include="Apps\Yeager\Engine\Renderer\TextureHandle.h" />
+    <ClInclude Include="Apps\Yeager\Engine\Renderer\Window.h" />
+    <ClInclude Include="Apps\Yeager\InputHandle.h" />
+    <ClInclude Include="Apps\Yeager\Launcher.h" />
+    <ClInclude Include="Apps\Yeager\Scene.h" />
+    <ClInclude Include="Apps\Yeager\Serialization.h" />
+    <ClInclude Include="Libraries\fmt\args.h" />
+    <ClInclude Include="Libraries\fmt\chrono.h" />
+    <ClInclude Include="Libraries\fmt\color.h" />
+    <ClInclude Include="Libraries\fmt\compile.h" />
+    <ClInclude Include="Libraries\fmt\core.h" />
+    <ClInclude Include="Libraries\fmt\format-inl.h" />
+    <ClInclude Include="Libraries\fmt\format.h" />
+    <ClInclude Include="Libraries\fmt\os.h" />
+    <ClInclude Include="Libraries\fmt\ostream.h" />
+    <ClInclude Include="Libraries\fmt\printf.h" />
+    <ClInclude Include="Libraries\fmt\ranges.h" />
+    <ClInclude Include="Libraries\fmt\std.h" />
+    <ClInclude Include="Libraries\fmt\xchar.h" />
+    <ClInclude Include="Libraries\imgui\imconfig.h" />
+    <ClInclude Include="Libraries\imgui\imgui.h" />
+    <ClInclude Include="Libraries\imgui\imgui_impl_glfw.h" />
+    <ClInclude Include="Libraries\imgui\imgui_impl_opengl3.h" />
+    <ClInclude Include="Libraries\imgui\imgui_impl_opengl3_loader.h" />
+    <ClInclude Include="Libraries\imgui\imgui_internal.h" />
+    <ClInclude Include="Libraries\imgui\imgui_stdlib.h" />
+    <ClInclude Include="Libraries\imgui\imstb_rectpack.h" />
+    <ClInclude Include="Libraries\imgui\imstb_textedit.h" />
+    <ClInclude Include="Libraries\imgui\imstb_truetype.h" />
+    <ClInclude Include="Libraries\loguru.hpp" />
+    <ClInclude Include="Libraries\portable-file-dialogs.h" />
+    <ClInclude Include="Libraries\stb_image.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Apps\Yeager\Application.cpp" />
+    <ClCompile Include="Apps\Yeager\Common\LogEngine.cpp" />
+    <ClCompile Include="Apps\Yeager\Common\Utilities.cpp" />
+    <ClCompile Include="Apps\Yeager\Engine\Editor\Camera.cpp" />
+    <ClCompile Include="Apps\Yeager\Engine\Editor\Explorer.cpp" />
+    <ClCompile Include="Apps\Yeager\Engine\Editor\ToolboxObj.cpp" />
+    <ClCompile Include="Apps\Yeager\Engine\Interface\Interface.cpp" />
+    <ClCompile Include="Apps\Yeager\Engine\Interface\Notification.cpp" />
+    <ClCompile Include="Apps\Yeager\Engine\Interface\UIManagement.cpp" />
+    <ClCompile Include="Apps\Yeager\Engine\Media\AudioHandle.cpp" />
+    <ClCompile Include="Apps\Yeager\Engine\Media\VideoPlayer.cpp" />
+    <ClCompile Include="Apps\Yeager\Engine\Physics\PhysicsHandle.cpp" />
+    <ClCompile Include="Apps\Yeager\Engine\Renderer\Entity.cpp" />
+    <ClCompile Include="Apps\Yeager\Engine\Renderer\Geometry.cpp" />
+    <ClCompile Include="Apps\Yeager\Engine\Renderer\ImportedObj.cpp" />
+    <ClCompile Include="Apps\Yeager\Engine\Renderer\RendererEngine.cpp" />
+    <ClCompile Include="Apps\Yeager\Engine\Renderer\ShaderHandle.cpp" />
+    <ClCompile Include="Apps\Yeager\Engine\Renderer\TextureHandle.cpp" />
+    <ClCompile Include="Apps\Yeager\Engine\Renderer\Window.cpp" />
+    <ClCompile Include="Apps\Yeager\InputHandle.cpp" />
+    <ClCompile Include="Apps\Yeager\Launcher.cpp" />
+    <ClCompile Include="Apps\Yeager\main.cpp" />
+    <ClCompile Include="Apps\Yeager\Scene.cpp" />
+    <ClCompile Include="Apps\Yeager\Serialization.cpp" />
+    <ClCompile Include="Libraries\glad.c" />
+    <ClCompile Include="Libraries\imgui\imgui.cpp" />
+    <ClCompile Include="Libraries\imgui\imgui_demo.cpp" />
+    <ClCompile Include="Libraries\imgui\imgui_draw.cpp" />
+    <ClCompile Include="Libraries\imgui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="Libraries\imgui\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="Libraries\imgui\imgui_stdlib.cpp" />
+    <ClCompile Include="Libraries\imgui\imgui_tables.cpp" />
+    <ClCompile Include="Libraries\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="Libraries\loguru.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Apps\Yeager\Assets\Imported_Models\backpack\backpack.mtl" />
+    <None Include="Apps\Yeager\Assets\Imported_Models\neco_arc\neco.mtl" />
+    <None Include="Apps\Yeager\Assets\Shaders\common_fg.glsl" />
+    <None Include="Apps\Yeager\Assets\Shaders\common_vt.glsl" />
+    <None Include="Apps\Yeager\Assets\Shaders\geometry_fg.glsl" />
+    <None Include="Apps\Yeager\Assets\Shaders\geometry_vt.glsl" />
+    <None Include="Apps\Yeager\Assets\Shaders\imp_object_fg.glsl" />
+    <None Include="Apps\Yeager\Assets\Shaders\imp_object_vt.glsl" />
+    <None Include="Apps\Yeager\Assets\Shaders\lighting_fg.glsl" />
+    <None Include="Apps\Yeager\Assets\Shaders\lighting_vt.glsl" />
+    <None Include="Apps\Yeager\Assets\Shaders\simple_fg.glsl" />
+    <None Include="Apps\Yeager\Assets\Shaders\simple_vt.glsl" />
+    <None Include="Apps\Yeager\Assets\Shaders\skybox_fg.glsl" />
+    <None Include="Apps\Yeager\Assets\Shaders\skybox_vt.glsl" />
+    <None Include="Apps\Yeager\Configuration\Scenes\DefaultScene.yaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Apps\Yeager\Assets\Images\launcher_icon.jpg" />
+    <Image Include="Apps\Yeager\Assets\Imported_Models\backpack\ao.jpg" />
+    <Image Include="Apps\Yeager\Assets\Imported_Models\backpack\diffuse.jpg" />
+    <Image Include="Apps\Yeager\Assets\Imported_Models\backpack\normal.png" />
+    <Image Include="Apps\Yeager\Assets\Imported_Models\backpack\roughness.jpg" />
+    <Image Include="Apps\Yeager\Assets\Imported_Models\backpack\specular.jpg" />
+    <Image Include="Apps\Yeager\Assets\Imported_Models\neco_arc\necoarctposefeettilt_None_BaseColor.png" />
+    <Image Include="Apps\Yeager\Assets\Imported_Models\neco_arc\necoarctposefeettilt_None_Height.png" />
+    <Image Include="Apps\Yeager\Assets\Imported_Models\neco_arc\necoarctposefeettilt_None_Metallic.png" />
+    <Image Include="Apps\Yeager\Assets\Imported_Models\neco_arc\necoarctposefeettilt_None_Normal.png" />
+    <Image Include="Apps\Yeager\Assets\Imported_Models\neco_arc\necoarctposefeettilt_None_Roughness.png" />
+    <Image Include="Apps\Yeager\Assets\Textures\bocchi.jpg" />
+    <Image Include="Apps\Yeager\Assets\Textures\default.jpg" />
+    <Image Include="Apps\Yeager\Assets\Textures\neco.jpg" />
+    <Image Include="Apps\Yeager\Assets\Textures\skybox\back.jpg" />
+    <Image Include="Apps\Yeager\Assets\Textures\skybox\bottom.jpg" />
+    <Image Include="Apps\Yeager\Assets\Textures\skybox\front.jpg" />
+    <Image Include="Apps\Yeager\Assets\Textures\skybox\left.jpg" />
+    <Image Include="Apps\Yeager\Assets\Textures\skybox\right.jpg" />
+    <Image Include="Apps\Yeager\Assets\Textures\skybox\top.jpg" />
+    <Image Include="Apps\Yeager\Assets\Textures\wall.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <Font Include="Apps\Yeager\Assets\Fonts\big_blue_term.ttf" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Apps\Yeager\Assets\Imported_Models\backpack\source_attribution.txt" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <ProjectGuid>{2E211817-3308-4885-8AE6-6D03945B0717}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>YeagerEngine</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <Optimization>Disabled</Optimization>
+    </ClCompile>
+    <Link>
+      <TargetMachine>MachineX86</TargetMachine>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <TargetMachine>MachineX86</TargetMachine>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>C:\Users\schwq\OneDrive\Área de Trabalho\VSIncludes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>C:\Users\schwq\OneDrive\Área de Trabalho\VsLibraries;C:\Users\schwq\OneDrive\Área de Trabalho\VsLibraries\irrKlang;C:\Users\schwq\OneDrive\Área de Trabalho\VsLibraries\assimp;C:\Users\schwq\OneDrive\Área de Trabalho\VsLibraries\glew;C:\Users\schwq\OneDrive\Área de Trabalho\VsLibraries\GLFW;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;glew32.lib;assimp-vc143-mtd.lib;irrKlang.lib;yaml-cppd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

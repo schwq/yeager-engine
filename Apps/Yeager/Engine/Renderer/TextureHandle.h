@@ -22,57 +22,64 @@
 #include "../../Common/LogEngine.h"
 #include "ShaderHandle.h"
 
-class Yeager::Shader;
-
 // Assimp model loading
-yg_uint LoadTextureFromFile(yg_string path, bool flip = true);
+unsigned int LoadTextureFromFile(YgString path, bool flip = true);
 
 // Imgui Icon
-bool LoadTextureFromFile(yg_cchar filename, GLuint* out_texture, int* out_width, int* out_height);
+bool LoadTextureFromFile(YgCchar filename, GLuint* out_texture, int* out_width, int* out_height);
 
 namespace Yeager {
+
+class Shader;
+
 class Texture2D {
  public:
-  Texture2D(yg_cchar texturePath, yg_string name = "DEFAULT");
+  Texture2D(YgCchar texturePath, YgString name = "DEFAULT");
   Texture2D(){};
   ~Texture2D();
 
-  constexpr GLuint GetID() const { return m_id; }
+  YEAGER_NODISCARD constexpr GLuint GetID() const { return m_OpenGL_ID; }
 
   // Imported object use
-  constexpr yg_string GetPath() { return m_texture_path; }
-  constexpr void SetPath(yg_string path) { m_texture_path = path; }
-  constexpr yg_string GetTypeName() { return m_type_name; }
-  constexpr void SetTypeName(yg_string typeName) { m_type_name = typeName; }
+  constexpr YgString GetPath() { return m_TexturePath; }
+  constexpr void SetPath(YgString path) { m_TexturePath = path; }
+  constexpr YgString GetTypeName() { return m_TypeName; }
+  constexpr void SetTypeName(YgString typeName) { m_TypeName = typeName; }
+
+  constexpr int GetWidth() const { return TextureWidth; }
+  constexpr int GetHeight() const { return TextureHeight; }
 
  private:
   void GenerateTexture();
-  void ReadDataToTexture(yg_cchar path);
+  void ReadDataToTexture(YgCchar path);
 
-  GLuint m_id = 0;
-  yg_string m_name;
-  yg_uint m_texture_num = 0;
-  static yg_uint m_texture_count;
+  // Used in imgui displaying the texture as an image
+  int TextureWidth = 0, TextureHeight = 0;
+
+  GLuint m_OpenGL_ID = 0;
+  YgString m_Name;
+  unsigned int m_TextureNumber = 0;
+  static unsigned int m_TextureEngineCount;
   // Imported object use
-  yg_string m_texture_path;
-  yg_string m_type_name;
+  YgString m_TexturePath;
+  YgString m_TypeName;
 };
 
 class Skybox {
  public:
-  Skybox(std::vector<yg_string> faces, yg_string name = "DEFAULT");
+  Skybox(std::vector<YgString> faces, YgString name = "DEFAULT");
   ~Skybox();
 
   YEAGER_NODISCARD constexpr GLuint GetID() const { return m_id; }
-  void Draw(Yeager::Shader* shader, yg_mat4 view, yg_mat4 projection);
+  void Draw(Yeager::Shader* shader, YgMatrix4 view, YgMatrix4 projection);
 
  private:
   void GenerateTexture();
-  void ReadDataToTexture(std::vector<yg_string> faces);
+  void ReadDataToTexture(std::vector<YgString> faces);
 
   GLuint m_id;
-  yg_string m_name;
-  yg_uint skyboxVAO, skyboxVBO;
+  YgString m_name;
+  unsigned int skyboxVAO, skyboxVBO;
 
   float skyboxVertices[108] = {
       // positions

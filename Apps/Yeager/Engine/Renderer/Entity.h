@@ -26,38 +26,39 @@
 namespace Yeager {
 
 typedef struct {
-  yg_mat4 model;
-  yg_vec3 position;
-  yg_vec3 rotation;
-  yg_vec3 scale;
+  YgMatrix4 model;
+  YgVector3 position;
+  YgVector3 rotation;
+  YgVector3 scale;
 } Transformation;
 
 extern constexpr Transformation GetDefaultTransformation();
 
 class Entity {
  public:
-  Entity(yg_string name = YEAGER_NULL_LITERAL);
+  Entity(YgString name = YEAGER_NULL_LITERAL);
   ~Entity();
 
-  yg_string GetName();
-  yg_uint GetId();
+  YgString GetName();
+
+  unsigned int GetId();
 
  protected:
-  yg_string m_name;
-  const yg_uint m_id;
-  static yg_uint m_entityCountId;
+  YgString m_name;
+  const unsigned int m_id;
+  static unsigned int m_entityCountId;
 };
 
 class GameEntity : public Entity {
  public:
-  GameEntity(yg_string name = YEAGER_NULL_LITERAL, Yeager::Texture2D* texture = nullptr,
+  GameEntity(YgString name = YEAGER_NULL_LITERAL, Yeager::Texture2D* texture = nullptr,
              Yeager::Shader* shader = nullptr);
   ~GameEntity();
   constexpr Yeager::Texture2D* GetTexture();
   constexpr Yeager::Shader* GetShader();
   Transformation GetTransformation();
   Transformation* GetTransformationPtr();
-  void SetPosition(yg_vec3 pos);
+  void SetPosition(YgVector3 pos);
   void ProcessTransformation(Shader* Shader);
 
  protected:

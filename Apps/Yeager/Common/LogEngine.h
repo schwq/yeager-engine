@@ -20,7 +20,7 @@
 #include "Common.h"
 
 typedef struct {
-  yg_string message;
+  YgString message;
   int verbosity;
   ImVec4 text_color;
 } ConsoleLogSender;
@@ -47,7 +47,7 @@ template <typename... T>
 void Log(int verbosity, fmt::format_string<T...> fmt, T&&... args)
 {
   auto str = fmt::format(fmt, std::forward<T>(args)...);
-  yg_string log(str);
+  YgString log(str);
 
   ConsoleLogSender console_message;
   console_message.text_color = VerbosityToColor(verbosity);
@@ -55,7 +55,7 @@ void Log(int verbosity, fmt::format_string<T...> fmt, T&&... args)
   console_message.message = log;
   kConsole.SetLogString(console_message);
 
-  yg_string terminal_prefix;
+  YgString terminal_prefix;
   if (verbosity == INFO) {
     terminal_prefix = "(-) ";
   } else if (verbosity == WARNING) {

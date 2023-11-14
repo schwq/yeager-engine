@@ -32,8 +32,8 @@ enum class CameraPosition { kForward, kBackward, kRight, kLeft };
 
 class EditorCamera {
  public:
-  EditorCamera(Yeager::ApplicationCore* app, yg_vec3 cameraPosition = yg_vec3(0.0f, 0.0f, 0.0f),
-               yg_vec3 cameraFront = yg_vec3(0.0f, 0.0f, -1.0f), yg_vec3 cameraUp = yg_vec3(0.0f, 1.0f, 0.0f));
+  EditorCamera(Yeager::ApplicationCore* app, YgVector3 cameraPosition = YgVector3(0.0f, 0.0f, 0.0f),
+               YgVector3 cameraFront = YgVector3(0.0f, 0.0f, -1.0f), YgVector3 cameraUp = YgVector3(0.0f, 1.0f, 0.0f));
 
   void UpdatePosition(CameraPosition position, float delta);
   void UpdateDirection(float xoffset, float yoffset);
@@ -42,22 +42,22 @@ class EditorCamera {
   void MouseCallback(bool& firstMouse, float& lastX, float& lastY, double xpos, double ypos);
   void SetShouldMove(bool move);
   bool GetShouldMove();
-  const yg_mat4 ReturnViewMatrix();
-  const yg_vec3 GetPosition();
-  const yg_vec3 GetDirection();
+  const YgMatrix4 ReturnViewMatrix();
+  const YgVector3 GetPosition();
+  const YgVector3 GetDirection();
   const float& GetSensitivity();
 
  protected:
-  yg_vec3 m_position;
-  yg_vec3 m_cameraFront;
-  yg_vec3 m_cameraUp;
-  yg_vec3 m_cameraDirection;
-  float m_sensitivity = 0.1f;
-  float m_cameraYaw = 0.0f;
-  float m_cameraPitch = 0.0f;
-  float m_cameraSpeed = 0.2f;
-  Yeager::ApplicationCore* m_app;
-  bool m_cameraShouldMove = false;
+  YgVector3 m_Position;
+  YgVector3 m_CameraFront;
+  YgVector3 m_CameraUp;
+  YgVector3 m_CameraDirection;
+  float m_Sensitivity = 0.1f;
+  float m_CameraYaw = 0.0f;
+  float m_CameraPitch = 0.0f;
+  float m_CameraSpeed = 0.2f;
+  Yeager::ApplicationCore* m_Application;
+  bool m_CameraShouldMove = false;
 };
 
 class PlayerCamera : public EditorCamera {

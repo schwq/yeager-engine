@@ -18,7 +18,7 @@ ImVec4 VerbosityToColor(int verbosity)
 
 void EditorConsole::ReadLog()
 {
-  for (yg_uint x = 0; x < m_logs.size(); x++) {
+  for (unsigned int x = 0; x < m_logs.size(); x++) {
     ImGui::TextColored(m_logs[x].text_color, m_logs[x].message.c_str());
   }
 }

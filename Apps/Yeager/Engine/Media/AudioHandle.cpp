@@ -144,7 +144,14 @@ bool AudioHandle::IsSoundEffectEnable(AudioHandleSoundEffects effect)
                 "Cannot check sound effect for AudioHandle name {} ID {}, no m_sound or m_sound_effect initialized "
                 "correctly!",
                 m_name, m_id);
+    return false;
   }
+}
+
+bool Yeager::AudioHandle::CheckIfSoundEffectIsSupported()
+{
+  // TODO
+  return false;
 }
 
 bool InitAudioEngine()
@@ -174,7 +181,7 @@ void TerminateAudioEngine()
   }
 }
 
-AudioHandle::AudioHandle(yg_string path, yg_string name, bool looped) : GameEntity(name), m_path(path), m_looped(looped)
+AudioHandle::AudioHandle(YgString path, YgString name, bool looped) : GameEntity(name), m_path(path), m_looped(looped)
 {
   m_sound_source = ygAudioEngine->addSoundSourceFromFile(path.c_str(), ESM_AUTO_DETECT, false);
   if (!m_sound_source) {
@@ -189,6 +196,7 @@ bool AudioHandle::isPlaying()
   if (ygAudioEngine && m_sound_source) {
     return ygAudioEngine->isCurrentlyPlaying(m_sound_source);
   }
+  return false;
 }
 
 void AudioHandle::StopAll()
@@ -282,6 +290,7 @@ irrklang::ik_u32 AudioHandle::GetLenght()
   if (m_sound) {
     return m_sound->getPlayLength();
   }
+  return 0;
 }
 
 irrklang::ISoundEngine* AudioHandle::GetEngine()
@@ -317,7 +326,7 @@ void Audio3DHandle::SetAudioPos(irrklang::vec3df pos)
   }
 }
 
-Audio3DHandle::Audio3DHandle(yg_string path, yg_string name, bool looped, irrklang::vec3df position)
+Audio3DHandle::Audio3DHandle(YgString path, YgString name, bool looped, irrklang::vec3df position)
     : AudioHandle(path, name, looped), m_audio_pos(position)
 {
   if (m_sound_source) {
@@ -370,12 +379,12 @@ irrklang::vec3df Audio3DHandle::GetIrrklangPosition()
   }
 }
 
-yg_vec3 Audio3DHandle::GetVector3Position()
+YgVector3 Audio3DHandle::GetVector3Position()
 {
   if (m_sound) {
     return Vec3df_to_YgVec3(m_sound->getPosition());
   } else {
-    return yg_vec3(0.0f);
+    return YgVector3(0.0f);
   }
 }
 irrklang::vec3df GetListernerPos()
@@ -390,16 +399,16 @@ void Yeager::SetListernerPos(irrklang::vec3df pos, irrklang::vec3df lookDir, irr
   ygAudioEngine->setListenerPosition(pos, lookDir, velocity, upVec);
 }
 
-yg_vec3 Yeager::Vec3df_to_YgVec3(irrklang::vec3df vec)
+YgVector3 Yeager::Vec3df_to_YgVec3(irrklang::vec3df vec)
 {
-  yg_vec3 vector;
+  YgVector3 vector;
   vector.x = vec.X;
   vector.y = vec.Y;
   vector.z = vec.Z;
   return vector;
 }
 
-irrklang::vec3df Yeager::YgVec3_to_Vec3df(yg_vec3 vec)
+irrklang::vec3df Yeager::YgVec3_to_Vec3df(YgVector3 vec)
 {
   irrklang::vec3df vector;
   vector.X = vec.x;

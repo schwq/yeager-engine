@@ -1,8 +1,9 @@
 #include "Notification.h"
 using namespace Yeager;
 using namespace ImGui;
-NotificationBox::NotificationBox(yg_string title, yg_string message, ImVec4 text_color, yg_string icon,
-                                 yg_uint time_appearing)
+NotificationBox::NotificationBox(YgString title, YgString message, ImVec4 text_color, YgString icon,
+
+                                 unsigned int time_appearing)
 {
   NotificationBody body;
   body.title = title;
@@ -15,4 +16,4 @@ NotificationBox::NotificationBox(yg_string title, yg_string message, ImVec4 text
 
 NotificationBox::~NotificationBox() {}
 
-void NotificationBox::Appear(yg_uint size_x, yg_uint size_y, yg_uint pos_x, yg_uint pos_y) {}
+void NotificationBox::Appear(unsigned int size_x, unsigned int size_y, unsigned int pos_x, unsigned int pos_y) {}
