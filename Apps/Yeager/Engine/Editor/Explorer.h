@@ -20,20 +20,18 @@
 
 #include "../../Common/Common.h"
 #include "../../Engine/Interface/Interface.h"
+#include "../../Engine/Renderer/Object.h"
 #include "../Media/AudioHandle.h"
-#include "../Renderer/ImportedObj.h"
 #include "ToolboxObj.h"
 
 namespace Yeager {
 class ApplicationCore;
-}
-
 class Interface;
-class ImportedObject;
 
 class EditorExplorer {
  public:
   EditorExplorer(Yeager::ApplicationCore* app);
+  EditorExplorer() {}
   void DrawExplorer();
 
   Yeager::ToolBoxObject* toolbox_selected;
@@ -58,3 +56,4 @@ class EditorExplorer {
   YgString m_new_object_path;
   YgString m_new_object_texture_path;
 };
+}  // namespace Yeager

@@ -3,6 +3,7 @@ using namespace ImGui;
 using namespace Yeager;
 
 WindowMenuBar Yeager::EngineEditorMenuBar;
+bool Yeager::EngineEditorWindowShouldVanish = false;
 
 InterfaceWindow::InterfaceWindow(YgString title, ImVec2 size, InterfaceWindow* parent_window,
                                  ImVec2 parent_relative_pos, WindowRelativePos relative_pos)
@@ -28,6 +29,7 @@ InterfaceWindow::~InterfaceWindow() {}
 
 void InterfaceWindow::Begin(ImGuiWindowFlags flags)
 {
+
   m_TempSize = m_Size;
   ProcessPreRules();
   CalcScreenPos();
@@ -91,6 +93,7 @@ void Yeager::InterfaceWindow::ProcessPosRules()
 
 void InterfaceWindow::End()
 {
+
   /// What is this doing here, well, if in the future, we want to alloc something, this is going to be used to desalloc
   ImGui::End();
 

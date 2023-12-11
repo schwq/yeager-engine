@@ -34,7 +34,7 @@ class EditorCamera {
  public:
   EditorCamera(Yeager::ApplicationCore* app, YgVector3 cameraPosition = YgVector3(0.0f, 0.0f, 0.0f),
                YgVector3 cameraFront = YgVector3(0.0f, 0.0f, -1.0f), YgVector3 cameraUp = YgVector3(0.0f, 1.0f, 0.0f));
-
+  EditorCamera() {}
   void UpdatePosition(CameraPosition position, float delta);
   void UpdateDirection(float xoffset, float yoffset);
   void UpdateSpeed(float speed);
@@ -44,8 +44,10 @@ class EditorCamera {
   bool GetShouldMove();
   const YgMatrix4 ReturnViewMatrix();
   const YgVector3 GetPosition();
+  constexpr inline void SetPosition(const YgVector3& pos) { m_Position = pos; }
   const YgVector3 GetDirection();
   const float& GetSensitivity();
+  constexpr inline void SetDirection(const YgVector3& dir) { m_CameraDirection = dir; }
 
  protected:
   YgVector3 m_Position;
@@ -55,7 +57,7 @@ class EditorCamera {
   float m_Sensitivity = 0.1f;
   float m_CameraYaw = 0.0f;
   float m_CameraPitch = 0.0f;
-  float m_CameraSpeed = 0.2f;
+  float m_CameraSpeed = 2.0f;
   Yeager::ApplicationCore* m_Application;
   bool m_CameraShouldMove = false;
 };

@@ -3,6 +3,40 @@
 #include "Scene.h"
 using namespace Yeager;
 
+std::vector<OpenProjectsDisplay> Yeager::ReadProjectsToDisplay(YgString dir)
+{
+  std::vector<OpenProjectsDisplay> rt_proj;
+  for (const auto& entry : std::filesystem::directory_iterator(dir)) {
+    try {
+
+      YAML::Node node = YAML::LoadFile(entry.path().c_str());
+      OpenProjectsDisplay proj;
+
+      proj.Path = entry.path().c_str();
+
+      if (node["Scene"]) {
+        proj.Name = node["Scene"].as<YgString>();
+      }
+
+      if (node["Renderer"]) {
+        proj.RendererType = node["Renderer"].as<YgString>();
+      }
+
+      if (node["SceneType"]) {
+        proj.SceneType = node["SceneType"].as<YgString>();
+      }
+
+      proj.Author = "Rick";
+      rt_proj.push_back(proj);
+
+    } catch (YAML::BadFile bad) {
+      Yeager::Log(ERROR, "Read Projects To Display error, bad file: {}", bad.msg);
+      return std::vector<OpenProjectsDisplay>{0};
+    }
+  }
+  return rt_proj;
+}
+
 YAML::Emitter& operator<<(YAML::Emitter& out, const YgVector3& vector)
 {
   out << YAML::Flow;
@@ -58,6 +92,8 @@ void Serialization::SerializeScene(Yeager::Scene* scene, YgString path)
   SerializeObject(out, "Scene", scene->GetContext().m_name);
   SerializeObject(out, "Renderer", SceneRendererToString(scene->GetContext().m_renderer));
   SerializeObject(out, "SceneType", SceneTypeToString(scene->GetContext().m_type));
+  SerializeObject(out, "Camera Position", m_app->GetCamera()->GetPosition());
+  SerializeObject(out, "Camera Direction", m_app->GetCamera()->GetDirection());
   SerializeBegin(out, "SceneEntities", YAML::BeginSeq);
 
   for (unsigned int x = 0; x < scene->GetAudios()->size(); x++) {
@@ -77,45 +113,40 @@ void Serialization::SerializeScene(Yeager::Scene* scene, YgString path)
     out << YAML::EndMap;
   }
 
-  for (unsigned int x = 0; x < scene->GetImportedObjects()->size(); x++) {
-    ImportedObject* obj = scene->GetImportedObjects()->at(x).get();
+  for (unsigned int x = 0; x < scene->GetObjects()->size(); x++) {
+
+    Object* obj = scene->GetObjects()->at(x).get();
     out << YAML::BeginMap;
-    SerializeBasicEntity(out, obj->GetName(), obj->GetId(), "ImportedObject");
-    SerializeObject(out, "Path", obj->GetPath());
+
+    SerializeBasicEntity(out, obj->GetName(), obj->GetId(), "Object");
     SerializeObject(out, "Position", obj->GetTransformation().position);
     SerializeObject(out, "Rotation", obj->GetTransformation().rotation);
     SerializeObject(out, "Scale", obj->GetTransformation().scale);
-    SerializeObject(out, "TexturesLoaded", obj->GetTexturesLoaded()->size());
-    SerializeBegin(out, "Textures", YAML::BeginMap);
-    for (unsigned int y = 0; y < obj->GetTexturesLoaded()->size(); y++) {
-      SerializeObject(out, "Name", obj->GetTexturesLoaded()->at(y).m_name);
-      SerializeObject(out, "Path", obj->GetTexturesLoaded()->at(y).m_path);
-      SerializeObject(out, "ID", obj->GetTexturesLoaded()->at(y).m_id);
-    }
-    out << YAML::EndMap;
-    out << YAML::EndMap;
-  }
-  for (unsigned int x = 0; x < scene->GetGeometry()->size(); x++) {
-    Yeager::Geometry* geometry = scene->GetGeometry()->at(x).get();
-    out << YAML::BeginMap;
-    SerializeBasicEntity(out, geometry->GetName(), geometry->GetId(), "Geometry");
-    SerializeObject(out, "Shape", geometry->GetShape());
-    SerializeObject(out, "Position", geometry->GetTransformation().position);
-    SerializeObject(out, "Rotation", geometry->GetTransformation().rotation);
-    SerializeObject(out, "Scale", geometry->GetTransformation().scale);
-    SerializeObject(out, "IsColor", geometry->isColor());
-    if (geometry->isColor()) {
-      SerializeObject(out, "Color", geometry->GetColor());
+    SerializeObject(out, "Path", obj->GetPath());
+    SerializeObject(out, "Geometry", ObjectGeometryTypeToString(obj->GetGeometry()));
+    SerializeBegin(out, "TexturesLoaded", YAML::BeginMap);
+
+    if (obj->GetGeometry() == ObjectGeometryType::ECustom) {
+      for (unsigned int y = 0; y < obj->GetModelData()->TexturesLoaded.size(); y++) {
+        ObjectTexture tex = obj->GetModelData()->TexturesLoaded.at(y);
+        SerializeObject(out, "Path", tex.Path);
+        SerializeObject(out, "Type", tex.Type);
+        SerializeObject(out, "Name", tex.Name);
+        SerializeObject(out, "Flip", tex.FlipImage);
+      }
     } else {
-      Yeager::Texture2D* tex = geometry->GetTexture();
-      SerializeBegin(out, "Texture", YAML::BeginMap);
-      SerializeObject(out, "Path", tex->GetPath());
-      SerializeObject(out, "ID", tex->GetID());
-      SerializeObject(out, "Type", tex->GetTypeName());
-      out << YAML::EndMap;
+      for (unsigned int y = 0; y < obj->GetGeometryData()->Textures.size(); y++) {
+        ObjectTexture tex = obj->GetGeometryData()->Textures.at(y);
+        SerializeObject(out, "Path", tex.Path);
+        SerializeObject(out, "Type", tex.Type);
+        SerializeObject(out, "Name", tex.Name);
+        SerializeObject(out, "Flip", tex.FlipImage);
+      }
     }
     out << YAML::EndMap;
+    out << YAML::EndMap;
   }
+
   out << YAML::EndSeq;
   out << YAML::EndMap;
   std::ofstream fout(path.c_str());
@@ -349,6 +380,13 @@ void inline Serialization::DeserializeSceneInfo(Yeager::Scene* scene, YAML::Node
     if (node["SceneType"]) {
       scene->SetContextType(StringToScreneType(node["SceneType"].as<YgString>()));
     }
+    if (node["Camera Position"]) {
+      m_app->GetCamera()->SetPosition(node["Camera Position"].as<YgVector3>());
+    }
+
+    if (node["Camera Direction"]) {
+      m_app->GetCamera()->SetDirection(node["Camera Direction"].as<YgVector3>());
+    }
   }
 }
 
@@ -385,17 +423,62 @@ void inline Serialization::DeserializeEntity(Yeager::Scene* scene, YAML::Node& n
       toolbox->SetType(ExplorerObjectType::kAudio);
       scene->GetToolboxs()->push_back(toolbox);
     }
+  } else if (type == "Object") {
 
-  } else if (type == "ImportedObject") {
+    auto obj = std::make_shared<Yeager::Object>(name, m_app);
+    obj->GetTransformationPtr()->position = entity["Position"].as<YgVector3>();
+    obj->GetTransformationPtr()->rotation = entity["Rotation"].as<YgVector3>();
+    obj->GetTransformationPtr()->scale = entity["Scale"].as<YgVector3>();
+    ObjectGeometryType geometry = StringToObjectGeometryType(entity["Geometry"].as<YgString>());
+    obj->SetGeometry(geometry);
 
-    YgString path = entity["Path"].as<YgString>();
-    YgVector3 position = entity["Position"].as<YgVector3>();
-    YgVector3 rotation = entity["Rotation"].as<YgVector3>();
-    YgVector3 scale = entity["Scale"].as<YgVector3>();
-    auto obj = std::make_shared<ImportedObject>(path, m_app, name, true);
-    obj->GetTransformationPtr()->position = position;
-    obj->GetTransformationPtr()->rotation = rotation;
-    obj->GetTransformationPtr()->scale = scale;
-    scene->GetImportedObjects()->push_back(obj);
+    bool succceded = true;
+
+    if (geometry == ObjectGeometryType::ECustom) {
+      if (!obj->ImportObjectFromFile(entity["Path"].as<YgString>().c_str())) {
+        Yeager::Log(WARNING, "Error importing object from file during deserialization!");
+        succceded = false;
+      }
+    } else {
+      if (!obj->GenerateObjectGeometry(geometry)) {
+        Yeager::Log(WARNING, "Error generating object geometry during deserialization!");
+        succceded = false;
+      }
+    }
+    if (succceded) {
+      scene->GetObjects()->push_back(obj);
+    }
+  }
+}
+
+void Serialization::ReadEditorVariables(YgCchar path)
+{
+  YAML::Node node = YAML::LoadFile(path);
+  if (node) {
+    if (node["EditorScreenWidth"]) {
+      ygWindowWidth = node["EditorScreenWidth"].as<int>();
+    }
+    if (node["EditorScreenHeight"]) {
+      ygWindowHeight = node["EditorScreenHeight"].as<int>();
+    }
+  }
+}
+
+void Serialization::SaveEditorVariables(YgCchar path)
+{
+  YAML::Emitter out;
+  out << YAML::BeginMap;
+
+  out << YAML::Key << "EditorScreenWidth" << YAML::Value << ygWindowWidth;
+  out << YAML::Key << "EditorScreenHeight" << YAML::Value << ygWindowHeight;
+
+  out << YAML::EndMap;
+
+  std::ofstream fout;
+  fout.open(path);
+  if (fout.is_open()) {
+    fout << out.c_str();
+  } else {
+    Yeager::Log(ERROR, "Cannot create editor variables configuration file {}", path);
   }
 }

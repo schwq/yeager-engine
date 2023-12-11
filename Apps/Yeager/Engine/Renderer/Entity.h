@@ -25,6 +25,8 @@
 
 namespace Yeager {
 
+struct ObjectTexture;
+
 typedef struct {
   YgMatrix4 model;
   YgVector3 position;
@@ -34,6 +36,8 @@ typedef struct {
 
 extern constexpr Transformation GetDefaultTransformation();
 
+class Shader;
+
 class Entity {
  public:
   Entity(YgString name = YEAGER_NULL_LITERAL);
@@ -42,34 +46,43 @@ class Entity {
   YgString GetName();
 
   unsigned int GetId();
+  constexpr inline void SetRender(bool render) { m_Render = render; }
+  constexpr inline bool* GetRender() { return &m_Render; }
 
  protected:
-  YgString m_name;
+  YgString m_Name;
+  bool m_Render = true;
   const unsigned int m_id;
   static unsigned int m_entityCountId;
 };
 
 class GameEntity : public Entity {
  public:
-  GameEntity(YgString name = YEAGER_NULL_LITERAL, Yeager::Texture2D* texture = nullptr,
-             Yeager::Shader* shader = nullptr);
+  GameEntity(YgString name = YEAGER_NULL_LITERAL);
   ~GameEntity();
-  constexpr Yeager::Texture2D* GetTexture();
-  constexpr Yeager::Shader* GetShader();
+
   Transformation GetTransformation();
   Transformation* GetTransformationPtr();
-  void SetPosition(YgVector3 pos);
-  void ProcessTransformation(Shader* Shader);
+  virtual void ProcessTransformation(Shader* Shader);
+
+  constexpr inline std::vector<ObjectTexture*>* GetLoadedTextures() { return &m_EntityLoadedTextures; };
 
  protected:
-  Transformation m_transformation;
-  Yeager::Texture2D* m_texture;
-  Yeager::Shader* m_shader;
+  std::vector<ObjectTexture*> m_EntityLoadedTextures;
+  Transformation m_EntityTransformation;
 };
-/* 
-class EditorEntity : public Entity {
+
+class DrawableEntity : public GameEntity {
  public:
+  DrawableEntity(YgString name = YEAGER_NULL_LITERAL);
+  ~DrawableEntity();
+
+  virtual void Draw(Shader* shader);
+
+  void Terminate();
+
  protected:
+  GLuint m_Ebo = 0, m_Vao = 0, m_Vbo = 0;
 };
-*/
+
 }  // namespace Yeager

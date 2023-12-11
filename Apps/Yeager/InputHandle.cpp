@@ -2,6 +2,7 @@
 #include "Application.h"
 #include "Common/Common.h"
 #include "Engine/Editor/Camera.h"
+using namespace Yeager;
 
 float Input::m_LastMouseWidth = ygWindowWidth / 2.0f;
 float Input::m_LastMouseHeight = ygWindowHeight / 2.0f;
@@ -64,7 +65,7 @@ const inline bool Input::GetKeyPressed(int key) noexcept
 void Input::ProcessInputRender(Window* window, float delta)
 {
   m_FramesCount++;
-  Interface* intr = m_Application->GetInterface();
+  Yeager::Interface* intr = m_Application->GetInterface();
   if (glfwGetKey(window->getWindow(), GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 
     if (!intr->GetExitProgramWindowOpen()) {
@@ -90,6 +91,13 @@ void Input::ProcessInputRender(Window* window, float delta)
     }
   }
   if (m_Application->GetMode() == Yeager::AppEditor) {
+
+    if (glfwGetKey(window->getWindow(), GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+      if (glfwGetKey(window->getWindow(), GLFW_KEY_F) == GLFW_PRESS) {
+        m_Application->GetInterface()->MakeScreenShotAppear(true);
+      }
+    }
+
     if (((glfwGetKey(window->getWindow(), GLFW_KEY_E) == GLFW_PRESS) && m_FramesCount % 5 == 0) &&
         m_CursorCanDisappear) {
       if (m_Application->GetCamera()->GetShouldMove()) {

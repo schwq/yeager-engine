@@ -83,7 +83,10 @@ struct convert<ImVec4> {
 extern YAML::Emitter& operator<<(YAML::Emitter& out, const YgVector3& vector);
 
 namespace Yeager {
+
 class Scene;
+
+extern std::vector<OpenProjectsDisplay> ReadProjectsToDisplay(YgString dir);
 
 class Serialization {
  public:
@@ -96,6 +99,9 @@ class Serialization {
   void DeserializeScene(Yeager::Scene* scene, YgString path);
   void ReadConf(YgString path){YEAGER_NOT_IMPLEMENTED("ReadConf")};
   void SaveConf(){YEAGER_NOT_IMPLEMENTED("SaveConf")};
+
+  void ReadEditorVariables(YgCchar path);
+  void SaveEditorVariables(YgCchar path);
 
  private:
   Yeager::ApplicationCore* m_app = nullptr;

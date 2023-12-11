@@ -21,6 +21,7 @@
 #include "../../Common/Common.h"
 #include "../../Common/LogEngine.h"
 #include "../../Common/Utilities.h"
+
 namespace Yeager {
 class Shader {
  public:
@@ -37,14 +38,20 @@ class Shader {
   void SetUniform1i(const YgString& name, int value);
   void SetVec4(const YgString& name, glm::vec4 value);
 
+  constexpr inline GLuint GetId() { return m_id; }
+  constexpr inline bool IsInitialized() { return m_initialize; }
+
+  constexpr inline YgString GetName() { return m_Name; }
+
  private:
   GLuint m_id;
-  YgString m_name;
   bool m_initialize = false;
   bool m_fragment_build = false;
   bool m_vertex_build = false;
   static unsigned int m_shader_count;
   unsigned int m_shader_num = 0;
+
+  YgString m_Name;
 
   YEAGER_NODISCARD unsigned int CreateVertexGL(YgCchar vertexPath);
   YEAGER_NODISCARD unsigned int CreateFragmentGL(YgCchar fragmentPath);

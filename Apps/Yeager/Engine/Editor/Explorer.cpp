@@ -3,6 +3,7 @@
 #include "Camera.h"
 #include "ToolboxObj.h"
 using namespace ImGui;
+using namespace Yeager;
 
 EditorExplorer::EditorExplorer(Yeager::ApplicationCore* app) : m_app(app)
 {
@@ -55,7 +56,8 @@ void EditorExplorer::AddAudioWindow()
           toolbox->SetType(ExplorerObjectType::k3DAudio);
           toolbox->SetAudio(audio.get());
           m_app->GetScene()->GetAudios3D()->push_back(audio);
-          m_toolboxs.push_back(toolbox);
+          m_app->GetScene()->GetToolboxs()->push_back(toolbox);
+
         } else {
           auto audio = std::make_shared<Yeager::AudioHandle>(m_new_object_path, m_new_object_name, m_looped_audio);
           auto toolbox = std::make_shared<Yeager::ToolBoxObject>();
@@ -111,12 +113,13 @@ void EditorExplorer::AddGeometryObjectWindow()
       }
 
       if (m_everything_fine_to_create) {
-        Yeager::GeometryShape shape;
+        Yeager::ObjectGeometryType shape;
         if (m_add_geometry_shape_cube) {
-          shape = Yeager::kCube;
+          shape = Yeager::ObjectGeometryType::ECube;
         }
-        auto geometry = std::make_shared<Yeager::Geometry>(m_new_object_name, YgVector3(1.0f), shape, m_app);
-        m_app->GetScene()->GetGeometry()->push_back(geometry);
+        auto obj = std::make_shared<Yeager::Object>(m_new_object_name, m_app);
+        obj->GenerateObjectGeometry(shape);
+        m_app->GetScene()->GetObjects()->push_back(obj);
         m_new_object_name.clear();
         m_add_geometry_shape_cube = false;
         m_add_imported_object_window_open = false;
@@ -173,15 +176,19 @@ void EditorExplorer::AddImportedObjectWindow()
       }
 
       if (m_everything_fine_to_create) {
-        auto object =
-            std::make_shared<ImportedObject>(m_new_object_path, m_app, m_new_object_name, m_imported_object_flip_tex);
-        m_app->GetScene()->GetImportedObjects()->push_back(object);
-        m_new_object_name.clear();
-        m_new_object_path.clear();
-        m_add_imported_object_window_open = false;
-        m_app->GetCamera()->SetShouldMove(true);
-        m_app->GetInput()->SetCursorCanDisappear(true);
-        m_app->GetInput()->SetCameraCursorToWindowState(false);
+        auto obj = std::make_shared<Yeager::Object>(m_new_object_name, m_app);
+        if (obj->ImportObjectFromFile(m_new_object_path.c_str(), m_imported_object_flip_tex)) {
+          m_app->GetScene()->GetObjects()->push_back(obj);
+          m_new_object_name.clear();
+          m_new_object_path.clear();
+          m_add_imported_object_window_open = false;
+          m_app->GetCamera()->SetShouldMove(true);
+          m_app->GetInput()->SetCursorCanDisappear(true);
+          m_app->GetInput()->SetCameraCursorToWindowState(false);
+        } else {
+          m_app->GetInterface()->AddWarningWindow("Error processing the path from the imported model!");
+          m_everything_fine_to_create = false;
+        }
       }
       m_everything_fine_to_create = true;
     }

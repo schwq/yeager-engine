@@ -24,11 +24,13 @@
 #include "../Renderer/Entity.h"
 #include "../Renderer/TextureHandle.h"
 
-class Yeager::Texture2D;
-class Yeager::GameEntity;
-class Yeager::Entity;
-class Yeager::AudioHandle;
 
+namespace Yeager {
+class Texture2D;
+class GameEntity;
+class Entity;
+class AudioHandle;
+}
 enum class ExplorerObjectType {
   kShapes = 0,
   kScene,
@@ -52,6 +54,7 @@ namespace Yeager {
 class ToolBoxObject {
  public:
   ToolBoxObject(){};
+  ToolBoxObject(Yeager::GameEntity* entity, ExplorerObjectType type, Yeager::EntityPhysics* physics) : m_entity(entity), m_type(type), m_physics(physics){};
   Yeager::Transformation* GetTransformation() { return m_entity->GetTransformationPtr(); }
 
   Yeager::GameEntity* GetEntity() { return m_entity; }
@@ -64,6 +67,10 @@ class ToolBoxObject {
   Yeager::EntityPhysics* GetPhysics() { return m_physics; }
   void SetAudio(Yeager::AudioHandle* audio);
   void Set3DAudio(Yeager::Audio3DHandle* audio);
+
+  constexpr void SetEntity(Yeager::Entity* entity) {
+    m_entity = (GameEntity*)entity;
+  }
 
   bool m_selected = false;
 

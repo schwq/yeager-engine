@@ -28,6 +28,8 @@ unsigned int LoadTextureFromFile(YgString path, bool flip = true);
 // Imgui Icon
 bool LoadTextureFromFile(YgCchar filename, GLuint* out_texture, int* out_width, int* out_height);
 
+unsigned int LoadTextureCubeMap(std::vector<YgString> paths, bool flip = true);
+
 namespace Yeager {
 
 class Shader;
@@ -37,6 +39,17 @@ class Texture2D {
   Texture2D(YgCchar texturePath, YgString name = "DEFAULT");
   Texture2D(){};
   ~Texture2D();
+
+  Texture2D& operator=(Texture2D&& rhs) noexcept
+  {
+    Log(INFO, "Texture Move assign been called!");
+    this->m_Name = rhs.m_Name;
+    this->m_OpenGL_ID = rhs.m_OpenGL_ID;
+    this->TextureHeight = rhs.TextureHeight;
+    this->TextureWidth = rhs.TextureWidth;
+    this->m_TexturePath = rhs.m_TexturePath;
+    return *this;
+  }
 
   YEAGER_NODISCARD constexpr GLuint GetID() const { return m_OpenGL_ID; }
 
@@ -65,40 +78,4 @@ class Texture2D {
   YgString m_TypeName;
 };
 
-class Skybox {
- public:
-  Skybox(std::vector<YgString> faces, YgString name = "DEFAULT");
-  ~Skybox();
-
-  YEAGER_NODISCARD constexpr GLuint GetID() const { return m_id; }
-  void Draw(Yeager::Shader* shader, YgMatrix4 view, YgMatrix4 projection);
-
- private:
-  void GenerateTexture();
-  void ReadDataToTexture(std::vector<YgString> faces);
-
-  GLuint m_id;
-  YgString m_name;
-  unsigned int skyboxVAO, skyboxVBO;
-
-  float skyboxVertices[108] = {
-      // positions
-      -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f,
-      1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f,
-
-      -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f,
-      -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,
-
-      1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,
-      1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f,
-
-      -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,
-      1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,
-
-      -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,
-      1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f,
-
-      -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f,
-      1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f};
-};
 }  // namespace Yeager

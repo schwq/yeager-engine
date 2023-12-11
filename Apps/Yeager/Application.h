@@ -26,25 +26,20 @@
 #include "Engine/Interface/Interface.h"
 #include "Engine/Renderer/Window.h"
 #include "InputHandle.h"
+#include "Launcher.h"
 #include "Scene.h"
 
 namespace Yeager {
+
 /// @brief Represent the current state for the Application, if its running, paused, crashed ect
 enum ApplicationState { AppRunning, AppStopped, AppCrashed };
 /// @brief Represent the current mode of the Application, used most for control the current window to appear to the user
 enum ApplicationMode { AppEditor, AppLauncher, AppSettings, AppGame, AppLoading };
 
-/** @brief Struct to handle the constructor of the application 
- * @param Interface @param Window @param Camera @param Scene @param Renderer
- * @param Input @param Explorer
- */
-struct ApplicationCoreSetup {
-  std::shared_ptr<Interface> m_interface;
-  std::shared_ptr<Input> m_input;
-  std::shared_ptr<Window> m_window;
-  std::shared_ptr<EditorExplorer> m_explorer;
-  std::shared_ptr<EditorCamera> m_camera;
-  std::shared_ptr<Yeager::Scene> m_scene;
+struct WorldCharacterMatrices {
+  YgMatrix4 Projection;
+  YgMatrix4 View;
+  YgVector3 ViewerPos;
 };
 
 ///  @brief Class that handles the program
@@ -56,14 +51,15 @@ class ApplicationCore {
   ApplicationCore(ApplicationCore&&) = delete;
 
   /// @brief Setup the current application
-  /// @param setup An ApplicationSetup already built
-  void Setup(ApplicationCoreSetup setup);
+  void Setup();
 
   /// @brief Get a boolean if the application or user have request for stop rendering, most likely to close the program
   /// @return True if requested, false if not
   bool ShouldRender();
 
+  LauncherProjectPicker RequestLauncher();
   void Render();
+  void Terminate() {}
 
   Interface* GetInterface();
   Input* GetInput();
@@ -80,14 +76,30 @@ class ApplicationCore {
   void CheckGLAD();
 
  private:
-  void ManifestShaderProps(Yeager::Shader* shader, YgMatrix4 view, YgMatrix4 projection, YgVector3 viewPos);
+  void ManifestShaderProps(Yeager::Shader* shader);
+  void OpenGLFunc();
+  void OpenGLClear();
 
-  std::shared_ptr<Interface> m_interface = YEAGER_NULLPTR;
-  std::shared_ptr<Input> m_input = YEAGER_NULLPTR;
-  std::shared_ptr<Window> m_window = YEAGER_NULLPTR;
-  std::shared_ptr<EditorExplorer> m_explorer = YEAGER_NULLPTR;
-  std::shared_ptr<EditorCamera> m_camera = YEAGER_NULLPTR;
-  std::shared_ptr<Yeager::Scene> m_scene = YEAGER_NULLPTR;
+  void BuildApplicationCoreCompoments();
+  YgString RequestWindowEngineName(const LauncherProjectPicker& project);
+
+  float m_DeltaTime = 0.0f;
+  float m_LastFrame = 0.0f;
+  long long m_FrameCurrentCount = 0;
+
+  void UpdateDeltaTime();
+  WorldCharacterMatrices m_WorldMatrices;
+  void UpdateWorldMatrices();
+
+  void UpdateListenerPosition();
+
+  Interface* m_Interface;
+  Input* m_Input;
+  Window* m_Window;
+  EditorExplorer* m_EditorExplorer;
+  EditorCamera* m_EditorCamera;
+  Yeager::Scene* m_Scene;
+  Yeager::Launcher* m_Launcher;
 
   ApplicationState m_state = AppRunning;
   ApplicationMode m_mode = AppLauncher;

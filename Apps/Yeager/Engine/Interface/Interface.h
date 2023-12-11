@@ -21,16 +21,16 @@
 #include "../../Common/Common.h"
 #include "../Editor/Explorer.h"
 #include "../Media/AudioHandle.h"
-#include "../Renderer/Geometry.h"
+#include "../Renderer/ImageUtilities.h"
 #include "../Renderer/TextureHandle.h"
 #include "../Renderer/Window.h"
 #include "IconsFontAwesome6.h"
-#include "Notification.h"
 #include "UIManagement.h"
 
 namespace Yeager {
 class ApplicationCore;
-}  // namespace Yeager
+class Launcher;
+struct LauncherProjectPicker;
 
 /// @brief Struct of the Imgui Colorscheme, the defaults values are for the dark mode,
 /// @brief colorschemes can been readed from the colorscheme configuration folder
@@ -126,6 +126,17 @@ struct InterfaceFonts {
   float PixelSize = 14.0f;
 };
 
+struct OpenProjectsDisplay {
+  YgString Name;
+  YgString Author;
+  YgString SceneType;
+  YgString RendererType;
+  YgString Path;
+  InterfaceImage ScreenShot;
+};
+
+enum class ScreenShotMode { EFullScreen, EMiddleFixedSized, ECustomSizedAndPosition };
+
 /// @brief Class that holds the interface management, use ImGui as library, the current program must be running just one instance of this class
 /// @attention In the future, we need to write a self-custom GUI library in C for this Engine
 /// @attention so we can have more control over the drawing methods and increase performance
@@ -136,14 +147,30 @@ class Interface {
   /// @param app The ApplicationCore pointer for management
   Interface(Window* window, Yeager::ApplicationCore* app);
   ~Interface();
+  Interface() {}
+
+  void InitRenderFrame();
+  void TerminateRenderFrame();
 
   /// @brief Return a boolean representing if the program have been initialize with success
   /// @return True if initialize, false if not
   bool getInitStatus() { return m_Control.Initialize; }
 
-  /// @brief The main function to be called, it check switch current mode the program is at, and pass to the correct function for the GUI rendering
-  void RenderUI();
+  void ScreenShotWindow();
+  /**
+   * @brief When the user had choice the screenshot to be made, and is all set, the interface goes thrown a another loop
+   * and makes all the interface windows to dissapear, so they doesnt appear at the final screenshot
+   */
+  void PrepareAndMakeScreenShot();
+  /**
+   * @brief Request a restart of imgui for a new window pointer to be created, it calls all destrory functions of imgui
+   * @param window The old window pointer to the destrory
+   */
+  void RequestRestartInterface(Window* window);
 
+  /// @brief The main function to be called, it check switch current mode the program is at, and pass to the correct function for the GUI rendering
+  void RenderUI(Yeager::Launcher* launcher = nullptr);
+  bool RenderLauncher(Yeager::Launcher* launcher = nullptr);
   /// @brief ImGui have a function that let the user choice the next window position, this function does the same
   /// @param size_x Window width
   /// @param size_y Window height
@@ -171,8 +198,26 @@ class Interface {
   /// @brief Display the Exit Program Window
   /// @return The user choice to exit the program or not
   bool WindowExitProgram();
-
+  /**
+   * @brief Get the launcher information that the user had selected, in this case, if is done using the launcher
+   * @return True if the user is done, False if not
+   */
   bool GetLauncherDone() { return m_Control.LauncherDone; }
+
+  /**
+   * @brief Makes the screenshot window appear to the user
+   * @param appear if the window must appear to the user
+   */
+  void MakeScreenShotAppear(bool appear) { m_MakeScreenShotWindowShouldAppear = appear; }
+  /**
+   * @brief Returns a boolean representing if the screenshot window is appearing to the user
+   * @return True if is appearing, false if not
+   */
+  bool MakeScreenShotIsAppearing() { return m_MakeScreenShotWindowShouldAppear; }
+  /**
+   * @brief Renders the window with shaders debugging information
+   */
+  void ShadersControlWindow();
 
  private:
   InterfaceControl m_Control;
@@ -187,6 +232,24 @@ class Interface {
   Yeager::InterfaceWindow m_ToolboxWindow;
   Yeager::InterfaceWindow m_ExplorerWindow;
   Yeager::InterfaceWindow m_DebuggerWindow;
+  Yeager::InterfaceWindow m_ScreenShotWindow;
+
+  bool m_OpenProjectWindowOpen = false;
+  std::vector<OpenProjectsDisplay> m_OpenProjectToDisplay;
+
+  bool m_NewProjectWindowOpen = false;
+  bool m_NewProjectIsOkayToCreate = true;
+  Yeager::LauncherProjectPicker* m_NewProjectHandle = YEAGER_NULLPTR;
+  YgString m_NewProjectCurrentRenderer = "Default";
+  YgString m_NewProjectCurrentSceneType = "Default";
+  YgString m_NewProjectCurrentPlataformTarget = "Default";
+  std::vector<YgString> m_ProjectsNamesAlreadyTaken;
+  bool m_MakeScreenShotWindowShouldAppear = false;
+  YgString m_NewScreenShootName;
+  ScreenShotMode m_ScreenShotMode = ScreenShotMode::EFullScreen;
+  bool m_ReadyToScreenShot = false;
+  int m_ScreenShotPosition[2] = {0};
+  int m_ScreenShotSize[2] = {0};
 
   void NewProjectWindow();
 
@@ -197,7 +260,7 @@ class Interface {
   void DrawConsole();
 
   void RenderAwait();
-  void RenderLauncher();
+
   void RenderEditor();
   void RenderSettings(){};
   void RenderError(){};
@@ -209,3 +272,4 @@ class Interface {
   void CreateSpaceX(unsigned int count);
   void RenderDebugger();
 };
+}  // namespace Yeager

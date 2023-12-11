@@ -31,8 +31,12 @@ class Window {
   static void HandleError(int code, YgCchar description);
   void GetWindowSize(int* width, int* height);
   bool GenerateWindow(unsigned window_x, unsigned int window_y, YgString title);
+  bool RegenerateMainWindow(unsigned int window_x, unsigned int window_y, YgString title,
+                            GLFWcursorposfun cursor) noexcept;
+  static void ResizeCallback(GLFWwindow* window, int width, int height);
 
  private:
   GLFWwindow* m_window = nullptr;
+  unsigned char* m_IconImageData = nullptr;
   unsigned int m_window_monitor_x = 0, m_window_monitor_y = 0;
 };

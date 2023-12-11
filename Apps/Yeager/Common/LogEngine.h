@@ -18,6 +18,7 @@
 
 #pragma once
 #include "Common.h"
+#include "Utilities.h"
 
 typedef struct {
   YgString message;
@@ -64,6 +65,9 @@ void Log(int verbosity, fmt::format_string<T...> fmt, T&&... args)
     terminal_prefix = "(!!) ";
   }
 
-  std::cout << terminal_prefix << log << std::endl;
+  YgTime_t time = CurrentTimeToTimeType();
+  YgString time_str = "[ " + std::to_string(time.Time.Hours) + ":" + std::to_string(time.Time.Minutes) + ":" +
+                      std::to_string(time.Time.Seconds) + " ]";
+  std::cout << time_str << terminal_prefix << log << std::endl;
 }
 }  // namespace Yeager

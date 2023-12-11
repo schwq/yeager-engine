@@ -16,33 +16,18 @@
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // clang-format off
+
 #include "Common/Common.h"
 #include "Application.h"
-#include "Scene.h"
+
 
 // clang-format on 
 int main(int argc, char* argv[])
 {
- 
-  Yeager::ApplicationCoreSetup setup;
-  auto app = std::make_shared<Yeager::ApplicationCore>();
-  auto input = std::make_shared<Input>(app.get());
-  std::shared_ptr<Window> window = std::make_shared<Window>(ygWindowWidth, ygWindowHeight, "Yeager Engine",app->GetInput()->MouseCallback);
-  std::shared_ptr<Yeager::Scene> scene = std::make_shared<Yeager::Scene>("DefaultScene", Yeager::Scene2D, Yeager::OpenGL3_3, app.get());
-  app->CheckGLAD();
-  auto intr = std::make_shared<Interface>(window.get(), app.get());
-  auto camera = std::make_shared<EditorCamera>(app.get());
-  auto explorer = std::make_shared<EditorExplorer>(app.get());
-
-  setup.m_input = input;
-  setup.m_window = window;
-  setup.m_scene = scene;
-  setup.m_interface = intr;
-  setup.m_camera = camera;
-  setup.m_explorer = explorer;
-  setup.m_scene = scene;
-  app->Setup(setup);
-  app->Render();
-  
+  Yeager::ApplicationCore Application;
+  if(Application.ShouldRender()) {
+    Application.Render();
+  }
+  Application.Terminate();
   return EXIT_SUCCESS;
 }

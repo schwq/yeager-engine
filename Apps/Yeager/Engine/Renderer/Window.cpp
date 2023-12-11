@@ -1,11 +1,14 @@
 #include "Window.h"
 
+#include "../../../../Libraries/stb_image.h"
+
 Window::Window(unsigned int window_x, unsigned int window_y, YgString title, GLFWcursorposfun cursor)
 {
   Yeager::Log(INFO, "Creating GLFW window!");
   if (!glfwInit()) {
     Yeager::Log(ERROR, "Cannot initialize glfw!");
   }
+  glfwSetErrorCallback(HandleError);
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -16,19 +19,46 @@ Window::Window(unsigned int window_x, unsigned int window_y, YgString title, GLF
 #endif
 
   GenerateWindow(window_x, window_y, title);
-
   glfwSetCursorPosCallback(m_window, cursor);
   glfwMakeContextCurrent(m_window);
-  glfwSetErrorCallback(HandleError);
   glfwSetFramebufferSizeCallback(m_window, FramebufferSizeCallback);
   glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+  glfwSetWindowSizeCallback(m_window, ResizeCallback);
+  glfwSetWindowSizeLimits(m_window, 700, 700, 2000, 2000);
   glfwSwapInterval(1);
+}
+
+bool Window::RegenerateMainWindow(unsigned int window_x, unsigned int window_y, YgString title,
+                                  GLFWcursorposfun cursor) noexcept
+{
+  if (m_window) {
+    glfwDestroyWindow(m_window);
+    m_window = glfwCreateWindow(window_x, window_y, title.c_str(), NULL, NULL);
+    glfwSetCursorPosCallback(m_window, cursor);
+    glfwMakeContextCurrent(m_window);
+    glfwSetErrorCallback(HandleError);
+    glfwSetFramebufferSizeCallback(m_window, FramebufferSizeCallback);
+    glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    glfwSwapInterval(1);
+    return true;
+  } else {
+    Yeager::Log(WARNING, "Window pointer does not exist!");
+    return false;
+  }
+}
+
+void Window::ResizeCallback(GLFWwindow* window, int width, int height)
+{
+  ygWindowHeight = height;
+  ygWindowWidth = width;
+  Yeager::Log(INFO, "Window resized to {} {}", width, height);
 }
 
 bool Window::GenerateWindow(unsigned window_x, unsigned int window_y, YgString title)
 {
 
   m_window = glfwCreateWindow(window_x, window_y, title.c_str(), NULL, NULL);
+
   if (!m_window) {
     Yeager::Log(ERROR, "Cannot Generate GLFW Window!");
     glfwTerminate();
@@ -53,6 +83,7 @@ void Window::FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 Window::~Window()
 {
   Yeager::Log(INFO, "Destrorying Window!");
+  delete m_IconImageData;
 }
 
 void Window::GetWindowSize(int* width, int* height)

@@ -20,11 +20,15 @@
 
 #include "Common/Common.h"
 #include "Engine/Editor/Camera.h"
+#include "Engine/Renderer/ImageUtilities.h"
 #include "Engine/Renderer/Window.h"
+
+#define YEAGER_KEY_PRESS 1
+#define YEAGER_KEY_RELEASE 2
+#define YEAGER_KEY_PRESS_AND_RELEASE 3
 
 namespace Yeager {
 class ApplicationCore;
-}
 
 /// @brief Stores the last state of the camera and cursor before some modification
 struct CameraCursorLastState {
@@ -42,7 +46,7 @@ class Input {
   /// @param app The current application pointer
   Input(Yeager::ApplicationCore* app);
   ~Input();
-
+  Input() {}
   /// @brief Process all input registed by the GLFW library loaded
   /// @param window The current GLFW window been used
   /// @param delta Delta time for handling delays
@@ -85,3 +89,4 @@ class Input {
   bool m_CursorCanDisappear = true;
   bool m_CursorShouldAppear = true;
 };
+}  // namespace Yeager

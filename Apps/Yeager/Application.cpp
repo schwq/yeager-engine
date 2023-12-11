@@ -1,54 +1,174 @@
 #include "Application.h"
+#include "Engine/Renderer/Animation/AnimationEngine.h"
+#include "Engine/Renderer/Object.h"
+#include "Engine/Renderer/Skybox.h"
+#include "Engine/Terrain/ProceduralTerrain.h"
+
 using namespace Yeager;
 
 ApplicationCore::ApplicationCore()
 {
-  Log(INFO, "Application running");
+  Setup();
 }
 
-void ApplicationCore::Setup(ApplicationCoreSetup setup)
+LauncherProjectPicker ApplicationCore::RequestLauncher()
 {
-  m_interface = setup.m_interface;
-  m_input = setup.m_input;
-  m_window = setup.m_window;
-  m_explorer = setup.m_explorer;
-  m_camera = setup.m_camera;
-  m_scene = setup.m_scene;
+  m_Launcher = new Yeager::Launcher(800, 800, "Yeager Launcher", this);
+  m_Launcher->Render();
+
+  if (ShouldRender()) {
+    // The user have not decided to exit the program during the launcher phase
+    return m_Launcher->GetSelectedProject();
+  } else {
+    // The user have requested a exit program, it returns a "fake" project with the (UserWantToExit) variable set to true
+    m_Launcher->GetSelectedProjectPtr()->UserWantToExit = true;
+    return m_Launcher->GetSelectedProject();
+  }
+}
+
+YgString ApplicationCore::RequestWindowEngineName(const LauncherProjectPicker& project)
+{
+  YgString scene_renderer_str = Yeager::SceneRendererToString(project.m_SceneRenderer);
+  std::replace(scene_renderer_str.begin(), scene_renderer_str.end(), '_', ' ');
+  YgString engine_new_name = "Yeager Engine : " + project.m_Name + " / " + scene_renderer_str;
+  return engine_new_name;
+}
+
+void ApplicationCore::BuildApplicationCoreCompoments()
+{
+  m_Input = new Input(this);
+  m_Window = new Window(ygWindowWidth, ygWindowHeight, "Yeager Engine", m_Input->MouseCallback);
+  m_Interface = new Interface(m_Window, this);
+  m_EditorCamera = new EditorCamera(this);
+  m_EditorExplorer = new EditorExplorer(this);
+}
+
+void ApplicationCore::Setup()
+{
+  YgString EditorVariablesPath = GetPath("/Configuration/Editor/editor_variables.yml");
+  CheckGLAD();
+  BuildApplicationCoreCompoments();
+  InitAudioEngine();
+
+  LauncherProjectPicker project = RequestLauncher();
+  if (!project.UserWantToExit) {
+
+    m_mode = Yeager::AppEditor;
+    m_Window->RegenerateMainWindow(1920, 1080, RequestWindowEngineName(project), m_Input->MouseCallback);
+    m_Interface->RequestRestartInterface(m_Window);
+    m_Scene = new Yeager::Scene(project.m_Name, project.m_SceneType, project.m_SceneRenderer, this);
+    m_Launcher->GetNewProjectLaoded() ? m_Scene->Save() : m_Scene->Load(project.m_ProjectPath);
+    m_Scene->GetSerial().ReadEditorVariables(EditorVariablesPath.c_str());
+    m_Scene->GetSerial().ReadSceneShadersConfig(GetPath("/Configuration/Editor/Shaders/default_shaders.yaml"));
+
+  } else {
+    TerminateAudioEngine();
+  }
 }
 
 bool ApplicationCore::ShouldRender()
 {
-  return (glfwWindowShouldClose(m_window->getWindow())) ? false : true;
+  return (glfwWindowShouldClose(m_Window->getWindow())) ? false : true;
 }
 
 ApplicationCore::~ApplicationCore()
 {
-  Log(INFO, "Application shutdown");
+  delete m_EditorExplorer;
+  delete m_EditorCamera;
+  delete m_Scene;
+  delete m_Interface;
+  delete m_Input;
+  delete m_Window;
+}
+
+void ApplicationCore::UpdateDeltaTime()
+{
+  m_FrameCurrentCount++;
+  auto currentFrame = static_cast<float>(glfwGetTime());
+  m_DeltaTime = currentFrame - m_LastFrame;
+  m_LastFrame = currentFrame;
+}
+
+void ApplicationCore::UpdateWorldMatrices()
+{
+  m_WorldMatrices.Projection =
+      glm::perspective(glm::radians(45.0f), (float)ygWindowWidth / (float)ygWindowHeight, 0.1f, 10000.0f);
+  m_WorldMatrices.View = GetCamera()->ReturnViewMatrix();
+  m_WorldMatrices.ViewerPos = GetCamera()->GetPosition();
+}
+
+void ApplicationCore::UpdateListenerPosition()
+{
+  irrklang::vec3df cameraPos = Yeager::YgVec3_to_Vec3df(m_WorldMatrices.ViewerPos);
+  irrklang::vec3df cameraDir = Yeager::YgVec3_to_Vec3df(GetCamera()->GetDirection());
+  Yeager::SetListernerPos(cameraPos, cameraDir, irrklang::vec3df(0.0f, 0.0f, 0.0f), irrklang::vec3df(0.0f, 1.0f, 0.0f));
+}
+
+void ApplicationCore::Render()
+{
+  OpenGLFunc();
+
+  Yeager::Skybox skybox("Skybox", ObjectGeometryType::ECube, this, false);
+  skybox.BuildSkyboxFromImport(GetPath("/Assets/ImportedModels/anime-skybox/skybox.obj"));
+
+  while (ShouldRender()) {
+
+    glfwPollEvents();
+    OpenGLClear();
+
+    m_Interface->InitRenderFrame();
+
+    UpdateDeltaTime();
+    UpdateWorldMatrices();
+    UpdateListenerPosition();
+
+    ManifestShaderProps(ShaderFromVarName("Skybox"));
+    skybox.Draw(ShaderFromVarName("Skybox"), YgMatrix3(m_WorldMatrices.View), m_WorldMatrices.Projection);
+
+    ygAudioEngine->update();
+
+    ManifestShaderProps(ShaderFromVarName("TerrainGeneration"));
+    ManifestShaderProps(ShaderFromVarName("SimpleAnimated"));
+
+    ManifestShaderProps(ShaderFromVarName("Simple"));
+
+    for (const auto& obj : *GetScene()->GetObjects()) {
+      obj->Draw(ShaderFromVarName("Simple"));
+    }
+
+    GetInterface()->RenderUI();
+    m_Interface->TerminateRenderFrame();
+    GetInput()->ProcessInputRender(GetWindow(), m_DeltaTime);
+    glfwSwapBuffers(GetWindow()->getWindow());
+  }
+
+  GetScene()->Save();
+  TerminateAudioEngine();
 }
 
 Interface* ApplicationCore::GetInterface()
 {
-  return m_interface.get();
+  return m_Interface;
 }
 Input* ApplicationCore::GetInput()
 {
-  return m_input.get();
+  return m_Input;
 }
 Window* ApplicationCore::GetWindow()
 {
-  return m_window.get();
+  return m_Window;
 }
 EditorExplorer* ApplicationCore::GetExplorer()
 {
-  return m_explorer.get();
+  return m_EditorExplorer;
 }
 EditorCamera* ApplicationCore::GetCamera()
 {
-  return m_camera.get();
+  return m_EditorCamera;
 }
 Yeager::Scene* ApplicationCore::GetScene()
 {
-  return m_scene.get();
+  return m_Scene;
 }
 
 ApplicationMode ApplicationCore::GetMode() noexcept
@@ -69,13 +189,12 @@ void ApplicationCore::SetState(ApplicationState state) noexcept
   m_state = state;
 }
 
-void ApplicationCore::ManifestShaderProps(Yeager::Shader* shader, YgMatrix4 view, YgMatrix4 projection,
-                                          YgVector3 viewPos)
+void ApplicationCore::ManifestShaderProps(Yeager::Shader* shader)
 {
   shader->UseShader();
-  shader->SetMat4("view", view);
-  shader->SetMat4("projection", projection);
-  shader->SetVec3("viewPos", viewPos);
+  shader->SetMat4("view", m_WorldMatrices.View);
+  shader->SetMat4("projection", m_WorldMatrices.Projection);
+  shader->SetVec3("viewPos", m_WorldMatrices.ViewerPos);
 }
 
 void ApplicationCore::CheckGLAD()
@@ -85,80 +204,15 @@ void ApplicationCore::CheckGLAD()
   }
 }
 
-void ApplicationCore::Render()
+void ApplicationCore::OpenGLFunc()
 {
-  Yeager::Log(INFO, "Rendering OpenGL");
-  InitAudioEngine();
-
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
-  glCullFace(GL_FRONT);
-
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  float deltaTime = 0.0f;
-  float lastFrame = 0.0f;
-  std::vector<YgString> faces = {"right.jpg", "left.jpg", "top.jpg", "bottom.jpg", "front.jpg", "back.jpg"};
+}
 
-  for (
-
-      unsigned int x = 0; x < 6; x++) {
-    YgString path = GetPath("/Assets/textures/skybox/") + faces[x];
-    faces[x] = path;
-  }
-  GetInterface();
-  GetScene()->GetSerial().ReadSceneShadersConfig(GetPath("/Configuration/Editor/Shaders/default_shaders.yaml"));
-  Yeager::Texture2D wall_texture(GetPath("/Assets/textures/neco.jpg").c_str(), "Wall texture");
-  Yeager::Texture2D bocchi_texture(GetPath("/Assets/textures/bocchi.jpg").c_str(), "Bocchi texture");
-  Yeager::Skybox skybox(faces, "Skybox");
-
-  GetScene()->GetSerial().DeserializeScene(GetScene(), GetPath("/Configuration/Scenes/DefaultScene.yaml"));
-
-  while (ShouldRender()) {
-    float time = (float)glfwGetTime();
-    float currentFrame = static_cast<float>(glfwGetTime());
-    deltaTime = currentFrame - lastFrame;
-    lastFrame = currentFrame;
-
-    ygAudioEngine->update();
-
-    YgMatrix4 projection =
-        glm::perspective(glm::radians(45.0f), (float)ygWindowWidth / (float)ygWindowHeight, 0.1f, 1000.0f);
-    YgMatrix4 view = GetCamera()->ReturnViewMatrix();
-    YgVector3 viewPos = GetCamera()->GetPosition();
-
-    irrklang::vec3df cameraPos = Yeager::YgVec3_to_Vec3df(viewPos);
-    irrklang::vec3df cameraDir = Yeager::YgVec3_to_Vec3df(GetCamera()->GetDirection());
-    Yeager::SetListernerPos(cameraPos, cameraDir, irrklang::vec3df(0.0f, 0.0f, 0.0f),
-                            irrklang::vec3df(0.0f, 1.0f, 0.0f));
-
-    for (unsigned int x = 0; x < GetScene()->GetAudios3D()->size(); x++) {
-      YgVector3 pos = GetScene()->GetAudios3D()->at(x)->GetVector3Position();
-    }
-
-    glfwPollEvents();
-
-    glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    skybox.Draw(Yeager::ShaderFromVarName("Skybox"), YgMatrix3(view), projection);
-
-    ManifestShaderProps(Yeager::ShaderFromVarName("Common"), view, projection, viewPos);
-
-    ManifestShaderProps(Yeager::ShaderFromVarName("Simple"), view, projection, viewPos);
-
-    for (unsigned int x = 0; x < GetScene()->GetImportedObjects()->size(); x++) {
-      GetScene()->GetImportedObjects()->at(x)->Draw(Yeager::ShaderFromVarName("Simple"));
-    }
-
-    ManifestShaderProps(Yeager::ShaderFromVarName("Geometry"), view, projection, viewPos);
-    for (unsigned int x = 0; x < GetScene()->GetGeometry()->size(); x++) {
-      GetScene()->GetGeometry()->at(x)->Draw(Yeager::ShaderFromVarName("Geometry"));
-    }
-
-    GetInterface()->RenderUI();
-    GetInput()->ProcessInputRender(GetWindow(), deltaTime);
-    glfwSwapBuffers(GetWindow()->getWindow());
-  }
-  GetScene()->Save();
-  TerminateAudioEngine();
+void ApplicationCore::OpenGLClear()
+{
+  glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }

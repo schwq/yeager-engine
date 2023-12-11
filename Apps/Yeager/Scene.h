@@ -25,15 +25,12 @@
 #include "Common/Utilities.h"
 #include "Engine/Editor/ToolboxObj.h"
 #include "Engine/Media/AudioHandle.h"
-#include "Engine/Renderer/Geometry.h"
-#include "Engine/Renderer/ImportedObj.h"
+#include "Engine/Renderer/Object.h"
 #include "Serialization.h"
 
 namespace Yeager {
 class ApplicationCore;
-}
 
-namespace Yeager {
 enum SceneType { Scene2D, Scene3D, SceneError };
 enum SceneRenderer { OpenGL3_3, OpenGL4, RendererError };
 extern YgString SceneTypeToString(SceneType type);
@@ -53,6 +50,15 @@ class Scene {
   Scene(YgString name, SceneType type, SceneRenderer renderer, Yeager::ApplicationCore* app);
   //Scene(SceneContext context, Yeager::ApplicationCore* app);
   ~Scene();
+  Scene() {}
+  Yeager::Scene& operator=(const Yeager::Scene& rhs)
+  {
+    this->m_context.m_name = rhs.m_context.m_name;
+    this->m_context.m_type = rhs.m_context.m_type;
+    this->m_context.m_renderer = rhs.m_context.m_renderer;
+    this->m_context.m_file_path = rhs.m_context.m_file_path;
+    this->m_serial = Yeager::Serialization(rhs.m_app);
+  }
 
   void Save();
   void Load(YgString path);
@@ -67,8 +73,7 @@ class Scene {
 
   std::vector<std::shared_ptr<Yeager::Audio3DHandle>>* GetAudios3D();
   std::vector<std::shared_ptr<Yeager::AudioHandle>>* GetAudios();
-  std::vector<std::shared_ptr<Yeager::Geometry>>* GetGeometry();
-  std::vector<std::shared_ptr<ImportedObject>>* GetImportedObjects();
+  std::vector<std::shared_ptr<Yeager::Object>>* GetObjects();
   std::vector<std::shared_ptr<ToolBoxObject>>* GetToolboxs();
 
  private:
@@ -78,8 +83,7 @@ class Scene {
 
   std::vector<std::shared_ptr<Yeager::Audio3DHandle>> m_audios3d;
   std::vector<std::shared_ptr<Yeager::AudioHandle>> m_audios;
-  std::vector<std::shared_ptr<Yeager::Geometry>> m_geometry;
-  std::vector<std::shared_ptr<ImportedObject>> m_imported_objs;
+  std::vector<std::shared_ptr<Yeager::Object>> m_objs;
   std::vector<std::shared_ptr<ToolBoxObject>> m_toolboxs;
 
   inline YgString GetSceneFilePath();

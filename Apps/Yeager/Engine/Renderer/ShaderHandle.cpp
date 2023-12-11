@@ -14,8 +14,9 @@ Yeager::Shader* Yeager::ShaderFromVarName(YgString var)
   return nullptr;
 }
 
-Shader::Shader(YgCchar fragmentPath, YgCchar vertexPath, YgString name) : m_name(name)
+Shader::Shader(YgCchar fragmentPath, YgCchar vertexPath, YgString name)
 {
+  m_Name = name;
   m_shader_num = m_shader_count++;
   unsigned int vt = CreateVertexGL(vertexPath);
   unsigned int fg = CreateFragmentGL(fragmentPath);
@@ -56,10 +57,10 @@ unsigned int Shader::CreateVertexGL(YgCchar vertexPath)
 
     if (!vertexShaderSuccess) {
       glGetShaderInfoLog(vertexShaderSource, 512, NULL, vertexInfoLog);
-      Yeager::Log(ERROR, "Cannot create vertex shader: {}, ID: {}, Error: {}", m_name.c_str(), m_shader_num,
+      Yeager::Log(ERROR, "Cannot create vertex shader: {}, ID: {}, Error: {}", m_Name.c_str(), m_shader_num,
                   vertexInfoLog);
     } else {
-      Yeager::Log(INFO, "Success in creating vertex shader {}, ID {}", m_name.c_str(), m_shader_num);
+      Yeager::Log(INFO, "Success in creating vertex shader {}, ID {}", m_Name.c_str(), m_shader_num);
       m_vertex_build = true;
     }
 
@@ -94,10 +95,10 @@ unsigned int Shader::CreateFragmentGL(YgCchar fragmentPath)
 
     if (!fragmentShaderSuccess) {
       glGetShaderInfoLog(fragmentShaderSource, 512, NULL, fragmentInfoLog);
-      Yeager::Log(ERROR, "Cannot create fragment shader: {}, ID: {}, Error: {}", m_name.c_str(), m_shader_num,
+      Yeager::Log(ERROR, "Cannot create fragment shader: {}, ID: {}, Error: {}", m_Name.c_str(), m_shader_num,
                   fragmentInfoLog);
     } else {
-      Yeager::Log(INFO, "Success in creating fragment shader {}, ID {}", m_name.c_str(), m_shader_num);
+      Yeager::Log(INFO, "Success in creating fragment shader {}, ID {}", m_Name.c_str(), m_shader_num);
       m_fragment_build = true;
     }
 
@@ -122,9 +123,9 @@ void Shader::LinkShaders(unsigned int vertexShader, unsigned int fragmentShader)
   glGetProgramiv(m_id, GL_LINK_STATUS, &linkSuccess);
   if (!linkSuccess) {
     glGetProgramInfoLog(m_id, 512, NULL, linkInfo);
-    Yeager::Log(ERROR, "Cannot link shaders: {}, ID: {}, Error: {}", m_name.c_str(), m_shader_num, linkInfo);
+    Yeager::Log(ERROR, "Cannot link shaders: {}, ID: {}, Error: {}", m_Name.c_str(), m_shader_num, linkInfo);
   } else {
-    Yeager::Log(INFO, "Success in linking shaders: {}, ID: {}", m_name.c_str(), m_shader_num);
+    Yeager::Log(INFO, "Success in linking shaders: {}, ID: {}", m_Name.c_str(), m_shader_num);
   }
 
   glDeleteShader(vertexShader);

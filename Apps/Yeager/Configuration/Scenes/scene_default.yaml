@@ -1,5 +1,0 @@
-Scene: DefaultScene
-SceneType: 3D 
-SceneRenderer: OpenGL_3_3
-SceneEntities: 
- []

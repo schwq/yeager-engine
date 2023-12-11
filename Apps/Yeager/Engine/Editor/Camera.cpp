@@ -39,7 +39,7 @@ void EditorCamera::Update(Yeager::Shader* shader)
 
 void EditorCamera::UpdatePosition(CameraPosition position, float delta)
 {
-  UpdateSpeed(2.5 * delta);
+  UpdateSpeed(30.0f * delta);
 
   switch (position) {
     case CameraPosition::kForward:

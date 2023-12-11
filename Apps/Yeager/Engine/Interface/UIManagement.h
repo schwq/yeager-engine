@@ -75,6 +75,7 @@ struct WindowMenuBar {
 };
 
 extern WindowMenuBar EngineEditorMenuBar;
+extern bool EngineEditorWindowShouldVanish;
 
 class InterfaceWindow {
  public:

@@ -24,7 +24,13 @@
 #error C++ needed to compile project!.
 #endif
 
-#include "SystemDetect.h"
+#include "PlataformDetect.h"
+
+// Enable debug functions and messages
+#define YEAGER_DEBUG true
+#undef YEAGER_DEBUG
+// Enable all kind of important messages, useful for debugging
+#define YEAGER_DEBUG_VERBOSE true
 
 // Version is written as (major version * 100 + minor version)
 #define YEAGER_VERSION 100
@@ -92,9 +98,12 @@
 #include <string.h>
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <climits>
+#include <ctime>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <ios>
 #include <iostream>
 #include <memory>

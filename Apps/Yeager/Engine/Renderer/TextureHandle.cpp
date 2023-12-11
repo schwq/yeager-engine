@@ -1,10 +1,43 @@
 #include "TextureHandle.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "../../../../Libraries/stb_image.h"
 
 using namespace Yeager;
 
 unsigned int Texture2D::m_TextureEngineCount = 0;
+
+unsigned int LoadTextureCubeMap(std::vector<YgString> paths, bool flip)
+{
+
+  stbi_set_flip_vertically_on_load(flip);
+  GLuint id = 0;
+
+  glGenTextures(1, &id);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, id);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+  int width, height, channels;
+  for (unsigned int i = 0; i < paths.size(); i++) {
+    unsigned char* data = stbi_load(paths[i].c_str(), &width, &height, &channels, 0);
+
+    if (data) {
+      glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+
+      stbi_image_free(data);
+    } else {
+      Yeager::Log(ERROR, "Cannot read data from skybox file {}", paths[i].c_str());
+      stbi_image_free(data);
+      return 0;
+    }
+  }
+  glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+  return id;
+}
 
 Texture2D::~Texture2D()
 {
@@ -90,6 +123,7 @@ void Texture2D::GenerateTexture()
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
@@ -132,69 +166,4 @@ Texture2D::Texture2D(YgCchar texturePath, YgString name) : m_Name(name)
 
   GenerateTexture();
   ReadDataToTexture(texturePath);
-}
-
-Skybox::~Skybox()
-{
-  glDeleteTextures(1, &m_id);
-}
-
-Skybox::Skybox(std::vector<YgString> faces, YgString name) : m_name(name)
-{
-  glGenVertexArrays(1, &skyboxVAO);
-  glGenBuffers(1, &skyboxVBO);
-  glBindVertexArray(skyboxVAO);
-  glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-  glBindVertexArray(0);
-  stbi_set_flip_vertically_on_load(false);
-
-  GenerateTexture();
-  ReadDataToTexture(faces);
-}
-
-void Skybox::GenerateTexture()
-{
-  glGenTextures(1, &m_id);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, m_id);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-}
-
-void Skybox::ReadDataToTexture(std::vector<YgString> faces)
-{
-  int width, height, channels;
-  for (unsigned int i = 0; i < faces.size(); i++) {
-    unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &channels, 0);
-
-    if (data) {
-      glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-
-      stbi_image_free(data);
-    } else {
-      Yeager::Log(ERROR, "Cannot read data from skybox file {}", faces[i].c_str());
-      stbi_image_free(data);
-    }
-  }
-  Yeager::Log(INFO, "Create Skybox: {}", m_name.c_str());
-  glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-}
-
-void Skybox::Draw(Yeager::Shader* shader, YgMatrix4 view, YgMatrix4 projection)
-{
-  glDepthFunc(GL_LEQUAL);
-  shader->UseShader();
-  shader->SetMat4("view", view);
-  shader->SetMat4("projection", projection);
-  glBindVertexArray(skyboxVAO);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, m_id);
-  glDrawArrays(GL_TRIANGLES, 0, 36);
-  glBindVertexArray(0);
-  glDepthFunc(GL_LESS);
 }

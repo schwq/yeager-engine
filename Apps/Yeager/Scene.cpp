@@ -4,23 +4,27 @@ using namespace Yeager;
 
 SceneType Yeager::StringToScreneType(YgString str)
 {
-  if (str == "Scene2D") {
-    return Scene2D;
-  } else if (str == "Scene3D") {
-    return Scene3D;
-  } else {
-    return SceneError;
+  switch (Yeager::StringToInteger(str.c_str())) {
+    case Yeager::StringToInteger("Scene2D"):
+      return Scene2D;
+    case Yeager::StringToInteger("Scene3D"):
+      return Scene3D;
+    default:
+      Yeager::Log(ERROR, "Cannot convert string to scene type!");
+      return SceneError;
   }
 }
 
 SceneRenderer Yeager::StringToSceneRenderer(YgString str)
 {
-  if (str == "OpenGL3_3") {
-    return OpenGL3_3;
-  } else if (str == "OpenGL4") {
-    return OpenGL4;
-  } else {
-    return RendererError;
+  switch (Yeager::StringToInteger(str.c_str())) {
+    case Yeager::StringToInteger("OpenGL3_3"):
+      return OpenGL3_3;
+    case Yeager::StringToInteger("OpenGL4"):
+      return OpenGL4;
+    default:
+      Yeager::Log(ERROR, "Cannot convert string to scene renderer!");
+      return RendererError;
   }
 }
 
@@ -102,16 +106,13 @@ std::vector<std::shared_ptr<Yeager::AudioHandle>>* Scene::GetAudios()
 {
   return &m_audios;
 }
-std::vector<std::shared_ptr<Yeager::Geometry>>* Scene::GetGeometry()
-{
-  return &m_geometry;
-}
-std::vector<std::shared_ptr<ImportedObject>>* Scene::GetImportedObjects()
-{
-  return &m_imported_objs;
-}
 
 std::vector<std::shared_ptr<ToolBoxObject>>* Scene::GetToolboxs()
 {
   return &m_toolboxs;
+}
+
+std::vector<std::shared_ptr<Yeager::Object>>* Scene::GetObjects()
+{
+  return &m_objs;
 }

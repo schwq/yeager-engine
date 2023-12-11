@@ -1,0 +1,26 @@
+EditorVersionLang: 1.0.0
+
+Yeager.EngineName: "Yeager Engine"
+Yeager.EngineVersion: "1.0.0"
+Yeager.EngineVersionString: "Version 1.0.0"
+
+Launcher.NewProject.Button: "New Project"
+Launcher.NewProject.Input.ProjectName: "Project Name"
+Launcher.OpenProject.Button: "Open Project"
+Launcher.EngineDescription.String.1: "Welcome to the Yeager Engine!" 
+Launcher.EngineDescription.String.2: "This is a small project, being build by one developer with the propose"
+Launcher.EngineDescription.String.3: "of being a great render / game engine program."
+Launcher.EngineDescription.String.4: "This engine is open source and free, check out the github repository:"
+Launcher.EngineDescription.String.5: "https://github.com/schwq/yeager-engine"
+
+Editor.ExitProgram.Title: "Exit Program?"
+Editor.ExitProgram.String.1: "Do you really want to exit the program?"
+Editor.ExitProgram.String.2: "Unsaved work wont been load next time!"
+Editor.ExitProgram.Button.Exit: "Exit"
+Editor.ExitProgram.Button.Cancel: "Cancel"
+Editor.WarningWindow.Title: "Warning"
+Editor.WarningWindow.Button.Understood: "Understood"
+Editor.ToolboxWindow.InterfaceWindow.Name: "Toolbox"
+Editor.ConsoleWindow.InterfaceWindow.Name: "Console"
+Editor.Explorer.InterfaceWindow.Name: "Explorer"
+

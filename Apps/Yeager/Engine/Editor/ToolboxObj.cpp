@@ -1,5 +1,8 @@
 #include "ToolboxObj.h"
+#include "../Interface/IconsFontAwesome6.h"
 #include "../Renderer/Entity.h"
+#include "../Renderer/Object.h"
+#include "../Interface/Interface.h"
 using namespace ImGui;
 using namespace Yeager;
 
@@ -68,6 +71,8 @@ void ToolBoxObject::DrawObject()
       case ExplorerObjectType::kShapes:
       case ExplorerObjectType::kPointLight:
       case ExplorerObjectType::kImportedObject:
+        Checkbox("Should Render", m_entity->GetRender());
+
         Text("Position:");
         InputFloat("Pos X", &trans->position.x);
         InputFloat("Pos Y", &trans->position.y);
@@ -90,9 +95,9 @@ void ToolBoxObject::DrawObject()
         InputFloat("Rot Y", &trans->rotation.y);
         InputFloat("Rot Z", &trans->rotation.z);
 
-        SliderFloat("Scale X", &trans->scale.x, 0.01f, 100.0f);
-        SliderFloat("Scale Y", &trans->scale.y, 0.01f, 100.0f);
-        SliderFloat("Scale Z", &trans->scale.z, 0.01f, 100.0f);
+        InputFloat("Scale X", &trans->scale.x, 0.01f, 100.0f);
+        InputFloat("Scale Y", &trans->scale.y, 0.01f, 100.0f);
+        InputFloat("Scale Z", &trans->scale.z, 0.01f, 100.0f);
 
         Checkbox("Gravity Enabled", &m_gravity_checkbox);
         m_physics->GravityEnabled(m_gravity_checkbox);
@@ -106,6 +111,16 @@ void ToolBoxObject::DrawObject()
         InputFloat("Gravity Const", &obj_gravity_const);
         m_physics->ChangeGravity(obj_gravity_const, obj_weight);
 
+        for(auto& tex : *m_entity->GetLoadedTextures()) {
+
+          ImGui::Text("%s", tex->Name.c_str());
+          ImGui::Text("%s", tex->Type.c_str());
+          Image((void*)(intptr_t)tex->ID, ImVec2(300, 300));
+        }
+
+        break;
+      case ExplorerObjectType::kSkybox:
+        Checkbox("ShouldRender", m_entity->GetRender());
         break;
       case ExplorerObjectType::k3DAudio:
       case ExplorerObjectType::kAudio:
@@ -114,29 +129,29 @@ void ToolBoxObject::DrawObject()
           break;
         }
         Text("Driver name %s", m_audio->GetEngine()->getDriverName());
-        if (Button("Play")) {
+        if (Button(ICON_FA_PLAY " Play")) {
           m_audio->Play();
         }
         SameLine();
-        if (Button("Stop")) {
+        if (Button(ICON_FA_STOP " Stop")) {
           m_audio->Stop();
         }
         SameLine();
-        if (Button("Pause")) {
+        if (Button(ICON_FA_PAUSE " Pause")) {
           m_audio->Pause();
         }
         SameLine();
-        if (Button("Resume")) {
+        if (Button(ICON_FA_MUSIC " Resume")) {
           m_audio->Resume();
         }
-        if (Button("Forward 10s")) {
+        if (Button(ICON_FA_FORWARD " Forward 10s")) {
           m_audio->SetSoundPos(m_audio->GetSoundPos() + 10 * 1000);
         }
         SameLine();
-        if (Button("Back 10s")) {
+        if (Button(ICON_FA_BACKWARD " Back 10s")) {
           m_audio->SetSoundPos(m_audio->GetSoundPos() - 10 * 1000);
         }
-        SliderFloat("Volume", &m_sound_volume, 0.0f, 1.0f);
+        SliderFloat(ICON_FA_VOLUME_HIGH " Volume", &m_sound_volume, 0.0f, 1.0f);
         m_audio->SetVolume(m_sound_volume);
 
         unsigned int time_reimander = (m_audio->GetLenght() - m_audio->GetSoundPos()) / 1000;
@@ -158,6 +173,7 @@ void ToolBoxObject::DrawObject()
         }
 
         break;
+
     }
   }
 }
