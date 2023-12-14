@@ -49,17 +49,7 @@ const T* cend(const T* arr, size_t N)
 
 namespace Yeager {
 enum class ImageExtension { EPng, EJpeg };
-constexpr YgString ImageExtensionToString(ImageExtension ext)
-{
-  switch (ext) {
-    case ImageExtension::EJpeg:
-      return ".jpg";
-    case ImageExtension::EPng:
-      return ".png";
-    default:
-      return ".png";
-  }
-}
+extern YgString ImageExtensionToString(ImageExtension ext);
 }  // namespace Yeager
 
 struct ImagePixel {

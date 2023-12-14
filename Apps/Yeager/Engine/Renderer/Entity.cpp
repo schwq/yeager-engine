@@ -1,7 +1,7 @@
 #include "Entity.h"
 using namespace Yeager;
 
-constexpr Transformation Yeager::GetDefaultTransformation()
+Transformation Yeager::GetDefaultTransformation()
 {
   Transformation trans;
   trans.model = YgMatrix4(1.0f);

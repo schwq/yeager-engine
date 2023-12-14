@@ -39,10 +39,10 @@ extern SceneType StringToScreneType(YgString str);
 extern SceneRenderer StringToSceneRenderer(YgString str);
 
 struct SceneContext {
-  YgString m_name;
-  YgString m_file_path;
-  SceneType m_type;
-  SceneRenderer m_renderer;
+  YgString m_name = YEAGER_NULL_LITERAL;
+  YgString m_file_path = YEAGER_NULL_LITERAL;
+  SceneType m_type = SceneType::Scene2D;
+  SceneRenderer m_renderer = SceneRenderer::OpenGL3_3;
 };
 
 class Scene {

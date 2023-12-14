@@ -21,9 +21,9 @@
 #include "Utilities.h"
 
 typedef struct {
-  YgString message;
-  int verbosity;
-  ImVec4 text_color;
+  YgString message = YEAGER_NULL_LITERAL;
+  int verbosity = -1;
+  ImVec4 text_color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 } ConsoleLogSender;
 
 extern ImVec4 VerbosityToColor(int verbosity);

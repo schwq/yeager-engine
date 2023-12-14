@@ -23,11 +23,5 @@ void Launcher::Render()
 }
 void Launcher::BuildNewProject(const Yeager::LauncherProjectPicker& project)
 {
-  m_ProjectCurrentSelected.m_Name = project.m_Name;
-  m_ProjectCurrentSelected.m_ProjectPath = project.m_ProjectPath;
-  m_ProjectCurrentSelected.m_SceneRenderer = project.m_SceneRenderer;
-  m_ProjectCurrentSelected.m_SceneType = project.m_SceneType;
-  m_ProjectCurrentSelected.m_SceneConfigPath = project.m_SceneConfigPath;
-  m_ProjectCurrentSelected.m_PlataformTarget = project.m_PlataformTarget;
-  m_ProjectCurrentSelected.UserWantToExit = project.UserWantToExit;
+  m_ProjectCurrentSelected = project;
 }

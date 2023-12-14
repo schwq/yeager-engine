@@ -8,11 +8,10 @@ std::vector<OpenProjectsDisplay> Yeager::ReadProjectsToDisplay(YgString dir)
   std::vector<OpenProjectsDisplay> rt_proj;
   for (const auto& entry : std::filesystem::directory_iterator(dir)) {
     try {
-
-      YAML::Node node = YAML::LoadFile(entry.path().c_str());
+      YAML::Node node = YAML::LoadFile(entry.path().string());
       OpenProjectsDisplay proj;
 
-      proj.Path = entry.path().c_str();
+      proj.Path = entry.path().string();
 
       if (node["Scene"]) {
         proj.Name = node["Scene"].as<YgString>();
@@ -26,7 +25,9 @@ std::vector<OpenProjectsDisplay> Yeager::ReadProjectsToDisplay(YgString dir)
         proj.SceneType = node["SceneType"].as<YgString>();
       }
 
-      proj.Author = "Rick";
+      if (node["Author"]) {
+        proj.Author = node["Author"].as<YgString>();
+      }
       rt_proj.push_back(proj);
 
     } catch (YAML::BadFile bad) {

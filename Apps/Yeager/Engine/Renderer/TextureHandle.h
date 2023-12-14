@@ -54,10 +54,10 @@ class Texture2D {
   YEAGER_NODISCARD constexpr GLuint GetID() const { return m_OpenGL_ID; }
 
   // Imported object use
-  constexpr YgString GetPath() { return m_TexturePath; }
-  constexpr void SetPath(YgString path) { m_TexturePath = path; }
-  constexpr YgString GetTypeName() { return m_TypeName; }
-  constexpr void SetTypeName(YgString typeName) { m_TypeName = typeName; }
+  YgString GetPath() { return m_TexturePath; }
+  void SetPath(YgString path) { m_TexturePath = path; }
+  YgString GetTypeName() { return m_TypeName; }
+  void SetTypeName(YgString typeName) { m_TypeName = typeName; }
 
   constexpr int GetWidth() const { return TextureWidth; }
   constexpr int GetHeight() const { return TextureHeight; }

@@ -31,6 +31,7 @@
 *.out
 *.app
 
+out/
 x64/
 .vs/
 build/
@@ -39,3 +40,6 @@ build/
 Apps/yaeger/yaeger_engine
 yeager
 imgui.ini
+YeagerEngine.vcxproj
+YeagerEngine.vcxproj.filters
+YeagerEngine.vcxproj.user

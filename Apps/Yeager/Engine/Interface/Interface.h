@@ -80,7 +80,7 @@ struct ColorschemeConfig {
 /// @brief  so it doesnt keep logging the same thing
 struct InterfaceWarningWindow {
   YgString Warning;
-  unsigned int SizeWidth, SizeHeight;
+  unsigned int SizeWidth = 0, SizeHeight = 0;
   bool Active = false;
   bool FirstLogWarning = true;
 };
@@ -241,6 +241,7 @@ class Interface {
   bool m_NewProjectIsOkayToCreate = true;
   Yeager::LauncherProjectPicker* m_NewProjectHandle = YEAGER_NULLPTR;
   YgString m_NewProjectCurrentRenderer = "Default";
+  YgString m_NewProjectAuthorName = "Default";
   YgString m_NewProjectCurrentSceneType = "Default";
   YgString m_NewProjectCurrentPlataformTarget = "Default";
   std::vector<YgString> m_ProjectsNamesAlreadyTaken;

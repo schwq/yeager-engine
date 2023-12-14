@@ -110,6 +110,7 @@ bool Yeager::DrawSeparateMesh(ObjectMeshData* mesh, Yeager::Shader* shader)
   glBindVertexArray(0);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, 0);
+  return true;
 }
 
 bool Yeager::DrawSeparateInstancedMesh(ObjectMeshData* mesh, Yeager::Shader* shader, int amount)
@@ -136,6 +137,8 @@ bool Yeager::DrawSeparateInstancedMesh(ObjectMeshData* mesh, Yeager::Shader* sha
   glBindVertexArray(0);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, 0);
+
+  return true;
 }
 
 bool Object::GenerateObjectGeometry(ObjectGeometryType geometry)
@@ -146,21 +149,26 @@ bool Object::GenerateObjectGeometry(ObjectGeometryType geometry)
       case ObjectGeometryType::ECube:
         m_GeometryData.Vertices = GenerateCubeVertices();
         m_GeometryData.Indices = GenerateCubeIndices();
-        Setup();
-        m_ObjectDataLoaded = true;
-
-        Yeager::Log(INFO, "Success in loading geometry {}", m_Name);
-
-        m_Toolbox->SetTransformation(this);
-        m_Toolbox->SetPhysics(GetPhysics());
-        m_Toolbox->SetType(ExplorerObjectType::kShapes);
-        m_Application->GetScene()->GetToolboxs()->push_back(m_Toolbox);
-
-        return true;
+        break;
+      case ObjectGeometryType::ESphere:
+        m_GeometryData.Vertices = GenerateSphereVertices(50, 50);
+        m_GeometryData.Indices = GenerateSphereIndices(50, 50);
+        break;
       default:
         Yeager::Log(ERROR, "Cannot generate geometry, invalid type! model {}", m_Name);
         return false;
     }
+    Setup();
+    m_ObjectDataLoaded = true;
+
+    Yeager::Log(INFO, "Success in loading geometry {}", m_Name);
+
+    m_Toolbox->SetTransformation(this);
+    m_Toolbox->SetPhysics(GetPhysics());
+    m_Toolbox->SetType(ExplorerObjectType::kShapes);
+    m_Application->GetScene()->GetToolboxs()->push_back(m_Toolbox);
+
+    return true;
   } else {
     Yeager::Log(WARNING, "Object data already loaded! Trying to load geometry to model {}", m_Name);
     return false;
@@ -304,20 +312,21 @@ void Object::Setup()
     glGenVertexArrays(1, &m_GeometryData.m_Vao);
     glGenBuffers(1, &m_GeometryData.m_Vbo);
     glGenBuffers(1, &m_GeometryData.m_Ebo);
+
     glBindVertexArray(m_GeometryData.m_Vao);
     glBindBuffer(GL_ARRAY_BUFFER, m_GeometryData.m_Vbo);
     glBufferData(GL_ARRAY_BUFFER, m_GeometryData.Vertices.size() * sizeof(GLfloat), &m_GeometryData.Vertices[0],
                  GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_GeometryData.m_Ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_GeometryData.Indices.size() * sizeof(uint), &m_GeometryData.Indices[0],
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_GeometryData.Indices.size() * sizeof(GLuint), &m_GeometryData.Indices[0],
                  GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
     glEnableVertexAttribArray(2);
 
     glBindVertexArray(0);
@@ -413,6 +422,7 @@ void AnimatedObject::Draw(Shader* shader)
   }
 }
 
+
 void AnimatedObject::DrawMeshes(Shader* shader)
 {
   for (auto& mesh : m_ModelData.Meshes) {
@@ -434,7 +444,7 @@ void AnimatedObject::DrawMeshes(Shader* shader)
       } else if (name == "texture_height") {
         number = std::to_string(heightNum++);
       }
-      shader->SetInt((name + number).c_str(), x);
+      shader->SetInt(("material." + name + number).c_str(), x);
       glBindTexture(GL_TEXTURE_2D, mesh.Textures[x].ID);
     }
 
@@ -476,6 +486,126 @@ std::vector<GLfloat> Yeager::GenerateCubeVertices()
 }
 std::vector<GLuint> Yeager::GenerateCubeIndices()
 {
-  return std::vector<GLuint>{0, 1, 3, 3, 1, 2, 1, 5, 2, 2, 5, 6, 5, 4, 6, 6, 4, 7,
-                             4, 0, 7, 7, 0, 3, 3, 2, 7, 7, 2, 6, 4, 5, 0, 0, 5, 1};
+  return std::vector<GLuint>{0, 3, 2, 2, 1, 0, 4, 5, 6, 6, 7, 4,
+                             // left and right
+                             11, 8, 9, 9, 10, 11, 12, 13, 14, 14, 15, 12,
+                             // bottom and top
+                             16, 17, 18, 18, 19, 16, 20, 21, 22, 22, 23, 20};
 }
+
+std::vector<GLfloat> Yeager::GenerateSphereVertices(int stackCount, int sectorCount) {
+  std::vector<GLfloat> vertices;
+  int radius = 10;
+
+    float x, y, z, xy;
+  float nx, ny, nz, lenghtInv = 1.0f / radius;
+    float s, t;
+
+    float sectorStep = 2 * PI / sectorCount;
+    float stackStep = PI / stackCount;
+    float sectorAngle, stackAngle;
+
+    for (int i = 0; i <= stackCount; ++i) {
+    stackAngle = PI / 2 - i * stackStep;
+    xy = radius * cosf(stackAngle);
+    z = radius * sinf(stackAngle);
+
+    for (int j = 0; j <= sectorCount; ++j) {
+      sectorAngle = j * sectorStep;
+
+      x = xy * cosf(sectorAngle);
+      y = xy * sinf(sectorAngle);
+      vertices.push_back(x);
+      vertices.push_back(y);
+      vertices.push_back(z);
+
+      nx = x * lenghtInv;
+      ny = y * lenghtInv;
+      nz = z * lenghtInv;
+      vertices.push_back(nx);
+      vertices.push_back(ny);
+      vertices.push_back(nz);
+
+      s = (float)j / sectorCount;
+      t = (float)i / stackCount;
+      vertices.push_back(s);
+      vertices.push_back(t);
+    }
+    }
+    return vertices;
+}
+
+std::vector<GLuint> Yeager::GenerateSphereIndices(int stackCount, int sectorCount)
+{
+    std::vector<GLuint> indices;
+    int k1, k2;
+    for (int x = 0; x < stackCount; ++x) {
+        k1 = x * (sectorCount + 1);
+        k2 = k1 + sectorCount + 1;
+        for (int y = 0; y < sectorCount; ++y, ++k1, ++k2) {
+            if (x != 0) {
+                indices.push_back(k1);
+                indices.push_back(k2);
+                indices.push_back(k1 + 1);
+            }
+
+            if (x != (stackCount - 1)) {
+                indices.push_back(k1 + 1);
+                indices.push_back(k2);
+                indices.push_back(k2 + 1);
+            }
+        }
+    }
+    return indices;
+}
+
+void Yeager::InstancedAnimatedObject::Draw(Yeager::Shader* shader) {
+  if (m_ObjectDataLoaded && m_Render) {
+    shader->UseShader();
+    ProcessTransformation(shader);
+    DrawAnimatedMeshes(shader);
+  }
+}
+
+void Yeager::InstancedAnimatedObject::BuildProp(const std::vector<YgVector3>& positions, Shader* shader) {
+  shader->UseShader();
+  for (unsigned int x = 0; x < m_InstancedObjs; x++) {
+    shader->SetVec3("offsets[" + std::to_string(x) + "]", positions[x]);
+  }
+}
+
+void Yeager::InstancedAnimatedObject::DrawAnimatedMeshes(Shader* shader) {
+  for (auto& mesh : m_ModelData.Meshes) {
+    unsigned int diffuseNum = 1;
+    unsigned int specularNum = 1;
+    unsigned int normalNum = 1;
+    unsigned int heightNum = 1;
+
+    for (unsigned int x = 0; x < mesh.Textures.size(); x++) {
+      glActiveTexture(GL_TEXTURE0 + x);
+      YgString number;
+      YgString name = mesh.Textures[x].Name;
+      if (name == "texture_diffuse") {
+        number = std::to_string(diffuseNum++);
+      } else if (name == "texture_specular") {
+        number = std::to_string(specularNum++);
+      } else if (name == "texture_normal") {
+        number = std::to_string(normalNum++);
+      } else if (name == "texture_height") {
+        number = std::to_string(heightNum++);
+      }
+      YgString mat = ("material." + name + number).c_str();
+      shader->SetInt(mat, x);
+      glBindTexture(GL_TEXTURE_2D, mesh.Textures[x].ID);
+    }
+
+    glBindVertexArray(mesh.m_Vao);
+    glDrawElementsInstanced(GL_TRIANGLES, static_cast<GLsizei>(mesh.Indices.size()), GL_UNSIGNED_INT, nullptr, m_InstancedObjs);
+
+    glBindVertexArray(0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+  }
+}
+
+

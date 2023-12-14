@@ -9,11 +9,10 @@ Window::Window(unsigned int window_x, unsigned int window_y, YgString title, GLF
     Yeager::Log(ERROR, "Cannot initialize glfw!");
   }
   glfwSetErrorCallback(HandleError);
-
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
+  glfwWindowHint(GLFW_SAMPLES, 4);
 #ifdef YEAGER_SYSTEM_MACOS
   glfwWindowHint(GLFW_OPENGL_FORWAND_COMPAT, GL_TRUE);
 #endif

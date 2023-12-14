@@ -65,7 +65,7 @@ struct CommonMeshData {
     Textures = textures;
     Indices = indices;
   }
-  GLuint m_Vao, m_Vbo, m_Ebo;
+  GLuint m_Vao = -1, m_Vbo = -1, m_Ebo = -1;
 };
 
 struct ObjectMeshData : public CommonMeshData {
@@ -123,6 +123,10 @@ extern std::vector<GLfloat> GenerateCubeVertices();
 
 extern std::vector<GLuint> GenerateCubeIndices();
 
+extern std::vector<GLfloat> GenerateSphereVertices(int stackCount, int sectorCount);
+
+extern std::vector<GLuint> GenerateSphereIndices(int stackCount, int sectorCount);
+
 extern std::vector<GLfloat> GenerateAllDataIntoVector(ObjectModelData* data);
 
 extern void DeleteMeshGLBuffers(ObjectMeshData* mesh);
@@ -130,6 +134,8 @@ extern void DeleteMeshGLBuffers(ObjectMeshData* mesh);
 extern bool DrawSeparateMesh(ObjectMeshData* mesh, Yeager::Shader* shader);
 
 extern bool DrawSeparateInstancedMesh(ObjectMeshData* mesh, Yeager::Shader* shader, int amount);
+
+extern bool DrawSeparateInstancedAnimatedMesh(AnimatedObjectMeshData* mesh, Yeager::Shader* shader, int amount);
 
 extern std::vector<GLfloat> ExtractVerticesFromEveryMesh(ObjectModelData* model);
 
@@ -147,7 +153,7 @@ class Object : public GameEntity {
   constexpr inline ObjectModelData* GetModelData() { return &m_ModelData; }
   constexpr inline ObjectGeometryData* GetGeometryData() { return &m_GeometryData; }
   constexpr inline EntityPhysics* GetPhysics() { return &m_Physics; }
-  constexpr inline YgString GetPath() { return m_Path; }
+  inline YgString GetPath() { return m_Path; }
 
  protected:
   virtual void Setup();
@@ -168,13 +174,29 @@ class AnimatedObject : public Object {
  public:
   AnimatedObject(YgString name, ApplicationCore* application);
   bool ImportObjectFromFile(YgCchar path, bool flip_image = false);
-  void Draw(Shader* shader);
+  virtual void Draw(Shader* shader);
   AnimatedObjectModelData* GetModelData() { return &m_ModelData; }
 
- private:
+ protected:
   void Setup();
   void DrawMeshes(Shader* shader);
   AnimatedObjectModelData m_ModelData;
+};
+
+class InstancedAnimatedObject : public AnimatedObject {
+ public:
+  InstancedAnimatedObject(YgString name, ApplicationCore* application, GLuint number) : AnimatedObject(name, application)
+  {
+    m_InstancedObjs = number;
+  }
+  ~InstancedAnimatedObject() {}
+
+  void Draw(Yeager::Shader* shader);
+  void BuildProp(const std::vector<YgVector3>& positions, Shader* shader);
+
+ protected: 
+  void DrawAnimatedMeshes(Shader* shader);
+  GLuint m_InstancedObjs = 0;
 };
 
 class InstancedObject : public Object {

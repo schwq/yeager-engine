@@ -412,7 +412,7 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
     m_NewProjectHandle = new Yeager::LauncherProjectPicker();
     for (const auto& entry : std::filesystem::directory_iterator(GetPath("/Configuration/Scenes"))) {
       // Removes the extension of the file name, like (file.yaml) becomes (file.)
-      YgString str = RemoveSuffixUntilCharacter(entry.path().filename().c_str(), '.');
+      YgString str = RemoveSuffixUntilCharacter(entry.path().filename().string(), '.');
       // Removes the point at reimans at the end of the file name (file.) becomes (file)
       str.erase(str.length() - 1);
       m_ProjectsNamesAlreadyTaken.push_back(str);
@@ -436,6 +436,9 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
         m_NewProjectIsOkayToCreate = true;
       }
     }
+
+    InputText("Author`s Name", &m_NewProjectAuthorName);
+    m_NewProjectHandle->m_AuthorName = m_NewProjectAuthorName;
 
     if (BeginCombo("Renderer Type", m_NewProjectCurrentRenderer.c_str())) {
       for (unsigned int x = 0; x < 2; x++) {
@@ -477,6 +480,8 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
 
     if (Button("Create")) {
       if (m_NewProjectIsOkayToCreate) {
+        YgTime_t current_time = CurrentTimeToTimeType();
+        m_NewProjectHandle->m_ProjectDateOfCreation = current_time.Date;
         launcher->BuildNewProject(*m_NewProjectHandle);
         launcher->SetUserHasSelect(true);
         launcher->SetNewProjectLoaded(true);

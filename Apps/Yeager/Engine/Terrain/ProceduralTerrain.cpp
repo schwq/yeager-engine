@@ -39,7 +39,10 @@ void ProceduralTerrain::GenerateTerrain(Shader* shader, int octaves, int bias, b
   Setup();
 }
 
-float ProceduralTerrain::GetHeightInterpolated(float x, float z) const {}
+float ProceduralTerrain::GetHeightInterpolated(float x, float z) const
+{
+  return 0;
+}
 
 void TerrainVertex::InitVertex(ProceduralTerrain* Terrain, int x, int z)
 {

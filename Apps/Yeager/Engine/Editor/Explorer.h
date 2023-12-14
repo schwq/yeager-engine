@@ -34,7 +34,7 @@ class EditorExplorer {
   EditorExplorer() {}
   void DrawExplorer();
 
-  Yeager::ToolBoxObject* toolbox_selected;
+  Yeager::ToolBoxObject* toolbox_selected = nullptr;
 
  private:
   Yeager::ApplicationCore* m_app = nullptr;
@@ -52,8 +52,8 @@ class EditorExplorer {
   bool m_add_geometry_shape_cube = false;
   bool m_looped_audio = false;
   bool m_add_audio_is_3d = false;
-  YgString m_new_object_name;
-  YgString m_new_object_path;
-  YgString m_new_object_texture_path;
+  YgString m_new_object_name = YEAGER_NULL_LITERAL;
+  YgString m_new_object_path = YEAGER_NULL_LITERAL;
+  YgString m_new_object_texture_path = YEAGER_NULL_LITERAL;
 };
 }  // namespace Yeager

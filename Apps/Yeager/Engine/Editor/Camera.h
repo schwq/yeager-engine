@@ -48,17 +48,18 @@ class EditorCamera {
   const YgVector3 GetDirection();
   const float& GetSensitivity();
   constexpr inline void SetDirection(const YgVector3& dir) { m_CameraDirection = dir; }
+  const YgVector3 GetFront() { return m_CameraFront; }
 
  protected:
-  YgVector3 m_Position;
-  YgVector3 m_CameraFront;
-  YgVector3 m_CameraUp;
-  YgVector3 m_CameraDirection;
+  YgVector3 m_Position = YgVector3(0.0f);
+  YgVector3 m_CameraFront = YgVector3(0.0f);
+  YgVector3 m_CameraUp = YgVector3(0.0f);
+  YgVector3 m_CameraDirection = YgVector3(0.0f);
   float m_Sensitivity = 0.1f;
   float m_CameraYaw = 0.0f;
   float m_CameraPitch = 0.0f;
   float m_CameraSpeed = 2.0f;
-  Yeager::ApplicationCore* m_Application;
+  Yeager::ApplicationCore* m_Application = nullptr;
   bool m_CameraShouldMove = false;
 };
 

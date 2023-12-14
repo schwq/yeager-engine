@@ -55,7 +55,7 @@ class Bone {
   void Update(float AnimationTime);
 
   constexpr YgMatrix4 GetLocalTransform() { return m_LocalTransform; }
-  constexpr YgString GetBoneName() { return m_Name; }
+  YgString GetBoneName() { return m_Name; }
   constexpr int GetBoneID() { return m_ID; }
 
   int GetPositionIndex(float AnimationTime);

@@ -3,6 +3,7 @@
 #include "Engine/Renderer/Object.h"
 #include "Engine/Renderer/Skybox.h"
 #include "Engine/Terrain/ProceduralTerrain.h"
+#include "Engine/Lighting/LightHandle.h"
 
 using namespace Yeager;
 
@@ -38,6 +39,7 @@ void ApplicationCore::BuildApplicationCoreCompoments()
 {
   m_Input = new Input(this);
   m_Window = new Window(ygWindowWidth, ygWindowHeight, "Yeager Engine", m_Input->MouseCallback);
+  CheckGLAD();
   m_Interface = new Interface(m_Window, this);
   m_EditorCamera = new EditorCamera(this);
   m_EditorExplorer = new EditorExplorer(this);
@@ -46,7 +48,7 @@ void ApplicationCore::BuildApplicationCoreCompoments()
 void ApplicationCore::Setup()
 {
   YgString EditorVariablesPath = GetPath("/Configuration/Editor/editor_variables.yml");
-  CheckGLAD();
+
   BuildApplicationCoreCompoments();
   InitAudioEngine();
 
@@ -92,7 +94,7 @@ void ApplicationCore::UpdateDeltaTime()
 void ApplicationCore::UpdateWorldMatrices()
 {
   m_WorldMatrices.Projection =
-      glm::perspective(glm::radians(45.0f), (float)ygWindowWidth / (float)ygWindowHeight, 0.1f, 10000.0f);
+      glm::perspective(glm::radians(45.0f), (float)ygWindowWidth / (float)ygWindowHeight, 0.1f, 1000.0f);
   m_WorldMatrices.View = GetCamera()->ReturnViewMatrix();
   m_WorldMatrices.ViewerPos = GetCamera()->GetPosition();
 }
@@ -109,8 +111,36 @@ void ApplicationCore::Render()
   OpenGLFunc();
 
   Yeager::Skybox skybox("Skybox", ObjectGeometryType::ECube, this, false);
-  skybox.BuildSkyboxFromImport(GetPath("/Assets/ImportedModels/anime-skybox/skybox.obj"));
+  skybox.BuildSkyboxFromImport(GetPath("/Assets/ImportedModels/Skybox/skybox.obj"));
 
+  std::vector<YgVector3> pos;
+  for (int x = 0; x < 20; x++) {
+    for (int y = 0; y < 20; y++) {
+      YgVector3 vec;
+      vec.x = RandomFloatRange(0, 10) * x;
+      vec.y = RandomFloatRange(0, 10);
+      vec.z = RandomFloatRange(0, 10) * y;
+      pos.push_back(vec);
+    }
+  }
+
+  LightHandle light(ShaderFromVarName("SimpleAnimated"));
+  LightSource sources(ShaderFromVarName("Simple"));
+  ObjectPointLight obj;
+  sources.AddSpotLight(obj, this);
+
+  InstancedAnimatedObject swat("Swat", this, 400);
+  swat.ImportObjectFromFile(GetPath("/Assets/ImportedModels/style/style.dae").c_str(), true);
+  swat.BuildProp(pos, ShaderFromVarName("SimpleAnimated"));
+  //swat.BuildProp(pos, ShaderFromVarName("SimpleAnimated"));
+  Animation SwatCover(GetPath("/Assets/ImportedModels/style/style.dae"), &swat);
+  AnimationEngine engine(&SwatCover);
+
+  Object pacific("Pacific", this);
+  pacific.ImportObjectFromFile(GetPath("/Assets/ImportedModels/f18/F-18.obj").c_str(), false);
+  pacific.GetTransformationPtr()->scale = YgVector3(0.05f);
+ 
+  
   while (ShouldRender()) {
 
     glfwPollEvents();
@@ -126,15 +156,31 @@ void ApplicationCore::Render()
     skybox.Draw(ShaderFromVarName("Skybox"), YgMatrix3(m_WorldMatrices.View), m_WorldMatrices.Projection);
 
     ygAudioEngine->update();
+    engine.UpdateAnimation(m_DeltaTime);
 
     ManifestShaderProps(ShaderFromVarName("TerrainGeneration"));
+
+    light.BuildShaderProps(ShaderFromVarName("SimpleAnimated"), GetCamera()->GetPosition(), GetCamera()->GetDirection(),
+                           32.0f);
+
     ManifestShaderProps(ShaderFromVarName("SimpleAnimated"));
+    auto transf = engine.GetFinalBoneMatrices();
+    for (int x = 0; x < MAX_BONES; x++) {
+      ShaderFromVarName("SimpleAnimated")->SetMat4("finalBonesMatrices[" + std::to_string(x) + "]", transf.at(x));
+    }
+    swat.Draw(ShaderFromVarName("SimpleAnimated"));
 
     ManifestShaderProps(ShaderFromVarName("Simple"));
-
+    sources.BuildShaderProps(ShaderFromVarName("Simple"), GetCamera()->GetPosition(), GetCamera()->GetDirection(),
+                             32.0f);
+   
+    pacific.Draw(ShaderFromVarName("Simple"));
     for (const auto& obj : *GetScene()->GetObjects()) {
       obj->Draw(ShaderFromVarName("Simple"));
     }
+
+    ManifestShaderProps(ShaderFromVarName("Light"));
+    sources.DrawLightSources(ShaderFromVarName("Light"));
 
     GetInterface()->RenderUI();
     m_Interface->TerminateRenderFrame();
@@ -208,7 +254,9 @@ void ApplicationCore::OpenGLFunc()
 {
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
+  glEnable(GL_MULTISAMPLE);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glEnable(GL_CULL_FACE);
 }
 
 void ApplicationCore::OpenGLClear()

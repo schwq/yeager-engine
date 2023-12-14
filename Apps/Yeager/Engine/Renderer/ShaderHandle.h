@@ -41,7 +41,7 @@ class Shader {
   constexpr inline GLuint GetId() { return m_id; }
   constexpr inline bool IsInitialized() { return m_initialize; }
 
-  constexpr inline YgString GetName() { return m_Name; }
+   inline YgString GetName() { return m_Name; }
 
  private:
   GLuint m_id;

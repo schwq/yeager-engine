@@ -28,7 +28,7 @@
 
 // Enable debug functions and messages
 #define YEAGER_DEBUG true
-#undef YEAGER_DEBUG
+
 // Enable all kind of important messages, useful for debugging
 #define YEAGER_DEBUG_VERBOSE true
 

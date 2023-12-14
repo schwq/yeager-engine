@@ -8,10 +8,6 @@ Shaders:
     VarName: Common 
     FragmentPath: /Assets/Shaders/common_fg.glsl
     VertexPath: /Assets/Shaders/common_vt.glsl
-  - Shader: ImportedObject Shader
-    VarName: ImportedObject 
-    FragmentPath: /Assets/Shaders/imp_object_fg.glsl
-    VertexPath: /Assets/Shaders/imp_object_vt.glsl
   - Shader: Light Shader
     VarName: Light 
     FragmentPath: /Assets/Shaders/lighting_fg.glsl
@@ -20,10 +16,6 @@ Shaders:
     VarName: Simple 
     FragmentPath: /Assets/Shaders/simple_fg.glsl
     VertexPath: /Assets/Shaders/simple_vt.glsl
-  - Shader: Geometry Shader
-    VarName: Geometry 
-    FragmentPath: /Assets/Shaders/geometry_fg.glsl
-    VertexPath: /Assets/Shaders/geometry_vt.glsl
   - Shader: SkyboxCubeMap Shader
     VarName: SkyboxCubeMap 
     FragmentPath: /Assets/Shaders/skybox_cube_map_fg.glsl

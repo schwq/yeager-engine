@@ -34,7 +34,7 @@ typedef struct {
   YgVector3 scale;
 } Transformation;
 
-extern constexpr Transformation GetDefaultTransformation();
+extern Transformation GetDefaultTransformation();
 
 class Shader;
 

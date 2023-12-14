@@ -47,17 +47,17 @@ class Skybox : public Entity {
   void GenerateGeometry();
   void GenerateCubemapGeometry();
 
-  bool m_SkyboxDataLoaded;
+  bool m_SkyboxDataLoaded = false;
   bool m_ImageFlip = false;
   unsigned int m_VerticesIndex = 0;
-  GLuint m_Vao, m_Vbo, m_Ebo, m_ID;
+  GLuint m_Vao = -1, m_Vbo = -1, m_Ebo = -1, m_ID = -1;
 
   SkyboxTextureType m_Type;
   ObjectGeometryData m_Data;
   ObjectModelData m_Model;
   ObjectGeometryType m_Geometry;
-  ApplicationCore* m_Application;
-  std::shared_ptr<ToolBoxObject> m_Toolbox;
+  ApplicationCore* m_Application = YEAGER_NULLPTR;
+  std::shared_ptr<ToolBoxObject> m_Toolbox = YEAGER_NULLPTR;
 };
 
 static std::vector<GLfloat> GenerateSkyboxVertices()

@@ -23,7 +23,7 @@
 #include "../../../Common/Utilities.h"
 #include "Animation.h"
 
-#define MAX_BONES 300
+#define MAX_BONES 100
 
 namespace Yeager {
 class AnimationEngine {
@@ -33,7 +33,7 @@ class AnimationEngine {
   void UpdateAnimation(float dt);
   void PlayAnimation(Animation* animation);
   void CalculateBoneTransform(const AssimpNodeData* node, YgMatrix4 parentTrans);
-  constexpr std::vector<YgMatrix4> GetFinalBoneMatrices() const { return m_FinalBoneMatrices; }
+  std::vector<YgMatrix4> GetFinalBoneMatrices() const { return m_FinalBoneMatrices; }
 
  protected:
   std::vector<YgMatrix4> m_FinalBoneMatrices;

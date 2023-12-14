@@ -8,15 +8,18 @@ layout(location = 4) in vec3 bitangent;
 layout(location = 5) in ivec4 boneID;
 layout(location = 6) in vec4 weight;
 
-const int MAX_BONES = 300;
+const int MAX_BONES = 100;
 const int MAX_BONE_INFLUENCE = 4;
 uniform mat4 finalBonesMatrices[MAX_BONES];
 
 out vec2 texCoords;
 out vec3 NormalVec;
+out vec3 FragPos;
 uniform mat4 view;
 uniform mat4 model;
 uniform mat4 projection;
+
+uniform vec3 offsets[400];
 
 void main()
 {
@@ -36,7 +39,10 @@ void main()
     totalPosition += localPosition * weight[x];
   }
   mat4 viewModel = view * model;
+  totalPosition += vec4(offsets[gl_InstanceID], 1.0f);
   gl_Position = projection * viewModel * totalPosition;
   texCoords = vec2(aTexCoords.x, aTexCoords.y);
   NormalVec = aNormal;
+  // Review this, aPos? + offset?
+  FragPos = vec3(model * vec4(totalPosition.xyz, 1.0));
 }

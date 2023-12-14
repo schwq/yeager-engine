@@ -72,7 +72,7 @@ bool Skybox::BuildSkyboxFromCubemap(YgString directory, Yeager::ImageExtension e
       std::vector<YgString> paths;
       for (unsigned int x = 0; x < 6; x++) {
         for (const auto& path : std::filesystem::directory_iterator(directory)) {
-          paths.push_back(path.path().c_str());
+          paths.push_back(path.path().string());
         }
       }
       m_ID = LoadTextureCubeMap(paths, m_ImageFlip);

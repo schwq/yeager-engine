@@ -2,6 +2,7 @@
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "../../../../Libraries/stb_image_write.h"
+using namespace Yeager;
 
 bool MakeScreenShot(YgCchar output) noexcept
 {
@@ -20,6 +21,19 @@ bool MakeScreenShot(YgCchar output) noexcept
 
   stbi_write_jpg(output, ygWindowWidth, ygWindowHeight, 3, pixels, ygWindowWidth);
   delete pixels;
+  return true;
+}
+
+YgString Yeager::ImageExtensionToString(ImageExtension ext)
+{
+  switch (ext) {
+    case ImageExtension::EJpeg:
+      return ".jpg";
+    case ImageExtension::EPng:
+      return ".png";
+    default:
+      return ".png";
+  }
 }
 
 extern bool MakeScreenShotMiddle(YgCchar output) noexcept
@@ -40,6 +54,7 @@ extern bool MakeScreenShotMiddle(YgCchar output) noexcept
 
   stbi_write_jpg(output, 800, 800, 3, pixels, 800);
   delete pixels;
+  return true;
 }
 extern bool MakeScreenShotInPosition(YgCchar output, unsigned int pos_x, unsigned int pos_y, unsigned int size_x,
                                      unsigned int size_y)
