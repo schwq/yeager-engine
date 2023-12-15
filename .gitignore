@@ -37,8 +37,7 @@ x64/
 build/
 .cache/
 .vscode/
-Apps/yaeger/yaeger_engine
-yeager
+Apps/Yeager/Assets/ImportedModels/
 imgui.ini
 YeagerEngine.vcxproj
 YeagerEngine.vcxproj.filters
