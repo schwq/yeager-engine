@@ -11,7 +11,7 @@ Yeager::Shader* Yeager::ShaderFromVarName(YgString var)
     }
   }
   Yeager::Log(ERROR, "Cannot find shader from var name [{}]!", var);
-  return nullptr;
+  return YEAGER_NULLPTR;
 }
 
 Shader::Shader(YgCchar fragmentPath, YgCchar vertexPath, YgString name)

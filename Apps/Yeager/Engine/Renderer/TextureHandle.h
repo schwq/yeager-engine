@@ -23,12 +23,12 @@
 #include "ShaderHandle.h"
 
 // Assimp model loading
-unsigned int LoadTextureFromFile(YgString path, bool flip = true);
+unsigned int LoadTextureFromFile(YgString path, bool flip = false);
 
 // Imgui Icon
 bool LoadTextureFromFile(YgCchar filename, GLuint* out_texture, int* out_width, int* out_height);
 
-unsigned int LoadTextureCubeMap(std::vector<YgString> paths, bool flip = true);
+unsigned int LoadTextureCubeMap(std::vector<YgString> paths, bool flip = false);
 
 namespace Yeager {
 
@@ -39,17 +39,6 @@ class Texture2D {
   Texture2D(YgCchar texturePath, YgString name = "DEFAULT");
   Texture2D(){};
   ~Texture2D();
-
-  Texture2D& operator=(Texture2D&& rhs) noexcept
-  {
-    Log(INFO, "Texture Move assign been called!");
-    this->m_Name = rhs.m_Name;
-    this->m_OpenGL_ID = rhs.m_OpenGL_ID;
-    this->TextureHeight = rhs.TextureHeight;
-    this->TextureWidth = rhs.TextureWidth;
-    this->m_TexturePath = rhs.m_TexturePath;
-    return *this;
-  }
 
   YEAGER_NODISCARD constexpr GLuint GetID() const { return m_OpenGL_ID; }
 

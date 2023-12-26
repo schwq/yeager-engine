@@ -66,6 +66,9 @@ constexpr inline glm::quat GetGLMQuat(const aiQuaternion& qa)
   return glm::quat(qa.w, qa.x, qa.y, qa.z);
 }
 
+extern void ValidatesPath(const std::filesystem::path& p,
+                          std::filesystem::file_status s = std::filesystem::file_status());
+
 }  // namespace Yeager
 
 extern void* operator new(size_t s);

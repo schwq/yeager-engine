@@ -22,92 +22,107 @@
 #include "../../Common/LogEngine.h"
 #include "../../Common/Mathematics.h"
 #include "../../Common/Utilities.h"
+#include "../Renderer/Object.h"
 #include "../Renderer/ShaderHandle.h"
 #include "../Renderer/TextureHandle.h"
-#include "../Renderer/Object.h"
 
 #define MAX_POINT_LIGHTS 10
 
 namespace Yeager {
-	struct PointLight {
-	  YgVector3 Position = YgVector3(0.0f);
-	  float Constant = 1.0f;
-      float Linear = 0.09f;
-	  float Quadratic = 0.032f;
-      YgVector3 Ambient = YgVector3(0.05f);
-      YgVector3 Diffuse = YgVector3(0.8f);
-      YgVector3 Specular = YgVector3(1.0f);
-	  bool Active = false;
-	};
 
-	struct DirectionalLight {
-      YgVector3 Direction = YgVector3(-0.2f, -1.0f, -0.3f);
-      YgVector3 Ambient = YgVector3(0.7f);
-      YgVector3 Diffuse = YgVector3(0.4f);
-      YgVector3 Specular = YgVector3(0.5f);
-      YgVector3 Color = YgVector3(1.0f);	
-	};
+class ApplicationCore;
 
-	struct Material {
-      float Shininess = 32.0f;
-	};
+struct PointLight {
+  YgVector3 Position = YgVector3(0.0f);
+  float Constant = 1.0f;
+  float Linear = 0.09f;
+  float Quadratic = 0.032f;
+  YgVector3 Ambient = YgVector3(0.05f);
+  YgVector3 Diffuse = YgVector3(0.8f);
+  YgVector3 Specular = YgVector3(1.0f);
+  YgVector3 Color = YgVector3(1.0f);
+  bool Active = false;
+};
 
-	struct Viewer {
-      YgVector3 Position = YgVector3(0.0f);
-	};
+struct DirectionalLight {
+  YgVector3 Direction = YgVector3(-0.2f, -1.0f, -0.3f);
+  YgVector3 Ambient = YgVector3(0.03f);
+  YgVector3 Diffuse = YgVector3(0.4f);
+  YgVector3 Specular = YgVector3(0.5f);
+  YgVector3 Color = YgVector3(1.0f);
+};
 
-    struct SpotLight {
-      YgVector3 Position = YgVector3(0.0f);
-      YgVector3 Direction = YgVector3(0.0f);
-      float CutOff =  glm::cos(glm::radians(12.5f));
-      float OuterCutOff = glm::cos(glm::radians(15.0f));
-      float Constant = 1;
-      float Linear = 0.09f;
-      float Quadratic = 0.032f;
-      YgVector3 Ambient = YgVector3(0.0f);
-      YgVector3 Diffuse = YgVector3(1.0f);
-      YgVector3 Specular = YgVector3(1.0f);
-    };
+struct Material {
+  float Shininess = 32.0f;
+};
 
-    struct ObjectPointLight : public PointLight{
-      Object* ObjSource = YEAGER_NULLPTR;
-      constexpr void Destroy() const noexcept
-      {
-        if (ObjSource) 
-          delete ObjSource;
-      }
-    };
+struct Viewer {
+  YgVector3 Position = YgVector3(0.0f);
+};
 
-	class LightHandle {
-     public:
-      LightHandle(Shader* shader);
-      ~LightHandle() {}	
+struct SpotLight {
+  YgVector3 Position = YgVector3(0.0f);
+  YgVector3 Direction = YgVector3(0.0f);
+  float CutOff = glm::cos(glm::radians(12.5f));
+  float OuterCutOff = glm::cos(glm::radians(15.0f));
+  float Constant = 1;
+  float Linear = 0.09f;
+  float Quadratic = 0.032f;
+  YgVector3 Ambient = YgVector3(0.0f);
+  YgVector3 Diffuse = YgVector3(1.0f);
+  YgVector3 Specular = YgVector3(1.0f);
+  bool Active = true;
+};
 
-      std::vector<PointLight>* GetPointLights() { return &m_PointLights; }
-      DirectionalLight* GetDirectionalLight() { return &m_DirectionalLight; }
-      Material* GetMaterial() { return &m_Material; }
-      Viewer* GetViewer() { return &m_Viewer; }
+struct ObjectPointLight : public PointLight {
+  Object* ObjSource = YEAGER_NULLPTR;
+  constexpr void Destroy() const noexcept
+  {
+    if (ObjSource)
+      delete ObjSource;
+  }
+};
 
-      virtual void BuildShaderProps(Shader* shader, YgVector3 viewPos, YgVector3 front, float shininess);
+class LightHandle : public GameEntity {
+ public:
+  LightHandle(YgString name, ApplicationCore* app, Shader* shader);
+  ~LightHandle() {}
 
-     protected:	
-	  std::vector<PointLight> m_PointLights;
-      DirectionalLight m_DirectionalLight;
-      Material m_Material;
-      Viewer m_Viewer;
-      SpotLight spotLight;
-	};
+  std::vector<PointLight>* GetPointLights() { return &m_PointLights; }
+  DirectionalLight* GetDirectionalLight() { return &m_DirectionalLight; }
+  Material* GetMaterial() { return &m_Material; }
+  Viewer* GetViewer() { return &m_Viewer; }
+  SpotLight* GetSpotLight() { return &spotLight; }
+  virtual void BuildShaderProps(YgVector3 viewPos, YgVector3 front, float shininess);
 
-    class LightSource : public LightHandle {
-     public:
-      LightSource(Shader* shader);
-      ~LightSource();
-    
-      void AddSpotLight(const ObjectPointLight& obj, ApplicationCore* app);
-      void BuildShaderProps(Shader* shader, YgVector3 viewPos, YgVector3 front, float shininess);
-      void DrawLightSources(Shader* shader);
-    
-    protected:
-      std::vector<ObjectPointLight> m_ObjectPointLights;
-    };
-    }
+  Shader* GetLinkedShader() const { return m_LinkedShader; }
+
+ protected:
+  std::vector<PointLight> m_PointLights;
+  DirectionalLight m_DirectionalLight;
+  Material m_Material;
+  Viewer m_Viewer;
+  SpotLight spotLight;
+  ApplicationCore* m_Application = YEAGER_NULLPTR;
+  Shader* m_LinkedShader = YEAGER_NULLPTR;
+};
+
+class LightSource : public LightHandle {
+ public:
+  LightSource(YgString name, ApplicationCore* app, Shader* link_shader, Shader* draw_shader);
+  ~LightSource();
+
+  void AddObjectPointLight(const ObjectPointLight& obj, Transformation& trans);
+  void AddObjectPointLight(const ObjectPointLight& obj, Yeager::Object& custom_obj);
+  void BuildShaderProps(YgVector3 viewPos, YgVector3 front, float shininess);
+  void DrawLightSources();
+
+  Shader* GetDrawableShader() const { return m_DrawableShader; }
+
+  std::vector<ObjectPointLight>* GetObjectPointLights() { return &m_ObjectPointLights; }
+
+ protected:
+  std::vector<ObjectPointLight> m_ObjectPointLights;
+  Shader* m_DrawableShader = YEAGER_NULLPTR;
+};
+}  // namespace Yeager

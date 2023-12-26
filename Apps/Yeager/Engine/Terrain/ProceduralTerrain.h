@@ -90,7 +90,7 @@ struct TerrainDrawData {
 
 /// @brief Metric data holds the values for positioning the terrain in the space, like width, lenght, height, world scale, ect...
 struct TerrainMetricData {
-  Array2D<float>* m_HeightMap = nullptr;
+  Array2D<float>* m_HeightMap = YEAGER_NULLPTR;
   float m_MinHeight = 0.0f;
   float m_MaxHeight = 256.0f;
   int m_TerrainSize = 256;

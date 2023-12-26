@@ -1,5 +1,6 @@
 #include "Object.h"
 #include "../../Application.h"
+#include "Animation/AnimationEngine.h"
 #include "Importer.h"
 using namespace Yeager;
 
@@ -59,6 +60,17 @@ Object::~Object()
   }
 }
 
+AnimatedObject::~AnimatedObject()
+{
+  if (m_Animation) {
+    delete m_Animation;
+  }
+
+  if (m_AnimationEngine) {
+    delete m_AnimationEngine;
+  }
+}
+
 void Yeager::DeleteMeshGLBuffers(ObjectMeshData* mesh)
 {
   glDeleteVertexArrays(1, &mesh->m_Vao);
@@ -85,6 +97,32 @@ std::vector<GLfloat> Yeager::ExtractVerticesFromEveryMesh(ObjectModelData* model
   return vertices;
 }
 
+std::vector<YgVector3> Yeager::ExtractVerticesPositionToVector(ObjectModelData* model)
+{
+  std::vector<YgVector3> Positions;
+  for (const auto& mesh : model->Meshes) {
+    for (const auto& vertex : mesh.Vertices) {
+      YgVector3 vec(vertex.Position.x, vertex.Position.y, vertex.Position.z);
+      Positions.push_back(vec);
+    }
+  }
+  return Positions;
+}
+
+void AnimatedObject::UpdateAnimation(float delta)
+{
+  m_AnimationEngine->UpdateAnimation(delta);
+}
+
+void AnimatedObject::BuildAnimationMatrices(Shader* shader)
+{
+  shader->UseShader();
+  auto transform = m_AnimationEngine->GetFinalBoneMatrices();
+  for (int x = 0; x < transform.size(); x++) {
+    shader->SetMat4("finalBonesMatrices[" + std::to_string(x) + "]", transform.at(x));
+  }
+}
+
 bool Yeager::DrawSeparateMesh(ObjectMeshData* mesh, Yeager::Shader* shader)
 {
 
@@ -105,7 +143,7 @@ bool Yeager::DrawSeparateMesh(ObjectMeshData* mesh, Yeager::Shader* shader)
   }
 
   glBindVertexArray(mesh->m_Vao);
-  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh->Indices.size()), GL_UNSIGNED_INT, nullptr);
+  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh->Indices.size()), GL_UNSIGNED_INT, YEAGER_NULLPTR);
 
   glBindVertexArray(0);
   glActiveTexture(GL_TEXTURE0);
@@ -132,7 +170,8 @@ bool Yeager::DrawSeparateInstancedMesh(ObjectMeshData* mesh, Yeager::Shader* sha
   }
 
   glBindVertexArray(mesh->m_Vao);
-  glDrawElementsInstanced(GL_TRIANGLES, static_cast<GLsizei>(mesh->Indices.size()), GL_UNSIGNED_INT, nullptr, amount);
+  glDrawElementsInstanced(GL_TRIANGLES, static_cast<GLsizei>(mesh->Indices.size()), GL_UNSIGNED_INT, YEAGER_NULLPTR,
+                          amount);
 
   glBindVertexArray(0);
   glActiveTexture(GL_TEXTURE0);
@@ -247,6 +286,9 @@ void InstancedObject::DrawModel(Yeager::Shader* shader, int amount)
 void Object::Draw(Yeager::Shader* shader)
 {
   if (m_ObjectDataLoaded && m_Render) {
+
+    m_Collision.Draw(ShaderFromVarName("Collision"), m_EntityTransformation.model);
+
     shader->UseShader();
     ProcessTransformation(shader);
     if (m_GeometryType == ObjectGeometryType::ECustom) {
@@ -257,11 +299,13 @@ void Object::Draw(Yeager::Shader* shader)
   }
 }
 
-void InstancedObject::BuildProp(const std::vector<YgVector3>& positions, Shader* shader)
+void InstancedObject::BuildProp(std::vector<Transformation>& positions, Shader* shader)
 {
+  m_Props = positions;
   shader->UseShader();
-  for (unsigned int x = 0; x < m_InstancedObjs; x++) {
-    shader->SetVec3("offsets[" + std::to_string(x) + "]", positions[x]);
+  for (unsigned int x = 0; x < positions.size(); x++) {
+    Yeager::ProcessTransformation(&positions.at(x));
+    shader->SetMat4("matrices[" + std::to_string(x) + "]", positions.at(x).model);
   }
 }
 
@@ -269,7 +313,6 @@ void InstancedObject::Draw(Yeager::Shader* shader, int amount)
 {
   if (m_ObjectDataLoaded && m_Render) {
     shader->UseShader();
-    ProcessTransformation(shader);
     if (m_GeometryType == ObjectGeometryType::ECustom) {
       DrawModel(shader, m_InstancedObjs);
     } else {
@@ -280,7 +323,10 @@ void InstancedObject::Draw(Yeager::Shader* shader, int amount)
 
 void Object::Setup()
 {
+
   if (m_GeometryType == ObjectGeometryType::ECustom) {
+    std::vector<YgVector3> Pos = ExtractVerticesPositionToVector(&m_ModelData);
+    m_Collision.BuildCollision(this, Pos);
     for (auto& mesh : m_ModelData.Meshes) {
       glGenVertexArrays(1, &mesh.m_Vao);
       glGenBuffers(1, &mesh.m_Vbo);
@@ -309,6 +355,7 @@ void Object::Setup()
       glBindVertexArray(0);
     }
   } else {
+
     glGenVertexArrays(1, &m_GeometryData.m_Vao);
     glGenBuffers(1, &m_GeometryData.m_Vbo);
     glGenBuffers(1, &m_GeometryData.m_Ebo);
@@ -334,6 +381,13 @@ void Object::Setup()
 }
 
 AnimatedObject::AnimatedObject(YgString name, ApplicationCore* application) : Object(name, application) {}
+
+void AnimatedObject::BuildAnimation(YgString path)
+{
+  m_Animation = new Animation(path, this);
+  m_AnimationEngine = new AnimationEngine(m_Animation);
+}
+
 bool AnimatedObject::ImportObjectFromFile(YgCchar path, bool flip_image)
 {
   m_Path = path;
@@ -422,7 +476,6 @@ void AnimatedObject::Draw(Shader* shader)
   }
 }
 
-
 void AnimatedObject::DrawMeshes(Shader* shader)
 {
   for (auto& mesh : m_ModelData.Meshes) {
@@ -449,7 +502,7 @@ void AnimatedObject::DrawMeshes(Shader* shader)
     }
 
     glBindVertexArray(mesh.m_Vao);
-    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh.Indices.size()), GL_UNSIGNED_INT, nullptr);
+    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh.Indices.size()), GL_UNSIGNED_INT, YEAGER_NULLPTR);
 
     glBindVertexArray(0);
     glActiveTexture(GL_TEXTURE0);
@@ -493,19 +546,20 @@ std::vector<GLuint> Yeager::GenerateCubeIndices()
                              16, 17, 18, 18, 19, 16, 20, 21, 22, 22, 23, 20};
 }
 
-std::vector<GLfloat> Yeager::GenerateSphereVertices(int stackCount, int sectorCount) {
+std::vector<GLfloat> Yeager::GenerateSphereVertices(int stackCount, int sectorCount)
+{
   std::vector<GLfloat> vertices;
   int radius = 10;
 
-    float x, y, z, xy;
+  float x, y, z, xy;
   float nx, ny, nz, lenghtInv = 1.0f / radius;
-    float s, t;
+  float s, t;
 
-    float sectorStep = 2 * PI / sectorCount;
-    float stackStep = PI / stackCount;
-    float sectorAngle, stackAngle;
+  float sectorStep = 2 * PI / sectorCount;
+  float stackStep = PI / stackCount;
+  float sectorAngle, stackAngle;
 
-    for (int i = 0; i <= stackCount; ++i) {
+  for (int i = 0; i <= stackCount; ++i) {
     stackAngle = PI / 2 - i * stackStep;
     xy = radius * cosf(stackAngle);
     z = radius * sinf(stackAngle);
@@ -531,50 +585,55 @@ std::vector<GLfloat> Yeager::GenerateSphereVertices(int stackCount, int sectorCo
       vertices.push_back(s);
       vertices.push_back(t);
     }
-    }
-    return vertices;
+  }
+  return vertices;
 }
 
 std::vector<GLuint> Yeager::GenerateSphereIndices(int stackCount, int sectorCount)
 {
-    std::vector<GLuint> indices;
-    int k1, k2;
-    for (int x = 0; x < stackCount; ++x) {
-        k1 = x * (sectorCount + 1);
-        k2 = k1 + sectorCount + 1;
-        for (int y = 0; y < sectorCount; ++y, ++k1, ++k2) {
-            if (x != 0) {
-                indices.push_back(k1);
-                indices.push_back(k2);
-                indices.push_back(k1 + 1);
-            }
+  std::vector<GLuint> indices;
+  int k1, k2;
+  for (int x = 0; x < stackCount; ++x) {
+    k1 = x * (sectorCount + 1);
+    k2 = k1 + sectorCount + 1;
+    for (int y = 0; y < sectorCount; ++y, ++k1, ++k2) {
+      if (x != 0) {
+        indices.push_back(k1);
+        indices.push_back(k2);
+        indices.push_back(k1 + 1);
+      }
 
-            if (x != (stackCount - 1)) {
-                indices.push_back(k1 + 1);
-                indices.push_back(k2);
-                indices.push_back(k2 + 1);
-            }
-        }
+      if (x != (stackCount - 1)) {
+        indices.push_back(k1 + 1);
+        indices.push_back(k2);
+        indices.push_back(k2 + 1);
+      }
     }
-    return indices;
+  }
+  return indices;
 }
 
-void Yeager::InstancedAnimatedObject::Draw(Yeager::Shader* shader) {
+void Yeager::InstancedAnimatedObject::Draw(Yeager::Shader* shader)
+{
   if (m_ObjectDataLoaded && m_Render) {
     shader->UseShader();
-    ProcessTransformation(shader);
     DrawAnimatedMeshes(shader);
   }
 }
 
-void Yeager::InstancedAnimatedObject::BuildProp(const std::vector<YgVector3>& positions, Shader* shader) {
+void Yeager::InstancedAnimatedObject::BuildProp(std::vector<Transformation>& positions, Shader* shader)
+{
+  m_Props = positions;
   shader->UseShader();
+
   for (unsigned int x = 0; x < m_InstancedObjs; x++) {
-    shader->SetVec3("offsets[" + std::to_string(x) + "]", positions[x]);
+    Yeager::ProcessTransformation(&positions.at(x));
+    shader->SetMat4("matrices[" + std::to_string(x) + "]", positions.at(x).model);
   }
 }
 
-void Yeager::InstancedAnimatedObject::DrawAnimatedMeshes(Shader* shader) {
+void Yeager::InstancedAnimatedObject::DrawAnimatedMeshes(Shader* shader)
+{
   for (auto& mesh : m_ModelData.Meshes) {
     unsigned int diffuseNum = 1;
     unsigned int specularNum = 1;
@@ -600,12 +659,11 @@ void Yeager::InstancedAnimatedObject::DrawAnimatedMeshes(Shader* shader) {
     }
 
     glBindVertexArray(mesh.m_Vao);
-    glDrawElementsInstanced(GL_TRIANGLES, static_cast<GLsizei>(mesh.Indices.size()), GL_UNSIGNED_INT, nullptr, m_InstancedObjs);
+    glDrawElementsInstanced(GL_TRIANGLES, static_cast<GLsizei>(mesh.Indices.size()), GL_UNSIGNED_INT, YEAGER_NULLPTR,
+                            m_InstancedObjs);
 
     glBindVertexArray(0);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, 0);
   }
 }
-
-

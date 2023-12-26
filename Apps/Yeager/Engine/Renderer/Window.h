@@ -36,7 +36,7 @@ class Window {
   static void ResizeCallback(GLFWwindow* window, int width, int height);
 
  private:
-  GLFWwindow* m_window = nullptr;
-  unsigned char* m_IconImageData = nullptr;
+  GLFWwindow* m_window = YEAGER_NULLPTR;
+  unsigned char* m_IconImageData = YEAGER_NULLPTR;
   unsigned int m_window_monitor_x = 0, m_window_monitor_y = 0;
 };

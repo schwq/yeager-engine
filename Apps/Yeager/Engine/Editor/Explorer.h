@@ -34,26 +34,32 @@ class EditorExplorer {
   EditorExplorer() {}
   void DrawExplorer();
 
-  Yeager::ToolBoxObject* toolbox_selected = nullptr;
+  constexpr inline ToolBoxObject* GetSelectedToolbox() const { return m_ToolboxSelected; }
 
  private:
-  Yeager::ApplicationCore* m_app = nullptr;
   void AddGeometryObjectWindow();
   void AddImportedObjectWindow();
   void AddAudioWindow();
   void WarningExplorer(YgString msg);
-  bool m_first_time_toolbox = true;
-  bool m_add_imported_object_window_open = false;
-  bool m_imported_object_flip_tex = true;
-  bool m_everything_fine_to_create = true;
-  bool m_operation_canceled = false;
-  bool m_add_audio_window_open = false;
-  bool m_add_geometry_window_open = false;
-  bool m_add_geometry_shape_cube = false;
-  bool m_looped_audio = false;
-  bool m_add_audio_is_3d = false;
-  YgString m_new_object_name = YEAGER_NULL_LITERAL;
-  YgString m_new_object_path = YEAGER_NULL_LITERAL;
-  YgString m_new_object_texture_path = YEAGER_NULL_LITERAL;
+
+  Yeager::ToolBoxObject* m_ToolboxSelected = YEAGER_NULLPTR;
+  Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
+  bool m_FirstTimeToolbox = true;
+  bool m_AddImportedObjectWindowOpen = false;
+  bool m_ImportedObjectFlipTexture = true;
+  bool m_EverythingFineToCreate = true;
+  bool m_OperationCanceled = false;
+  bool m_AddAudioWindowOpen = false;
+  bool m_AddGeometryWindowOpen = false;
+  bool m_AddGeometryShapeCube = false;
+  bool m_LoopedAudio = false;
+  bool m_AddAudioIs3D = false;
+  bool m_AddObjectIsAnimated = false;
+  bool m_AddObjectIsInstanced = false;
+  int m_InstancedGridFactor = 1;
+  int m_InstancedObjectsCount = 1;
+  YgString m_NewObjectName = YEAGER_NULL_LITERAL;
+  YgString m_NewObjectPath = YEAGER_NULL_LITERAL;
+  YgString m_NewObjectTexturePath = YEAGER_NULL_LITERAL;
 };
 }  // namespace Yeager

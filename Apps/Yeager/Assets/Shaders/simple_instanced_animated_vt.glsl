@@ -16,8 +16,8 @@ out vec2 texCoords;
 out vec3 NormalVec;
 out vec3 FragPos;
 uniform mat4 view;
-uniform mat4 model;
 uniform mat4 projection;
+uniform mat4 matrices[100];
 
 void main()
 {
@@ -36,9 +36,9 @@ void main()
     vec4 localPosition = finalBonesMatrices[boneID[x]] * vec4(aPos, 1.0f);
     totalPosition += localPosition * weight[x];
   }
-  mat4 viewModel = view * model;
+  mat4 viewModel = view * matrices[gl_InstanceID];
   gl_Position = projection * viewModel * totalPosition;
   texCoords = vec2(aTexCoords.x, aTexCoords.y);
   NormalVec = aNormal;
-  FragPos = vec3(model * vec4(totalPosition.xyz, 1.0));
+  FragPos = vec3(matrices[gl_InstanceID] * vec4(totalPosition.xyz, 1.0));
 }

@@ -48,8 +48,8 @@ class PerlinNoise {
   bool m_Generated = false;
   int m_Width = 256;
   int m_Lenght = 256;
-  float* m_Seed = nullptr;
-  float* m_Noise = nullptr;
+  float* m_Seed = YEAGER_NULLPTR;
+  float* m_Noise = YEAGER_NULLPTR;
   int m_OctaveCount = 5;
   float m_ScallingBias = 5.0f;
 };

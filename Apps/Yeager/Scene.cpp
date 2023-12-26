@@ -51,68 +51,87 @@ YgString Yeager::SceneRendererToString(SceneRenderer renderer)
   }
 }
 
-Scene::Scene(YgString name, SceneType type, SceneRenderer renderer, Yeager::ApplicationCore* app) : m_app(app)
+Scene::Scene(YgString name, SceneType type, SceneRenderer renderer, Yeager::ApplicationCore* app) : m_Application(app)
 {
-  m_context.m_name = name;
-  m_context.m_type = type;
-  m_context.m_renderer = renderer;
-  m_context.m_file_path = GetSceneFilePath();
-  m_serial = Yeager::Serialization(m_app);
+  m_Context.m_name = name;
+  m_Context.m_type = type;
+  m_Context.m_renderer = renderer;
+  m_Context.m_file_path = GetSceneFilePath();
+  m_Serial = Yeager::Serialization(m_Application);
 
-  Log(INFO, "Created Scene name {}", m_context.m_name);
+  Log(INFO, "Created Scene name {}", m_Context.m_name);
 }
 
 Scene::~Scene()
 {
-  Log(INFO, "Destroring Scene name {}", m_context.m_name);
+  Log(INFO, "Destroring Scene name {}", m_Context.m_name);
 }
 
 inline YgString Scene::GetSceneFilePath()
 {
   YgString conf = GetPath("/Configuration/Scenes/");
-  YgString path = conf + m_context.m_name + ".yaml";
+  YgString path = conf + m_Context.m_name + ".yaml";
   return path;
 }
 
 void Scene::Save()
 {
-  m_serial.SerializeScene(this, m_context.m_file_path);
+  m_Serial.SerializeScene(this, m_Context.m_file_path);
 }
 
 void Scene::LoadEditorColorscheme(Interface* intr)
 {
-  intr->ApplyColorscheme(m_serial.ReadColorschemeConfig());
+  intr->ApplyColorscheme(m_Serial.ReadColorschemeConfig());
 }
 
 void Scene::Load(YgString path)
 {
-  m_serial.DeserializeScene(this, path);
+  m_Serial.DeserializeScene(this, path);
 }
 
 void Scene::SetContextType(SceneType type)
 {
-  m_context.m_type = type;
+  m_Context.m_type = type;
 }
 void Scene::SetContextRenderer(SceneRenderer renderer)
 {
-  m_context.m_renderer = renderer;
+  m_Context.m_renderer = renderer;
 }
 
 std::vector<std::shared_ptr<Yeager::Audio3DHandle>>* Scene::GetAudios3D()
 {
-  return &m_audios3d;
+  return &m_Audios3D;
 }
 std::vector<std::shared_ptr<Yeager::AudioHandle>>* Scene::GetAudios()
 {
-  return &m_audios;
+  return &m_Audios;
 }
 
 std::vector<std::shared_ptr<ToolBoxObject>>* Scene::GetToolboxs()
 {
-  return &m_toolboxs;
+  return &m_Toolboxes;
 }
 
 std::vector<std::shared_ptr<Yeager::Object>>* Scene::GetObjects()
 {
-  return &m_objs;
+  return &m_Objects;
+}
+
+std::vector<std::shared_ptr<Yeager::InstancedObject>>* Scene::GetInstancedObjects()
+{
+  return &m_InstancedObjects;
+}
+std::vector<std::shared_ptr<Yeager::AnimatedObject>>* Scene::GetAnimatedObject()
+{
+  return &m_AnimatedObject;
+}
+
+std::vector<std::shared_ptr<Yeager::InstancedAnimatedObject>>* Scene::GetInstancedAnimatedObjects()
+{
+  return &m_InstancedAnimatedObjects;
+}
+
+std::vector<std::shared_ptr<Yeager::LightSource>>* Scene::GetLightSources()
+{
+  return &m_LightSources;
 }

@@ -1,4 +1,5 @@
 #include "Utilities.h"
+#include "LogEngine.h"
 
 Yeager::MemoryManagement Yeager::s_MemoryManagement;
 
@@ -91,10 +92,12 @@ uint32_t Yeager::MemoryManagement::GetMemortUsage()
 YgString GetPath(YgString path)
 {
   if (kOperatingSystem == "LINUX") {
+    Yeager::ValidatesPath(kPath + "/Apps/Yeager" + path);
     return kPath + "/Apps/Yeager" + path;
   } else if (kOperatingSystem == "WIN32") {
     std::replace(kPath.begin(), kPath.end(), '/', '\\');
     std::replace(path.begin(), path.end(), '/', '\\');
+    Yeager::ValidatesPath(kPath + "\\apps\\Yeager" + path);
     return kPath + "\\apps\\Yeager" + path;
   } else {
     YgString respond = kPath + path;
@@ -102,6 +105,7 @@ YgString GetPath(YgString path)
            "GetPath function and this program does not support other OS that "
            "arent Windows and Linux system! Returing: %s",
            respond.c_str());
+    Yeager::ValidatesPath(respond);
     return respond;
   }
 };
@@ -136,4 +140,14 @@ extern YgTime_t CurrentTimeToTimeType()
   time.Time.Seconds = local_tm.tm_sec;
 
   return time;
+}
+
+void Yeager::ValidatesPath(const std::filesystem::path& p, std::filesystem::file_status s)
+{
+  YgString status = (std::filesystem::status_known(s) ? std::filesystem::exists(s) : std::filesystem::exists(p))
+                        ? "Validated!"
+                        : "Not Validated!";
+#ifdef YEAGER_DEBUG
+  Yeager::Log(INFO, "File validation: Path: {}, Status [{}]", p.c_str(), status);
+#endif
 }

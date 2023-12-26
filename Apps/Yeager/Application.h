@@ -42,19 +42,13 @@ struct WorldCharacterMatrices {
   YgVector3 ViewerPos;
 };
 
-///  @brief Class that handles the program
-///  @todo Make the EngineCore to handle launcher and editor
 class ApplicationCore {
  public:
   ApplicationCore();
   ~ApplicationCore();
   ApplicationCore(ApplicationCore&&) = delete;
 
-  /// @brief Setup the current application
   void Setup();
-
-  /// @brief Get a boolean if the application or user have request for stop rendering, most likely to close the program
-  /// @return True if requested, false if not
   bool ShouldRender();
 
   LauncherProjectPicker RequestLauncher();
@@ -75,6 +69,9 @@ class ApplicationCore {
   void SetState(ApplicationState state) noexcept;
   void CheckGLAD();
 
+  YgMatrix4 GetProjection() { return m_WorldMatrices.Projection; }
+  YgMatrix4 GetView() { return m_WorldMatrices.View; }
+
  private:
   void ManifestShaderProps(Yeager::Shader* shader);
   void OpenGLFunc();
@@ -92,6 +89,10 @@ class ApplicationCore {
   void UpdateWorldMatrices();
 
   void UpdateListenerPosition();
+  void DrawObjects();
+  void BuildAndDrawLightSources();
+
+  void VerifyCollisions();
 
   Interface* m_Interface;
   Input* m_Input;

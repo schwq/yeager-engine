@@ -50,6 +50,8 @@ class EditorCamera {
   constexpr inline void SetDirection(const YgVector3& dir) { m_CameraDirection = dir; }
   const YgVector3 GetFront() { return m_CameraFront; }
 
+  void RayCasting(int mouse_x, int mouse_y, YgMatrix4 projection, YgMatrix4 view);
+
  protected:
   YgVector3 m_Position = YgVector3(0.0f);
   YgVector3 m_CameraFront = YgVector3(0.0f);
@@ -59,7 +61,7 @@ class EditorCamera {
   float m_CameraYaw = 0.0f;
   float m_CameraPitch = 0.0f;
   float m_CameraSpeed = 2.0f;
-  Yeager::ApplicationCore* m_Application = nullptr;
+  Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
   bool m_CameraShouldMove = false;
 };
 

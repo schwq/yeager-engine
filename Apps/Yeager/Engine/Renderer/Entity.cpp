@@ -11,6 +11,16 @@ Transformation Yeager::GetDefaultTransformation()
   return trans;
 }
 
+void Yeager::ProcessTransformation(Transformation* trans)
+{
+  trans->model = YgMatrix4(1.0f);
+  trans->model = glm::translate(trans->model, trans->position);
+  trans->model = glm::rotate(trans->model, glm::radians(trans->rotation.x), YgVector3(1.0f, 0.0f, 0.0f));
+  trans->model = glm::rotate(trans->model, glm::radians(trans->rotation.y), YgVector3(0.0f, 1.0f, 0.0f));
+  trans->model = glm::rotate(trans->model, glm::radians(trans->rotation.z), YgVector3(0.0f, 0.0f, 1.0f));
+  trans->model = glm::scale(trans->model, trans->scale);
+}
+
 unsigned int Entity::m_entityCountId = 0;
 
 Entity::Entity(YgString name) : m_Name(name), m_id(m_entityCountId++)
@@ -77,17 +87,18 @@ DrawableEntity::DrawableEntity(YgString name)
 }
 DrawableEntity::~DrawableEntity()
 {
-  //Terminate();
+  Terminate();
+}
+
+void DrawableEntity::Terminate()
+{
+  Yeager::Log(INFO, "Terminate drawable entity was been called [{}]", m_Name.c_str());
+  glDeleteVertexArrays(1, &m_Vao);
+  glDeleteBuffers(1, &m_Vbo);
+  glDeleteBuffers(1, &m_Ebo);
 }
 
 void DrawableEntity::Draw(Shader* shader)
 {
   YEAGER_NOT_IMPLEMENTED("Draw from drawable entity");
-}
-
-void DrawableEntity::Terminate()
-{
-  glDeleteVertexArrays(1, &m_Vao);
-  glDeleteBuffers(1, &m_Vbo);
-  glDeleteBuffers(1, &m_Ebo);
 }

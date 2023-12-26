@@ -106,17 +106,20 @@
 #include <functional>
 #include <ios>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <thread>
 #include <vector>
 
 // clang-format off
 #include <glad/glad.h>
+
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include <glm/gtx/component_wise.hpp>
 //clang-format on
 
 #include "../../../Libraries/imgui/imgui.h"

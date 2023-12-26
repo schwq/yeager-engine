@@ -3,6 +3,11 @@
 #include <glm/geometric.hpp>
 #include "../../Application.h"
 
+void EditorCamera::RayCasting(int mouse_x, int mouse_y, YgMatrix4 projection, YgMatrix4 view)
+{
+  YEAGER_NOT_IMPLEMENTED("RayCasting");
+}
+
 EditorCamera::EditorCamera(Yeager::ApplicationCore* app, YgVector3 cameraPosition, YgVector3 cameraFront,
                            YgVector3 cameraUp)
     : m_Application(app)

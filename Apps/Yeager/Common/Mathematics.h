@@ -123,6 +123,6 @@ class Array2D {
 
   int m_Cols = 0;
   int m_Rows = 0;
-  Type* m_Pointer = nullptr;
+  Type* m_Pointer = YEAGER_NULLPTR;
 };
 }  // namespace Yeager

@@ -31,7 +31,7 @@ namespace Yeager {
 
 #define YEAGER_ASSIMP_DEFAULT_FLAGS aiProcess_Triangulate | aiProcess_FlipUVs
 #define YEAGER_ASSIMP_DEFAULT_FLAGS_ANIMATED \
-  aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace
+  aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_FlipUVs
 
 /// @brief this class can be used to import 2d and 3d models and assets to the editor by using assimp
 class Importer {

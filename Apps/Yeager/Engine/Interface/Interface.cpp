@@ -11,6 +11,65 @@ using namespace Yeager;
 
 unsigned int Yeager::Interface::m_Frames = 0;
 
+void Yeager::InputVector3(const char* label, YgVector3* v, const char* format, ImGuiInputTextFlags flags)
+{
+  float* ver[3] = {&v->x, &v->y, &v->z};
+  InputFloat3(label, *ver, format, flags);
+}
+
+void Interface::LightHandleControlWindow()
+{
+  /**
+   * NOTE Imgui button`s label problem explained where: https://github.com/ocornut/imgui/issues/74
+   */
+  int label_coflint = 0;
+  for (auto& lightsources : *m_Application->GetScene()->GetLightSources()) {
+    PushID(label_coflint++);
+
+    Text("Light Source: %s", lightsources->GetLinkedShader()->GetName().c_str());
+    SeparatorText("Directional Light");
+    InputVector3("Directions##Directional", &lightsources->GetDirectionalLight()->Direction);
+    InputVector3("Ambients##Directional", &lightsources->GetDirectionalLight()->Ambient);
+    InputVector3("Diffuses##Directional", &lightsources->GetDirectionalLight()->Diffuse);
+    InputVector3("Speculars##Directional", &lightsources->GetDirectionalLight()->Specular);
+    InputVector3("Colors##Directional", &lightsources->GetDirectionalLight()->Color);
+
+    SeparatorText("Spot Light");
+    InputVector3("Position##SpotLight", &lightsources->GetSpotLight()->Position);
+    InputVector3("Direction##SpotLight", &lightsources->GetSpotLight()->Direction);
+    InputFloat("CutOff##SpotLight", &lightsources->GetSpotLight()->CutOff);
+    InputFloat("OuterCutOff##SpotLight", &lightsources->GetSpotLight()->OuterCutOff);
+    InputFloat("Constant##SpotLight", &lightsources->GetSpotLight()->Constant);
+    InputFloat("Linear##SpotLight", &lightsources->GetSpotLight()->Linear);
+    InputFloat("Quadratic##SpotLight", &lightsources->GetSpotLight()->Quadratic);
+    InputVector3("Ambient##SpotLight", &lightsources->GetSpotLight()->Ambient);
+    InputVector3("Diffuse##SpotLight", &lightsources->GetSpotLight()->Diffuse);
+    InputVector3("Specular##SpotLight", &lightsources->GetSpotLight()->Specular);
+    Checkbox("Active##SpotLight", &lightsources->GetSpotLight()->Active);
+
+    int point_light_label = 0;
+    for (auto& pointlights : *lightsources->GetObjectPointLights()) {
+      PushID(point_light_label++);
+
+      Text("Object Point Light: %s", pointlights.ObjSource->GetName().c_str());
+      InputVector3("Position##PointLight", &pointlights.ObjSource->GetTransformationPtr()->position);
+      InputVector3("Scale##PointLight", &pointlights.ObjSource->GetTransformationPtr()->scale);
+      InputVector3("Rotation##PointLight", &pointlights.ObjSource->GetTransformationPtr()->rotation);
+      InputFloat("Constant##PointLight", &pointlights.Constant);
+      InputFloat("Linear##PointLight", &pointlights.Linear);
+      InputFloat("Quadratic##PointLight", &pointlights.Quadratic);
+      InputVector3("Ambient##PointLight", &pointlights.Ambient);
+      InputVector3("Specular##PointLight", &pointlights.Specular);
+      InputVector3("Diffuse##PointLight", &pointlights.Diffuse);
+      InputVector3("Color##PointLight", &pointlights.Color);
+      Checkbox("Active##PointLight", &pointlights.Active);
+
+      PopID();
+    }
+    PopID();
+  }
+}
+
 Interface::~Interface()
 {
   Yeager::Log(INFO, "Destrorying Interface!");
@@ -298,8 +357,8 @@ void Interface::DrawToolbox()
   //m_ToolboxWindow.Begin(m_Control.DontMoveWindowsEditor ? kWindowStatic : kWindowMoveable);
   Begin(ICON_FA_GEAR " Toolbox", NULL, m_Control.DontMoveWindowsEditor ? kWindowStatic : kWindowMoveable);
 
-  if (m_Application->GetExplorer()->toolbox_selected != nullptr) {
-    Yeager::ToolBoxObject* obj = m_Application->GetExplorer()->toolbox_selected;
+  if (m_Application->GetExplorer()->GetSelectedToolbox() != YEAGER_NULLPTR) {
+    Yeager::ToolBoxObject* obj = m_Application->GetExplorer()->GetSelectedToolbox();
     YgCchar text = obj->GetEntity()->GetName().c_str();
     Text(text);
     obj->DrawObject();
@@ -335,6 +394,7 @@ void Interface::RenderEditor()
     DrawEditorMenu();
     DrawConsole();
     ShadersControlWindow();
+    LightHandleControlWindow();
   }
 }
 
@@ -400,6 +460,8 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
         launcher->SetUserHasSelect(true);
         launcher->GetCurrentProjectPicked()->m_Name = project.Name;
         launcher->GetCurrentProjectPicked()->m_ProjectPath = project.Path;
+        launcher->GetCurrentProjectPicked()->m_SceneRenderer = StringToSceneRenderer(project.RendererType);
+        launcher->GetCurrentProjectPicked()->m_SceneType = StringToScreneType(project.SceneType);
       }
     }
     open_project_window.End();
@@ -576,7 +638,9 @@ void Interface::LoadColorscheme()
 void Interface::RenderDebugger()
 {
   m_DebuggerWindow.Begin();
-
+  if (Button("Reset camera position")) {
+    m_Application->GetCamera()->SetPosition(YgVector3(0));
+  }
   Text("Frames %u", m_Frames);
   Text("Camera should move: %s", m_Application->GetCamera()->GetShouldMove() ? "true" : "false");
   YgVector3 cameraPos = m_Application->GetCamera()->GetPosition();

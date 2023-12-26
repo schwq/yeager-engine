@@ -24,6 +24,7 @@
 #include "Common/LogEngine.h"
 #include "Common/Utilities.h"
 #include "Engine/Editor/ToolboxObj.h"
+#include "Engine/Lighting/LightHandle.h"
 #include "Engine/Media/AudioHandle.h"
 #include "Engine/Renderer/Object.h"
 #include "Serialization.h"
@@ -48,43 +49,50 @@ struct SceneContext {
 class Scene {
  public:
   Scene(YgString name, SceneType type, SceneRenderer renderer, Yeager::ApplicationCore* app);
-  //Scene(SceneContext context, Yeager::ApplicationCore* app);
   ~Scene();
   Scene() {}
   Yeager::Scene& operator=(const Yeager::Scene& rhs)
   {
-    this->m_context.m_name = rhs.m_context.m_name;
-    this->m_context.m_type = rhs.m_context.m_type;
-    this->m_context.m_renderer = rhs.m_context.m_renderer;
-    this->m_context.m_file_path = rhs.m_context.m_file_path;
-    this->m_serial = Yeager::Serialization(rhs.m_app);
+    this->m_Context.m_name = rhs.m_Context.m_name;
+    this->m_Context.m_type = rhs.m_Context.m_type;
+    this->m_Context.m_renderer = rhs.m_Context.m_renderer;
+    this->m_Context.m_file_path = rhs.m_Context.m_file_path;
+    this->m_Serial = Yeager::Serialization(rhs.m_Application);
   }
 
   void Save();
   void Load(YgString path);
   void LoadEditorColorscheme(Interface* intr);
 
-  SceneContext GetContext() { return m_context; }
-  Serialization GetSerial() { return m_serial; }
+  SceneContext GetContext() { return m_Context; }
+  Serialization GetSerial() { return m_Serial; }
   void SetContextType(SceneType type);
   void SetContextRenderer(SceneRenderer renderer);
 
-  std::thread SavedObjectsThread;
-
+  /**
+   *  Scene Objects and Entities (Everything that is stored where is going to be saved) 
+   */
   std::vector<std::shared_ptr<Yeager::Audio3DHandle>>* GetAudios3D();
   std::vector<std::shared_ptr<Yeager::AudioHandle>>* GetAudios();
   std::vector<std::shared_ptr<Yeager::Object>>* GetObjects();
   std::vector<std::shared_ptr<ToolBoxObject>>* GetToolboxs();
+  std::vector<std::shared_ptr<Yeager::InstancedObject>>* GetInstancedObjects();
+  std::vector<std::shared_ptr<Yeager::AnimatedObject>>* GetAnimatedObject();
+  std::vector<std::shared_ptr<Yeager::InstancedAnimatedObject>>* GetInstancedAnimatedObjects();
+  std::vector<std::shared_ptr<Yeager::LightSource>>* GetLightSources();
 
  private:
-  SceneContext m_context;
-  Yeager::ApplicationCore* m_app = nullptr;
-  Serialization m_serial;
-
-  std::vector<std::shared_ptr<Yeager::Audio3DHandle>> m_audios3d;
-  std::vector<std::shared_ptr<Yeager::AudioHandle>> m_audios;
-  std::vector<std::shared_ptr<Yeager::Object>> m_objs;
-  std::vector<std::shared_ptr<ToolBoxObject>> m_toolboxs;
+  SceneContext m_Context;
+  Serialization m_Serial;
+  Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
+  std::vector<std::shared_ptr<Yeager::Audio3DHandle>> m_Audios3D;
+  std::vector<std::shared_ptr<Yeager::AudioHandle>> m_Audios;
+  std::vector<std::shared_ptr<Yeager::Object>> m_Objects;
+  std::vector<std::shared_ptr<Yeager::InstancedObject>> m_InstancedObjects;
+  std::vector<std::shared_ptr<Yeager::AnimatedObject>> m_AnimatedObject;
+  std::vector<std::shared_ptr<Yeager::InstancedAnimatedObject>> m_InstancedAnimatedObjects;
+  std::vector<std::shared_ptr<Yeager::ToolBoxObject>> m_Toolboxes;
+  std::vector<std::shared_ptr<Yeager::LightSource>> m_LightSources;
 
   inline YgString GetSceneFilePath();
 };

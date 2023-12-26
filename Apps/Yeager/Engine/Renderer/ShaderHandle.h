@@ -41,7 +41,9 @@ class Shader {
   constexpr inline GLuint GetId() { return m_id; }
   constexpr inline bool IsInitialized() { return m_initialize; }
 
-   inline YgString GetName() { return m_Name; }
+  inline YgString GetName() { return m_Name; }
+  inline YgString GetVarName() { return m_VarName; }
+  inline void SetVarName(const YgString& str) { m_VarName = str; }
 
  private:
   GLuint m_id;
@@ -51,6 +53,7 @@ class Shader {
   static unsigned int m_shader_count;
   unsigned int m_shader_num = 0;
 
+  YgString m_VarName;
   YgString m_Name;
 
   YEAGER_NODISCARD unsigned int CreateVertexGL(YgCchar vertexPath);
@@ -59,7 +62,7 @@ class Shader {
 };
 
 struct ShaderFromYaml {
-  std::shared_ptr<Yeager::Shader> m_shader = nullptr;
+  std::shared_ptr<Yeager::Shader> m_shader = YEAGER_NULLPTR;
   YgString m_varName;
 };
 

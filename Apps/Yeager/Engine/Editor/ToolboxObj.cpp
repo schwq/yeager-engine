@@ -1,8 +1,8 @@
 #include "ToolboxObj.h"
 #include "../Interface/IconsFontAwesome6.h"
+#include "../Interface/Interface.h"
 #include "../Renderer/Entity.h"
 #include "../Renderer/Object.h"
-#include "../Interface/Interface.h"
 using namespace ImGui;
 using namespace Yeager;
 
@@ -12,9 +12,9 @@ YgString ExplorerTypeToString(ExplorerObjectType type)
 {
   switch (type) {
     case ExplorerObjectType::kShapes:
-      return "Yeager::Shape";
+      return "Shape";
     case ExplorerObjectType::kShader:
-      return "Yeager::Shader";
+      return "Shader";
     case ExplorerObjectType::kTexture:
       return "Texture";
     case ExplorerObjectType::kSkybox:
@@ -66,7 +66,7 @@ ToolBoxObject GetDefaultToolBoxObject()
 void ToolBoxObject::DrawObject()
 {
   Yeager::Transformation* trans = GetTransformation();
-  if (m_entity != nullptr) {
+  if (m_entity != YEAGER_NULLPTR) {
     switch (m_type) {
       case ExplorerObjectType::kShapes:
       case ExplorerObjectType::kPointLight:
@@ -74,9 +74,7 @@ void ToolBoxObject::DrawObject()
         Checkbox("Should Render", m_entity->GetRender());
 
         Text("Position:");
-        InputFloat("Pos X", &trans->position.x);
-        InputFloat("Pos Y", &trans->position.y);
-        InputFloat("Pos Z", &trans->position.z);
+        InputVector3("Position", &trans->position);
         if (Button("Reset Position")) {
           trans->position = YgVector3(0.0f);
         }
@@ -91,13 +89,8 @@ void ToolBoxObject::DrawObject()
           trans->rotation.y = 20.0f * angles * m_random_rotation_pow;
           trans->rotation.z = 15.0f * angles * m_random_rotation_pow;
         }
-        InputFloat("Rot X", &trans->rotation.x);
-        InputFloat("Rot Y", &trans->rotation.y);
-        InputFloat("Rot Z", &trans->rotation.z);
-
-        InputFloat("Scale X", &trans->scale.x, 0.01f, 100.0f);
-        InputFloat("Scale Y", &trans->scale.y, 0.01f, 100.0f);
-        InputFloat("Scale Z", &trans->scale.z, 0.01f, 100.0f);
+        InputVector3("Rotation", &trans->rotation);
+        InputVector3("Scale", &trans->scale);
 
         Checkbox("Gravity Enabled", &m_gravity_checkbox);
         m_physics->GravityEnabled(m_gravity_checkbox);
@@ -111,7 +104,7 @@ void ToolBoxObject::DrawObject()
         InputFloat("Gravity Const", &obj_gravity_const);
         m_physics->ChangeGravity(obj_gravity_const, obj_weight);
 
-        for(auto& tex : *m_entity->GetLoadedTextures()) {
+        for (auto& tex : *m_entity->GetLoadedTextures()) {
 
           ImGui::Text("%s", tex->Name.c_str());
           ImGui::Text("%s", tex->Type.c_str());
@@ -173,7 +166,6 @@ void ToolBoxObject::DrawObject()
         }
 
         break;
-
     }
   }
 }

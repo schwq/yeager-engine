@@ -1,9 +1,9 @@
 #include "Application.h"
+#include "Engine/Lighting/LightHandle.h"
 #include "Engine/Renderer/Animation/AnimationEngine.h"
 #include "Engine/Renderer/Object.h"
 #include "Engine/Renderer/Skybox.h"
 #include "Engine/Terrain/ProceduralTerrain.h"
-#include "Engine/Lighting/LightHandle.h"
 
 using namespace Yeager;
 
@@ -39,6 +39,7 @@ void ApplicationCore::BuildApplicationCoreCompoments()
 {
   m_Input = new Input(this);
   m_Window = new Window(ygWindowWidth, ygWindowHeight, "Yeager Engine", m_Input->MouseCallback);
+  m_Input->InitializeCallbacks();
   CheckGLAD();
   m_Interface = new Interface(m_Window, this);
   m_EditorCamera = new EditorCamera(this);
@@ -59,9 +60,9 @@ void ApplicationCore::Setup()
     m_Window->RegenerateMainWindow(1920, 1080, RequestWindowEngineName(project), m_Input->MouseCallback);
     m_Interface->RequestRestartInterface(m_Window);
     m_Scene = new Yeager::Scene(project.m_Name, project.m_SceneType, project.m_SceneRenderer, this);
-    m_Launcher->GetNewProjectLaoded() ? m_Scene->Save() : m_Scene->Load(project.m_ProjectPath);
     m_Scene->GetSerial().ReadEditorVariables(EditorVariablesPath.c_str());
     m_Scene->GetSerial().ReadSceneShadersConfig(GetPath("/Configuration/Editor/Shaders/default_shaders.yaml"));
+    m_Launcher->GetNewProjectLaoded() ? m_Scene->Save() : m_Scene->Load(project.m_ProjectPath);
 
   } else {
     TerminateAudioEngine();
@@ -110,39 +111,10 @@ void ApplicationCore::Render()
 {
   OpenGLFunc();
 
-  Yeager::Skybox skybox("Skybox", ObjectGeometryType::ECube, this, false);
-  skybox.BuildSkyboxFromImport(GetPath("/Assets/ImportedModels/Skybox/skybox.obj"));
+  Yeager::Skybox skybox("Skybox", ObjectGeometryType::ESphere, this, false);
+  skybox.BuildSkyboxFromImport(GetPath("/Assets/ImportedModels/skybox/skybox.obj"));
 
-  std::vector<YgVector3> pos;
-  for (int x = 0; x < 20; x++) {
-    for (int y = 0; y < 20; y++) {
-      YgVector3 vec;
-      vec.x = RandomFloatRange(0, 10) * x;
-      vec.y = RandomFloatRange(0, 10);
-      vec.z = RandomFloatRange(0, 10) * y;
-      pos.push_back(vec);
-    }
-  }
-
-  LightHandle light(ShaderFromVarName("SimpleAnimated"));
-  LightSource sources(ShaderFromVarName("Simple"));
-  ObjectPointLight obj;
-  sources.AddSpotLight(obj, this);
-
-  InstancedAnimatedObject swat("Swat", this, 400);
-  swat.ImportObjectFromFile(GetPath("/Assets/ImportedModels/style/style.dae").c_str(), true);
-  swat.BuildProp(pos, ShaderFromVarName("SimpleAnimated"));
-  //swat.BuildProp(pos, ShaderFromVarName("SimpleAnimated"));
-  Animation SwatCover(GetPath("/Assets/ImportedModels/style/style.dae"), &swat);
-  AnimationEngine engine(&SwatCover);
-
-  Object pacific("Pacific", this);
-  pacific.ImportObjectFromFile(GetPath("/Assets/ImportedModels/f18/F-18.obj").c_str(), false);
-  pacific.GetTransformationPtr()->scale = YgVector3(0.05f);
- 
-  
   while (ShouldRender()) {
-
     glfwPollEvents();
     OpenGLClear();
 
@@ -156,31 +128,20 @@ void ApplicationCore::Render()
     skybox.Draw(ShaderFromVarName("Skybox"), YgMatrix3(m_WorldMatrices.View), m_WorldMatrices.Projection);
 
     ygAudioEngine->update();
-    engine.UpdateAnimation(m_DeltaTime);
 
     ManifestShaderProps(ShaderFromVarName("TerrainGeneration"));
-
-    light.BuildShaderProps(ShaderFromVarName("SimpleAnimated"), GetCamera()->GetPosition(), GetCamera()->GetDirection(),
-                           32.0f);
+    ManifestShaderProps(ShaderFromVarName("Simple"));
+    ManifestShaderProps(ShaderFromVarName("Collision"));
 
     ManifestShaderProps(ShaderFromVarName("SimpleAnimated"));
-    auto transf = engine.GetFinalBoneMatrices();
-    for (int x = 0; x < MAX_BONES; x++) {
-      ShaderFromVarName("SimpleAnimated")->SetMat4("finalBonesMatrices[" + std::to_string(x) + "]", transf.at(x));
-    }
-    swat.Draw(ShaderFromVarName("SimpleAnimated"));
+    ManifestShaderProps(ShaderFromVarName("SimpleInstancedAnimated"));
 
-    ManifestShaderProps(ShaderFromVarName("Simple"));
-    sources.BuildShaderProps(ShaderFromVarName("Simple"), GetCamera()->GetPosition(), GetCamera()->GetDirection(),
-                             32.0f);
-   
-    pacific.Draw(ShaderFromVarName("Simple"));
-    for (const auto& obj : *GetScene()->GetObjects()) {
-      obj->Draw(ShaderFromVarName("Simple"));
-    }
+    VerifyCollisions();
+    DrawObjects();
+    ManifestShaderProps(ShaderFromVarName("SimpleInstanced"));
 
     ManifestShaderProps(ShaderFromVarName("Light"));
-    sources.DrawLightSources(ShaderFromVarName("Light"));
+    BuildAndDrawLightSources();
 
     GetInterface()->RenderUI();
     m_Interface->TerminateRenderFrame();
@@ -190,6 +151,62 @@ void ApplicationCore::Render()
 
   GetScene()->Save();
   TerminateAudioEngine();
+}
+
+void ApplicationCore::VerifyCollisions()
+{
+  if (GetScene()->GetObjects()->empty() || GetScene()->GetObjects()->size() == 1) {
+    return;
+  }
+
+  int obj_al = 1;
+
+  for (const auto& obj : *GetScene()->GetObjects()) {
+    obj->ForceCollision(false);
+  }
+
+  for (unsigned int x = 0; x < GetScene()->GetObjects()->size(); x++) {
+    for (unsigned int y = obj_al; y < GetScene()->GetObjects()->size(); y++) {
+      Object* obj1 = GetScene()->GetObjects()->at(x).get();
+      Object* obj2 = GetScene()->GetObjects()->at(y).get();
+      bool collision = obj1->GetCollision()->CheckCollision(obj2);
+      obj1->MakeCollision(collision);
+      obj2->MakeCollision(collision);
+    }
+    obj_al++;
+  }
+}
+
+void ApplicationCore::BuildAndDrawLightSources()
+{
+  for (const auto& light : *GetScene()->GetLightSources()) {
+    light->BuildShaderProps(GetCamera()->GetPosition(), GetCamera()->GetDirection(), 32.0f);
+    light->DrawLightSources();
+  }
+}
+
+void ApplicationCore::DrawObjects()
+{
+  for (const auto& obj : *GetScene()->GetObjects()) {
+    obj->Draw(ShaderFromVarName("Simple"));
+  }
+  for (const auto& obj : *GetScene()->GetInstancedObjects()) {
+    obj->Draw(ShaderFromVarName("SimpleInstanced"), obj->GetInstancedNumber());
+  }
+
+  for (const auto& obj : *GetScene()->GetAnimatedObject()) {
+    ShaderFromVarName("SimpleAnimated")->UseShader();
+    obj->UpdateAnimation(m_DeltaTime);
+    obj->BuildAnimationMatrices(ShaderFromVarName("SimpleAnimated"));
+    obj->Draw(ShaderFromVarName("SimpleAnimated"));
+  }
+
+  for (const auto& obj : *GetScene()->GetInstancedAnimatedObjects()) {
+    ShaderFromVarName("SimpleInstancedAnimated")->UseShader();
+    obj->UpdateAnimation(m_DeltaTime);
+    obj->BuildAnimationMatrices(ShaderFromVarName("SimpleInstancedAnimated"));
+    obj->Draw(ShaderFromVarName("SimpleInstancedAnimated"));
+  }
 }
 
 Interface* ApplicationCore::GetInterface()
@@ -256,7 +273,7 @@ void ApplicationCore::OpenGLFunc()
   glEnable(GL_BLEND);
   glEnable(GL_MULTISAMPLE);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glEnable(GL_CULL_FACE);
+  //glEnable(GL_CULL_FACE);
 }
 
 void ApplicationCore::OpenGLClear()

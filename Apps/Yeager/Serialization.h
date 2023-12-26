@@ -26,10 +26,6 @@
 #include "Engine/Interface/Interface.h"
 #include "Engine/Renderer/Entity.h"
 
-namespace Yeager {
-class ApplicationCore;
-}
-
 namespace YAML {
 template <>
 struct convert<YgVector3> {
@@ -78,40 +74,47 @@ struct convert<ImVec4> {
     return true;
   }
 };
-}  // namespace YAML
 
+}  // namespace YAML
 extern YAML::Emitter& operator<<(YAML::Emitter& out, const YgVector3& vector);
 
 namespace Yeager {
-
 class Scene;
-
+class ApplicationCore;
 extern std::vector<OpenProjectsDisplay> ReadProjectsToDisplay(YgString dir);
 
 class Serialization {
  public:
   Serialization(Yeager::ApplicationCore* app);
-  Serialization() {}
-  ~Serialization(){YEAGER_NOT_IMPLEMENTED("~Serialization")};
+  Serialization() { Yeager::Log(INFO, "Default Serialization constructor was been called"); }
+
   ColorschemeConfig ReadColorschemeConfig();
+
   void ReadSceneShadersConfig(YgString path);
   void SerializeScene(Yeager::Scene* scene, YgString path);
   void DeserializeScene(Yeager::Scene* scene, YgString path);
   void ReadConf(YgString path){YEAGER_NOT_IMPLEMENTED("ReadConf")};
   void SaveConf(){YEAGER_NOT_IMPLEMENTED("SaveConf")};
-
   void ReadEditorVariables(YgCchar path);
   void SaveEditorVariables(YgCchar path);
 
  private:
-  Yeager::ApplicationCore* m_app = nullptr;
-  template <typename _Ty>
-  const void inline CheckAndDeserialize(YAML::Node& node, _Ty* obj, YgCchar key) noexcept;
+  template <typename Type>
+  void SerializeSTDVector(YAML::Emitter& out, std::vector<Type> vec, const char* key);
+  Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
+
+  template <typename Type>
+  const void inline CheckAndDeserialize(YAML::Node& node, Type& obj, YgCchar key) noexcept;
   void inline DeserializeEntity(Yeager::Scene* scene, YAML::Node& node, YAML::detail::iterator_value& entity);
   void inline DeserializeSceneInfo(Yeager::Scene* scene, YAML::Node& node);
+  ObjectGeometryType inline DeserializeBasicObject(Yeager::Object* BaseClassObj, YAML::detail::iterator_value& entity);
+  std::vector<Transformation> inline DeserializeObjectProperties(YAML::detail::iterator_value& entity);
   void inline SerializeBasicEntity(YAML::Emitter& out, YgString name, unsigned int id, YgString type);
-  template <typename _T>
-  void inline SerializeObject(YAML::Emitter& out, const char* key, _T obj);
+  void inline SerializeObjectTransformation(YAML::Emitter& out, YgString name, Yeager::Transformation& transf) noexcept;
+
+  template <typename Type>
+  void inline SerializeObject(YAML::Emitter& out, const char* key, Type obj);
+  void inline SerializeBasicObjectType(YAML::Emitter& out, Yeager::Object* obj);
   void inline SerializeBegin(YAML::Emitter& out, const char* key, YAML::EMITTER_MANIP manip);
   void inline SerializeSystemInfo(YAML::Emitter& out, Yeager::Scene* scene);
 };

@@ -4,12 +4,62 @@
 #include "Engine/Editor/Camera.h"
 using namespace Yeager;
 
+std::vector<KeyMap> Yeager::KeyMapping = {KeyMap(GLFW_MOUSE_BUTTON_1), KeyMap(GLFW_MOUSE_BUTTON_2)};
+KeyMap* Yeager::FindKeyMap(uint8_t key)
+{
+  for (auto& keymap : KeyMapping) {
+    if (key == keymap.GlfwMacro) {
+      return &keymap;
+    }
+  }
+  assert("Cannot find key associated to keymapping!");
+}
+
 float Input::m_LastMouseWidth = ygWindowWidth / 2.0f;
 float Input::m_LastMouseHeight = ygWindowHeight / 2.0f;
 bool Input::m_FirstMouse = true;
 CameraCursorLastState Input::m_LastState;
+bool Input::m_CursorShouldAppear = true;
 
-Yeager::ApplicationCore* Input::m_Application = nullptr;
+void Input::KeyboardKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+  if (m_Application->GetMode() == ApplicationMode::AppEditor) {
+    switch (key) {
+      case GLFW_KEY_E:
+        if (FindKeyMap(GLFW_MOUSE_BUTTON_1)->AddStateAwaitAction(action)) {
+          if (m_Application->GetCamera()->GetShouldMove()) {
+            m_Application->GetCamera()->SetShouldMove(false);
+            m_FirstMouse = true;
+            SetCursorAppear(true);
+          } else {
+            m_Application->GetCamera()->SetShouldMove(true);
+            SetCursorAppear(false);
+          }
+        }
+        break;
+    }
+  }
+}
+
+void Input::MouseKeyCallback(GLFWwindow* window, int button, int action, int mods)
+{
+  if (m_Application->GetMode() == ApplicationMode::AppEditor) {
+    switch (button) {
+      case GLFW_MOUSE_BUTTON_1:
+        if (FindKeyMap(GLFW_MOUSE_BUTTON_1)->AddStateAwaitAction(action)) {
+          double xpos, ypos;
+          glfwGetCursorPos(window, &xpos, &ypos);
+          m_Application->GetCamera()->RayCasting(xpos, ypos, m_Application->GetProjection(), m_Application->GetView());
+        }
+        break;
+      case GLFW_MOUSE_BUTTON_2:
+        if (FindKeyMap(GLFW_MOUSE_BUTTON_2)->AddStateAwaitAction(action)) {}
+        break;
+    }
+  }
+}
+
+Yeager::ApplicationCore* Input::m_Application = YEAGER_NULLPTR;
 Input::~Input()
 {
   Yeager::Log(INFO, "Destrorying InputHandle!");
@@ -20,6 +70,12 @@ Input::Input(Yeager::ApplicationCore* app)
 {
   m_Application = app;
   Yeager::Log(INFO, "Input created");
+}
+
+void Input::InitializeCallbacks()
+{
+  glfwSetMouseButtonCallback(m_Application->GetWindow()->getWindow(), MouseKeyCallback);
+  glfwSetKeyCallback(m_Application->GetWindow()->getWindow(), KeyboardKeyCallback);
 }
 
 void Input::MouseCallback(GLFWwindow* window, double xpos, double ypos)
@@ -95,18 +151,6 @@ void Input::ProcessInputRender(Window* window, float delta)
     if (glfwGetKey(window->getWindow(), GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
       if (glfwGetKey(window->getWindow(), GLFW_KEY_F) == GLFW_PRESS) {
         m_Application->GetInterface()->MakeScreenShotAppear(true);
-      }
-    }
-
-    if (((glfwGetKey(window->getWindow(), GLFW_KEY_E) == GLFW_PRESS) && m_FramesCount % 5 == 0) &&
-        m_CursorCanDisappear) {
-      if (m_Application->GetCamera()->GetShouldMove()) {
-        m_Application->GetCamera()->SetShouldMove(false);
-        m_FirstMouse = true;
-        SetCursorAppear(true);
-      } else {
-        m_Application->GetCamera()->SetShouldMove(true);
-        SetCursorAppear(false);
       }
     }
   }

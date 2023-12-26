@@ -15,19 +15,8 @@
 //
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-// clang-format off
 
-#include "Common/Common.h"
-#include "Application.h"
-#include "Common/Utilities.h"
-
-// clang-format on 
-int main(int argc, char* argv[])
-{
-  Yeager::ApplicationCore Application;
-  if(Application.ShouldRender()) {
-    Application.Render();
-  }
-  Application.Terminate();
-  return EXIT_SUCCESS;
-}
+#pragma once
+#include "Common.h"
+#include "LogEngine.h"
+#include "Utilities.h"

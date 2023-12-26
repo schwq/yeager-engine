@@ -28,4 +28,15 @@ Shaders:
     VarName: SimpleAnimated 
     FragmentPath: /Assets/Shaders/simple_animated_fg.glsl
     VertexPath: /Assets/Shaders/simple_animated_vt.glsl
-
+  - Shader: Collision Shader
+    VarName: Collision
+    FragmentPath: /Assets/Shaders/collision_fg.glsl
+    VertexPath: /Assets/Shaders/collision_vt.glsl
+  - Shader: Simple Instanced Shader
+    VarName: SimpleInstanced
+    FragmentPath: /Assets/Shaders/simple_instanced_fg.glsl
+    VertexPath: /Assets/Shaders/simple_instanced_vt.glsl
+  - Shader: Simple Instanced Animated Shader
+    VarName: SimpleInstancedAnimated
+    FragmentPath: /Assets/Shaders/simple_instanced_animated_fg.glsl
+    VertexPath: /Assets/Shaders/simple_instanced_animated_vt.glsl

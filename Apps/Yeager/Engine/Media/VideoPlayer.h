@@ -49,13 +49,13 @@ class VideoPlayer : public GameEntity {
  private:
   bool ReadFrame();
 
-  Yeager::Texture2D* m_gl_texture = nullptr;
-  AVFormatContext* m_format_ctx = nullptr;
-  AVCodec* m_codec = nullptr;
-  AVCodecContext* m_codec_ctx = nullptr;
-  AVCodecParameters* m_codec_par = nullptr;
-  AVFrame* m_frame = nullptr;
-  AVPacket* m_packet = nullptr;
+  Yeager::Texture2D* m_gl_texture = YEAGER_NULLPTR;
+  AVFormatContext* m_format_ctx = YEAGER_NULLPTR;
+  AVCodec* m_codec = YEAGER_NULLPTR;
+  AVCodecContext* m_codec_ctx = YEAGER_NULLPTR;
+  AVCodecParameters* m_codec_par = YEAGER_NULLPTR;
+  AVFrame* m_frame = YEAGER_NULLPTR;
+  AVPacket* m_packet = YEAGER_NULLPTR;
   const YgString m_video_path;
 };
 }  // namespace Yeager

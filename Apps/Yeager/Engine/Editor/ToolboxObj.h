@@ -24,13 +24,12 @@
 #include "../Renderer/Entity.h"
 #include "../Renderer/TextureHandle.h"
 
-
 namespace Yeager {
 class Texture2D;
 class GameEntity;
 class Entity;
 class AudioHandle;
-}
+}  // namespace Yeager
 enum class ExplorerObjectType {
   kShapes = 0,
   kScene,
@@ -54,7 +53,8 @@ namespace Yeager {
 class ToolBoxObject {
  public:
   ToolBoxObject(){};
-  ToolBoxObject(Yeager::GameEntity* entity, ExplorerObjectType type, Yeager::EntityPhysics* physics) : m_entity(entity), m_type(type), m_physics(physics){};
+  ToolBoxObject(Yeager::GameEntity* entity, ExplorerObjectType type, Yeager::EntityPhysics* physics)
+      : m_entity(entity), m_type(type), m_physics(physics){};
   Yeager::Transformation* GetTransformation() { return m_entity->GetTransformationPtr(); }
 
   Yeager::GameEntity* GetEntity() { return m_entity; }
@@ -68,17 +68,15 @@ class ToolBoxObject {
   void SetAudio(Yeager::AudioHandle* audio);
   void Set3DAudio(Yeager::Audio3DHandle* audio);
 
-  constexpr void SetEntity(Yeager::Entity* entity) {
-    m_entity = (GameEntity*)entity;
-  }
+  constexpr void SetEntity(Yeager::Entity* entity) { m_entity = (GameEntity*)entity; }
 
   bool m_selected = false;
 
  private:
   ExplorerObjectType m_type;
-  Yeager::GameEntity* m_entity = nullptr;
-  Yeager::EntityPhysics* m_physics = nullptr;
-  Yeager::Audio3DHandle* m_audio = nullptr;
+  Yeager::GameEntity* m_entity = YEAGER_NULLPTR;
+  Yeager::EntityPhysics* m_physics = YEAGER_NULLPTR;
+  Yeager::Audio3DHandle* m_audio = YEAGER_NULLPTR;
 
   float obj_weight = 1.0f;
   float obj_gravity_const = 1.0f;

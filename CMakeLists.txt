@@ -1,6 +1,6 @@
 set(CMAKE_CXX_STANDARD 20)
 cmake_minimum_required(VERSION 3.0)
-set(projectName yeager)
+set(projectName YeagerEngine)
 project(${projectName})
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
@@ -41,6 +41,7 @@ set(SOURCEFILES
     Apps/Yeager/Engine/Media/AudioHandle.cpp 
     Apps/Yeager/Engine/Renderer/Entity.cpp
     Apps/Yeager/Engine/Renderer/Object.cpp
+    Apps/Yeager/Engine/Renderer/AABBCollision.cpp
     Apps/Yeager/Engine/Renderer/Importer.cpp
     Apps/Yeager/Engine/Renderer/TextureHandle.cpp 
     Apps/Yeager/Engine/Renderer/ImageUtilities.cpp 
@@ -54,6 +55,8 @@ set(SOURCEFILES
     Apps/Yeager/Engine/Editor/ToolboxObj.cpp
     Apps/Yeager/Engine/Physics/PhysicsHandle.cpp
     Apps/Yeager/Common/LogEngine.cpp
+    Apps/Yeager/Engine/Lighting/LightHandle.h
+    Apps/Yeager/Engine/Lighting/LightHandle.cpp
     Apps/Yeager/Engine/Terrain/ProceduralTerrain.cpp
     Apps/Yeager/Engine/Terrain/ProceduralTerrain.h
     Apps/Yeager/Common/Mathematics.cpp

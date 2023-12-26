@@ -7,12 +7,12 @@ VideoPlayer::VideoPlayer(const
     : GameEntity(name), m_video_path(video_path)
 {
 
-  if (avformat_open_input(&m_format_ctx, video_path.c_str(), nullptr, nullptr) < 0) {
+  if (avformat_open_input(&m_format_ctx, video_path.c_str(), YEAGER_NULLPTR, YEAGER_NULLPTR) < 0) {
     Yeager::Log(ERROR, "VideoPlayer name {} ID {} cannot been created!", m_name, m_id);
     return;
   }
 
-  if (avformat_find_stream_info(m_format_ctx, nullptr) < 0) {
+  if (avformat_find_stream_info(m_format_ctx, YEAGER_NULLPTR) < 0) {
     Yeager::Log(ERROR, "VideoPlayer name {} ID {} cannot find stream info!", m_name, m_id);
     return;
   }
@@ -33,7 +33,7 @@ VideoPlayer::VideoPlayer(const
   m_codec = const_cast<AVCodec*>(avcodec_find_decoder(m_codec_par->codec_id));
   m_codec_ctx = avcodec_alloc_context3(m_codec);
   avcodec_parameters_to_context(m_codec_ctx, m_codec_par);
-  if (avcodec_open2(m_codec_ctx, m_codec, nullptr) < 0) {
+  if (avcodec_open2(m_codec_ctx, m_codec, YEAGER_NULLPTR) < 0) {
     Yeager::Log(ERROR, "VideoPlayer name {} ID {} cannot open codec!", m_name, m_id);
     return;
   }
@@ -56,7 +56,7 @@ void VideoPlayer::Resume() {}
 void VideoPlayer::Stop() {}
 Yeager::Texture2D* VideoPlayer::GetGLTexture()
 {
-  return nullptr;
+  return YEAGER_NULLPTR;
 }
 bool VideoPlayer::ReadFrame() {}
 */

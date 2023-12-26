@@ -30,6 +30,50 @@
 namespace Yeager {
 class ApplicationCore;
 
+struct KeyMap {
+  KeyMap(uint64_t GlfwMacro) { this->GlfwMacro = GlfwMacro; }
+  constexpr KeyMap(Yeager::KeyMap&& other)
+  {
+    this->GlfwMacro = other.GlfwMacro;
+    this->state = other.state;
+    this->action = other.action;
+  }
+  constexpr KeyMap(const Yeager::KeyMap& other)
+  {
+    this->GlfwMacro = other.GlfwMacro;
+    this->state = other.state;
+    this->action = other.action;
+  }
+  uint64_t GlfwMacro = GLFW_KEY_UNKNOWN;
+  uint8_t state = GLFW_RELEASE;
+  bool action = false;
+  bool AddStateAwaitAction(uint8_t await)
+  {
+    if (await == GLFW_PRESS && state == GLFW_RELEASE) {
+      state = await;
+      action = false;
+      return false;
+    }
+
+    if (await == GLFW_RELEASE && state == GLFW_PRESS) {
+      state = await;
+      action = true;
+      return true;
+    }
+
+    state = GLFW_RELEASE;
+    action = false;
+    return false;
+  }
+};
+
+/** 
+ * TODO Make this a std::map (im having some confusion on this topic)
+ */
+
+extern std::vector<KeyMap> KeyMapping;
+extern KeyMap* FindKeyMap(uint8_t key);
+
 /// @brief Stores the last state of the camera and cursor before some modification
 struct CameraCursorLastState {
   bool CursorShouldAppear = false;
@@ -47,6 +91,8 @@ class Input {
   Input(Yeager::ApplicationCore* app);
   ~Input();
   Input() {}
+
+  void InitializeCallbacks();
   /// @brief Process all input registed by the GLFW library loaded
   /// @param window The current GLFW window been used
   /// @param delta Delta time for handling delays
@@ -61,7 +107,7 @@ class Input {
   /// @brief Sets if the cursor can disappear in the current state, like when moving around the settings windows, the cursor should not disappear
   /// @param should True if the mouse can disappear, false if not
   void SetCursorCanDisappear(bool should) noexcept;
-  void SetCursorAppear(bool appear) noexcept;
+  static void SetCursorAppear(bool appear) noexcept;
 
   /// @brief When a window popup in the engine editor, we dont want the camera moving around, and the cursor not appearing, so this function is set to true
   ///  when the window is showing, and false when is closed
@@ -77,6 +123,9 @@ class Input {
   void WriteCameraCursorLastState() noexcept;
 
  private:
+  static void MouseKeyCallback(GLFWwindow* window, int button, int action, int mods);
+  static void KeyboardKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
   static CameraCursorLastState m_LastState;
   static Yeager::ApplicationCore* m_Application;
   /// @brief The last y mouse position
@@ -87,6 +136,7 @@ class Input {
   static bool m_FirstMouse;
   static unsigned int m_FramesCount;
   bool m_CursorCanDisappear = true;
-  bool m_CursorShouldAppear = true;
+  static bool m_CursorShouldAppear;
+  int cursor_x = 0, cursor_y = 0;
 };
 }  // namespace Yeager

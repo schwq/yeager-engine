@@ -23,7 +23,7 @@ Bone* Animation::FindBone(const YgString& name)
 {
   auto iter = std::find_if(m_Bones.begin(), m_Bones.end(), [&](Bone& Bone) { return Bone.GetBoneName() == name; });
   if (iter == m_Bones.end()) {
-    return nullptr;
+    return YEAGER_NULLPTR;
   } else {
     return &(*iter);
   }

@@ -23,11 +23,14 @@
 #include "../../Common/Utilities.h"
 #include "../Editor/ToolboxObj.h"
 #include "../Physics/PhysicsHandle.h"
+#include "AABBCollision.h"
 #include "Animation/Bone.h"
 #include "Entity.h"
 
 namespace Yeager {
 class ApplicationCore;
+class Animation;
+class AnimationEngine;
 
 struct BoneInfo {
   int ID;
@@ -138,6 +141,7 @@ extern bool DrawSeparateInstancedMesh(ObjectMeshData* mesh, Yeager::Shader* shad
 extern bool DrawSeparateInstancedAnimatedMesh(AnimatedObjectMeshData* mesh, Yeager::Shader* shader, int amount);
 
 extern std::vector<GLfloat> ExtractVerticesFromEveryMesh(ObjectModelData* model);
+extern std::vector<YgVector3> ExtractVerticesPositionToVector(ObjectModelData* model);
 
 class Object : public GameEntity {
  public:
@@ -170,35 +174,6 @@ class Object : public GameEntity {
   std::shared_ptr<ToolBoxObject> m_Toolbox;
 };
 
-class AnimatedObject : public Object {
- public:
-  AnimatedObject(YgString name, ApplicationCore* application);
-  bool ImportObjectFromFile(YgCchar path, bool flip_image = false);
-  virtual void Draw(Shader* shader);
-  AnimatedObjectModelData* GetModelData() { return &m_ModelData; }
-
- protected:
-  void Setup();
-  void DrawMeshes(Shader* shader);
-  AnimatedObjectModelData m_ModelData;
-};
-
-class InstancedAnimatedObject : public AnimatedObject {
- public:
-  InstancedAnimatedObject(YgString name, ApplicationCore* application, GLuint number) : AnimatedObject(name, application)
-  {
-    m_InstancedObjs = number;
-  }
-  ~InstancedAnimatedObject() {}
-
-  void Draw(Yeager::Shader* shader);
-  void BuildProp(const std::vector<YgVector3>& positions, Shader* shader);
-
- protected: 
-  void DrawAnimatedMeshes(Shader* shader);
-  GLuint m_InstancedObjs = 0;
-};
-
 class InstancedObject : public Object {
  public:
   InstancedObject(YgString name, ApplicationCore* application, GLuint number) : Object(name, application)
@@ -208,11 +183,59 @@ class InstancedObject : public Object {
   ~InstancedObject() {}
 
   void Draw(Yeager::Shader* shader, int amount);
-  void BuildProp(const std::vector<YgVector3>& positions, Shader* shader);
+  void BuildProp(std::vector<Transformation>& positions, Shader* shader);
+  std::vector<Transformation>* GetProps() { return &m_Props; }
+
+  GLuint GetInstancedNumber() const { return m_InstancedObjs; }
 
  protected:
   void DrawGeometry(Yeager::Shader* shader);
+  std::vector<Transformation> m_Props;
   void DrawModel(Yeager::Shader* shader, int amount);
+  GLuint m_InstancedObjs = 0;
+};
+
+class AnimatedObject : public Object {
+ public:
+  AnimatedObject(YgString name, ApplicationCore* application);
+  ~AnimatedObject();
+  bool ImportObjectFromFile(YgCchar path, bool flip_image = false);
+  virtual void Draw(Shader* shader);
+  AnimatedObjectModelData* GetModelData() { return &m_ModelData; }
+
+  void UpdateAnimation(float delta);
+  void BuildAnimationMatrices(Shader* shader);
+  void BuildAnimation(YgString path);
+
+ protected:
+  void Setup();
+  void DrawMeshes(Shader* shader);
+  AnimatedObjectModelData m_ModelData;
+  Animation* m_Animation = YEAGER_NULLPTR;
+  AnimationEngine* m_AnimationEngine = YEAGER_NULLPTR;
+};
+
+class InstancedAnimatedObject : public AnimatedObject {
+ public:
+  InstancedAnimatedObject(YgString name, ApplicationCore* application, GLuint number)
+      : AnimatedObject(name, application)
+  {
+    m_InstancedObjs = number;
+    m_AABBCollisions.reserve(number);
+    m_Props.reserve(number);
+  }
+  ~InstancedAnimatedObject() {}
+
+  void Draw(Yeager::Shader* shader);
+  void BuildProp(std::vector<Transformation>& positions, Shader* shader);
+  std::vector<Transformation>* GetProps() { return &m_Props; }
+
+  GLuint GetInstancedNumber() const { return m_InstancedObjs; }
+
+ protected:
+  std::vector<AABBCollision> m_AABBCollisions;
+  std::vector<Transformation> m_Props;
+  void DrawAnimatedMeshes(Shader* shader);
   GLuint m_InstancedObjs = 0;
 };
 

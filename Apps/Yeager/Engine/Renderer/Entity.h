@@ -20,6 +20,7 @@
 
 #include "../../Common/Common.h"
 #include "../../Common/LogEngine.h"
+#include "AABBCollision.h"
 #include "ShaderHandle.h"
 #include "TextureHandle.h"
 
@@ -35,6 +36,7 @@ typedef struct {
 } Transformation;
 
 extern Transformation GetDefaultTransformation();
+extern void ProcessTransformation(Transformation* trans);
 
 class Shader;
 
@@ -50,7 +52,7 @@ class Entity {
   constexpr inline bool* GetRender() { return &m_Render; }
 
  protected:
-  YgString m_Name;
+  YgString m_Name = YEAGER_NULL_LITERAL;
   bool m_Render = true;
   const unsigned int m_id;
   static unsigned int m_entityCountId;
@@ -64,10 +66,31 @@ class GameEntity : public Entity {
   Transformation GetTransformation();
   Transformation* GetTransformationPtr();
   virtual void ProcessTransformation(Shader* Shader);
+  void inline SetTransformation(const Transformation& trans) { m_EntityTransformation = trans; }
 
   constexpr inline std::vector<ObjectTexture*>* GetLoadedTextures() { return &m_EntityLoadedTextures; };
+  constexpr AABBCollision* GetCollision() noexcept { return &m_Collision; }
+
+  /**
+   * @brief This is used by the verify collision loop, is the collision have been already set to true during the frame, it wont be set to false when comparing to other object that isnt make collision
+   * @param collision Boolean if the collision is happening
+   */
+  void MakeCollision(bool collision)
+  {
+    if (m_Collision.GetIsColliding()) {
+      return;
+    }
+    m_Collision.SetIsColliding(collision);
+  }
+
+  /**
+   * @brief This force the collision to be set to another state, used in the start of the frame
+   * @param collision Boolean if the collision is happening
+   */
+  void ForceCollision(bool collision) { m_Collision.SetIsColliding(collision); }
 
  protected:
+  AABBCollision m_Collision;
   std::vector<ObjectTexture*> m_EntityLoadedTextures;
   Transformation m_EntityTransformation;
 };
@@ -78,8 +101,7 @@ class DrawableEntity : public GameEntity {
   ~DrawableEntity();
 
   virtual void Draw(Shader* shader);
-
-  void Terminate();
+  virtual void Terminate();
 
  protected:
   GLuint m_Ebo = 0, m_Vao = 0, m_Vbo = 0;

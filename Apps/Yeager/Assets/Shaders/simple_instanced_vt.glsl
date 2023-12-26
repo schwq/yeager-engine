@@ -8,13 +8,14 @@ out vec2 texCoords;
 out vec3 NormalVec;
 out vec3 FragPos;
 uniform mat4 view;
-uniform mat4 model;
 uniform mat4 projection;
+
+uniform mat4 matrices[10];
 
 void main()
 {
-  gl_Position = projection * view * model * vec4(aPos, 1.0f);
+  gl_Position = projection * view * matrices[gl_InstanceID] * vec4(aPos, 1.0f);
   texCoords = vec2(aTexCoords.x, aTexCoords.y);
   NormalVec = aNormal;
-  FragPos = vec3(model * vec4(aPos, 1.0));
+  FragPos = vec3(matrices[gl_InstanceID] * vec4(aPos, 1.0));
 }

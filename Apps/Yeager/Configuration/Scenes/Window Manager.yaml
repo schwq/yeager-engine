@@ -1,8 +1,439 @@
-Operating System: Windows_x64
+# DO NOT CHANGE THIS FILE! (Keep in mind that editing this file might corrupt your saving! Only do if you understand the architeture of the save file!)
+Operating System: Linux
 Scene: Window Manager
 Renderer: OpenGL3_3
 SceneType: Scene3D
-Camera Position: [26.9538651, -13.4229136, 18.2098217]
-Camera Direction: [-0.56968981, 0.236838028, -0.786995113]
+Camera Position: [-0.945978105, 7.10659695, 22.4405899]
+Camera Direction: [0.572595656, -0.704633415, -0.419077516]
 SceneEntities:
-  []
+  - Entity: 0
+    Name: Animated
+    Type: InstancedAnimatedObject
+    InstancedCount: 100
+    Props:
+      - Position: [0, 0, 0]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [0, 0, 1.39999998]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [0, 0, 2.79999995]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [0, 0, 4.19999981]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [0, 0, 5.5999999]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [0, 0, 7]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [0, 0, 8.39999962]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [0, 0, 9.80000019]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [0, 0, 11.1999998]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [0, 0, 12.6000004]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [1.39999998, 0, 0]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [1.39999998, 0, 1.39999998]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [1.39999998, 0, 2.79999995]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [1.39999998, 0, 4.19999981]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [1.39999998, 0, 5.5999999]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [1.39999998, 0, 7]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [1.39999998, 0, 8.39999962]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [1.39999998, 0, 9.80000019]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [1.39999998, 0, 11.1999998]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [1.39999998, 0, 12.6000004]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [2.79999995, 0, 0]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [2.79999995, 0, 1.39999998]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [2.79999995, 0, 2.79999995]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [2.79999995, 0, 4.19999981]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [2.79999995, 0, 5.5999999]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [2.79999995, 0, 7]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [2.79999995, 0, 8.39999962]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [2.79999995, 0, 9.80000019]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [2.79999995, 0, 11.1999998]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [2.79999995, 0, 12.6000004]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [4.19999981, 0, 0]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [4.19999981, 0, 1.39999998]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [4.19999981, 0, 2.79999995]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [4.19999981, 0, 4.19999981]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [4.19999981, 0, 5.5999999]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [4.19999981, 0, 7]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [4.19999981, 0, 8.39999962]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [4.19999981, 0, 9.80000019]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [4.19999981, 0, 11.1999998]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [4.19999981, 0, 12.6000004]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [5.5999999, 0, 0]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [5.5999999, 0, 1.39999998]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [5.5999999, 0, 2.79999995]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [5.5999999, 0, 4.19999981]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [5.5999999, 0, 5.5999999]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [5.5999999, 0, 7]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [5.5999999, 0, 8.39999962]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [5.5999999, 0, 9.80000019]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [5.5999999, 0, 11.1999998]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [5.5999999, 0, 12.6000004]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [7, 0, 0]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [7, 0, 1.39999998]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [7, 0, 2.79999995]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [7, 0, 4.19999981]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [7, 0, 5.5999999]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [7, 0, 7]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [7, 0, 8.39999962]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [7, 0, 9.80000019]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [7, 0, 11.1999998]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [7, 0, 12.6000004]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [8.39999962, 0, 0]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [8.39999962, 0, 1.39999998]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [8.39999962, 0, 2.79999995]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [8.39999962, 0, 4.19999981]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [8.39999962, 0, 5.5999999]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [8.39999962, 0, 7]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [8.39999962, 0, 8.39999962]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [8.39999962, 0, 9.80000019]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [8.39999962, 0, 11.1999998]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [8.39999962, 0, 12.6000004]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [9.80000019, 0, 0]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [9.80000019, 0, 1.39999998]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [9.80000019, 0, 2.79999995]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [9.80000019, 0, 4.19999981]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [9.80000019, 0, 5.5999999]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [9.80000019, 0, 7]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [9.80000019, 0, 8.39999962]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [9.80000019, 0, 9.80000019]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [9.80000019, 0, 11.1999998]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [9.80000019, 0, 12.6000004]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [11.1999998, 0, 0]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [11.1999998, 0, 1.39999998]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [11.1999998, 0, 2.79999995]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [11.1999998, 0, 4.19999981]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [11.1999998, 0, 5.5999999]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [11.1999998, 0, 7]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [11.1999998, 0, 8.39999962]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [11.1999998, 0, 9.80000019]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [11.1999998, 0, 11.1999998]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [11.1999998, 0, 12.6000004]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [12.6000004, 0, 0]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [12.6000004, 0, 1.39999998]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [12.6000004, 0, 2.79999995]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [12.6000004, 0, 4.19999981]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [12.6000004, 0, 5.5999999]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [12.6000004, 0, 7]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [12.6000004, 0, 8.39999962]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [12.6000004, 0, 9.80000019]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [12.6000004, 0, 11.1999998]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      - Position: [12.6000004, 0, 12.6000004]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+    Position: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+    Path: /home/schwz/projects/YeagerEngine/Apps/Yeager/Assets/ImportedModels/Samba Dancing/Samba Dancing.dae
+    Geometry: Custom
+    TexturesLoaded:
+      {}
+  - Entity: 1
+    Name: SimpleLight
+    Type: LightSource
+    DrawableShaderVar: Light
+    LinkedShaderVar: Simple
+    DirectionalLight:
+      Direction: [-0.200000003, -1, -0.300000012]
+      Ambient: [0.0299999993, 0.0299999993, 0.0299999993]
+      Diffuse: [0.400000006, 0.400000006, 0.400000006]
+      Specular: [0.5, 0.5, 0.5]
+      Color: [1, 1, 1]
+    Material:
+      Shininess: 32
+    SpotLight:
+      Position: [0, 0, 0]
+      Direction: [0, 0, 0]
+      CutOff: 0.976296008
+      OuterCutOff: 0.965925813
+      Constant: 1
+      Linear: 0.0900000036
+      Quadratic: 0.0320000015
+      Ambient: [0, 0, 0]
+      Diffuse: [1, 1, 1]
+      Specular: [1, 1, 1]
+      Active: true
+      ObjectPointLightsCount: 0
+    ObjectPointLight:
+      []
+  - Entity: 2
+    Name: InstancedSimple
+    Type: LightSource
+    DrawableShaderVar: Light
+    LinkedShaderVar: SimpleInstanced
+    DirectionalLight:
+      Direction: [-0.200000003, -1, -0.300000012]
+      Ambient: [0.0299999993, 0.0299999993, 0.0299999993]
+      Diffuse: [0.400000006, 0.400000006, 0.400000006]
+      Specular: [0.5, 0.5, 0.5]
+      Color: [1, 1, 1]
+    Material:
+      Shininess: 32
+    SpotLight:
+      Position: [0, 0, 0]
+      Direction: [0, 0, 0]
+      CutOff: 0.976296008
+      OuterCutOff: 0.965925813
+      Constant: 1
+      Linear: 0.0900000036
+      Quadratic: 0.0320000015
+      Ambient: [0, 0, 0]
+      Diffuse: [1, 1, 1]
+      Specular: [1, 1, 1]
+      Active: true
+      ObjectPointLightsCount: 0
+    ObjectPointLight:
+      []
+  - Entity: 3
+    Name: AnimatedInstanced
+    Type: LightSource
+    DrawableShaderVar: Light
+    LinkedShaderVar: SimpleInstancedAnimated
+    DirectionalLight:
+      Direction: [-0.200000003, -1, -0.300000012]
+      Ambient: [0.0500000007, 0.0500000007, 0.0500000007]
+      Diffuse: [0.400000006, 0.400000006, 0.400000006]
+      Specular: [0.5, 0.5, 0.5]
+      Color: [1, 1, 1]
+    Material:
+      Shininess: 32
+    SpotLight:
+      Position: [0, 0, 0]
+      Direction: [0, 0, 0]
+      CutOff: 0.976296008
+      OuterCutOff: 0.965925813
+      Constant: 1
+      Linear: 0.00800000038
+      Quadratic: 0.0320000015
+      Ambient: [0, 0, 0]
+      Diffuse: [0.100000001, 0.100000001, 1]
+      Specular: [1, 1, 1]
+      Active: true
+      ObjectPointLightsCount: 2
+    ObjectPointLight:
+      - Entity: 4
+        Name: SpotLight_0
+        Type: ObjectPointLight
+        Position: [3, 3, 3]
+        Rotation: [0, 0, 0]
+        Scale: [0.100000001, 0.100000001, 0.100000001]
+        Path: ""
+        Geometry: Sphere
+        TexturesLoaded:
+          {}
+        Constant: 1
+        Linear: 0.0900000036
+        Quadratic: 0.0320000015
+        Ambient: [1, 1, 1]
+        Diffuse: [0.800000012, 0.800000012, 0.800000012]
+        Specular: [1, 1, 1]
+        Active: true
+        Color: [0, 1, 1]
+      - Entity: 5
+        Name: SpotLight_1
+        Type: ObjectPointLight
+        Position: [8, 3, 3]
+        Rotation: [0, 0, 0]
+        Scale: [0.100000001, 0.100000001, 0.100000001]
+        Path: ""
+        Geometry: Sphere
+        TexturesLoaded:
+          {}
+        Constant: 1
+        Linear: 0.0900000036
+        Quadratic: 0.0320000015
+        Ambient: [1, 1, 1]
+        Diffuse: [0.800000012, 0.800000012, 0.800000012]
+        Specular: [1, 1, 1]
+        Active: true
+        Color: [1, 0.119999997, 1]

@@ -5,83 +5,83 @@
 using namespace ImGui;
 using namespace Yeager;
 
-EditorExplorer::EditorExplorer(Yeager::ApplicationCore* app) : m_app(app)
+EditorExplorer::EditorExplorer(Yeager::ApplicationCore* app) : m_Application(app)
 {
   Yeager::Log(INFO, "Creating Editor Explorer");
 }
 
 void EditorExplorer::WarningExplorer(YgString msg)
 {
-  m_everything_fine_to_create = false;
-  m_app->GetInterface()->AddWarningWindow(msg);
+  m_EverythingFineToCreate = false;
+  m_Application->GetInterface()->AddWarningWindow(msg);
 }
 
 void EditorExplorer::AddAudioWindow()
 {
   if (Button("Add Audio")) {
-    if (!m_add_geometry_window_open && !m_add_imported_object_window_open) {
-      m_add_audio_window_open = true;
+    if (!m_AddGeometryWindowOpen && !m_AddImportedObjectWindowOpen) {
+      m_AddAudioWindowOpen = true;
     }
   }
-  if (m_add_audio_window_open) {
-    m_app->GetInput()->SetCameraCursorToWindowState(true);
-    m_app->GetInterface()->CenteredWindow(400, 150);
+  if (m_AddAudioWindowOpen) {
+    m_Application->GetInput()->SetCameraCursorToWindowState(true);
+    m_Application->GetInterface()->CenteredWindow(400, 150);
     Begin("Add Audio", NULL, kWindowStatic);
-    InputText("Audio's name", &m_new_object_name, 100);
+    InputText("Audio's name", &m_NewObjectName, 100);
 
     if (Button("Select Audio file")) {
       auto selection = pfd::open_file("Select .obj file", GetPath("/Assets/sound/").c_str(), {"*"}, false);
       if (!selection.result().empty()) {
-        m_new_object_path = selection.result()[0].c_str();
+        m_NewObjectPath = selection.result()[0].c_str();
       }
     }
-    Checkbox("Looped", &m_looped_audio);
-    Checkbox("3D Audio", &m_add_audio_is_3d);
+    Checkbox("Looped", &m_LoopedAudio);
+    Checkbox("3D Audio", &m_AddAudioIs3D);
 
-    Text("Path: %s", m_new_object_path.c_str());
-    m_app->GetCamera()->SetShouldMove(false);
-    m_app->GetInput()->SetCursorCanDisappear(false);
+    Text("Path: %s", m_NewObjectPath.c_str());
+    m_Application->GetCamera()->SetShouldMove(false);
+    m_Application->GetInput()->SetCursorCanDisappear(false);
 
     if (Button("Create")) {
-      if (m_new_object_name.empty() || m_new_object_path.empty()) {
-        m_app->GetInterface()->AddWarningWindow("Audio must have a name and path!");
-        m_everything_fine_to_create = false;
+      if (m_NewObjectName.empty() || m_NewObjectPath.empty()) {
+        m_Application->GetInterface()->AddWarningWindow("Audio must have a name and path!");
+        m_EverythingFineToCreate = false;
       }
 
-      if (m_everything_fine_to_create) {
-        if (m_add_audio_is_3d) {
-          auto audio = std::make_shared<Yeager::Audio3DHandle>(m_new_object_path, m_new_object_name, m_looped_audio,
+      if (m_EverythingFineToCreate) {
+        if (m_AddAudioIs3D) {
+          auto audio = std::make_shared<Yeager::Audio3DHandle>(m_NewObjectPath, m_NewObjectName, m_LoopedAudio,
                                                                irrklang::vec3df(0.0f, 0.0f, 0.0f));
           auto toolbox = std::make_shared<Yeager::ToolBoxObject>();
           toolbox->SetType(ExplorerObjectType::k3DAudio);
           toolbox->SetAudio(audio.get());
-          m_app->GetScene()->GetAudios3D()->push_back(audio);
-          m_app->GetScene()->GetToolboxs()->push_back(toolbox);
+          m_Application->GetScene()->GetAudios3D()->push_back(audio);
+          m_Application->GetScene()->GetToolboxs()->push_back(toolbox);
 
         } else {
-          auto audio = std::make_shared<Yeager::AudioHandle>(m_new_object_path, m_new_object_name, m_looped_audio);
+          auto audio = std::make_shared<Yeager::AudioHandle>(m_NewObjectPath, m_NewObjectName, m_LoopedAudio);
           auto toolbox = std::make_shared<Yeager::ToolBoxObject>();
           toolbox->SetType(ExplorerObjectType::kAudio);
           toolbox->SetAudio(audio.get());
-          m_app->GetScene()->GetAudios()->push_back(audio);
+          m_Application->GetScene()->GetAudios()->push_back(audio);
           m_toolboxs.push_back(toolbox);
         }
-        m_new_object_name.clear();
-        m_new_object_path.clear();
-        m_looped_audio = false;
-        m_add_audio_window_open = false;
-        m_add_audio_is_3d = false;
-        m_app->GetInput()->SetCameraCursorToWindowState(false);
+        m_NewObjectName.clear();
+        m_NewObjectPath.clear();
+        m_LoopedAudio = false;
+        m_AddAudioWindowOpen = false;
+        m_AddAudioIs3D = false;
+        m_Application->GetInput()->SetCameraCursorToWindowState(false);
       }
-      m_everything_fine_to_create = true;
+      m_EverythingFineToCreate = true;
     }
     SameLine();
     if (Button("Cancel")) {
-      m_new_object_name.clear();
-      m_new_object_path.clear();
-      m_everything_fine_to_create = false;
-      m_add_audio_window_open = false;
-      m_app->GetInput()->SetCameraCursorToWindowState(false);
+      m_NewObjectName.clear();
+      m_NewObjectPath.clear();
+      m_EverythingFineToCreate = false;
+      m_AddAudioWindowOpen = false;
+      m_Application->GetInput()->SetCameraCursorToWindowState(false);
     }
     End();
   }
@@ -90,54 +90,54 @@ void EditorExplorer::AddAudioWindow()
 void EditorExplorer::AddGeometryObjectWindow()
 {
   if (Button("Add Geometry Object")) {
-    if (!m_add_audio_window_open && !m_add_imported_object_window_open) {
-      m_add_geometry_window_open = true;
+    if (!m_AddAudioWindowOpen && !m_AddImportedObjectWindowOpen) {
+      m_AddGeometryWindowOpen = true;
     }
   }
-  if (m_add_geometry_window_open) {
-    m_app->GetInput()->SetCameraCursorToWindowState(true);
-    m_app->GetInterface()->CenteredWindow(400, 150);
+  if (m_AddGeometryWindowOpen) {
+    m_Application->GetInput()->SetCameraCursorToWindowState(true);
+    m_Application->GetInterface()->CenteredWindow(400, 150);
     Begin("Add Geometry", NULL, kWindowStatic);
-    InputText("Geometry's name", &m_new_object_name, 100);
+    InputText("Geometry's name", &m_NewObjectName, 100);
     Text("Shape");
     SameLine();
-    Checkbox("Cube", &m_add_geometry_shape_cube);
+    Checkbox("Cube", &m_AddGeometryShapeCube);
 
-    m_app->GetCamera()->SetShouldMove(false);
-    m_app->GetInput()->SetCursorCanDisappear(false);
+    m_Application->GetCamera()->SetShouldMove(false);
+    m_Application->GetInput()->SetCursorCanDisappear(false);
 
     if (Button("Create")) {
-      if (m_new_object_name.empty() || !m_add_geometry_shape_cube) {
-        m_app->GetInterface()->AddWarningWindow("Geometry must have a name and shape!");
-        m_everything_fine_to_create = false;
+      if (m_NewObjectName.empty() || !m_AddGeometryShapeCube) {
+        m_Application->GetInterface()->AddWarningWindow("Geometry must have a name and shape!");
+        m_EverythingFineToCreate = false;
       }
 
-      if (m_everything_fine_to_create) {
+      if (m_EverythingFineToCreate) {
         Yeager::ObjectGeometryType shape;
-        if (m_add_geometry_shape_cube) {
+        if (m_AddGeometryShapeCube) {
           shape = Yeager::ObjectGeometryType::ECube;
         }
-        auto obj = std::make_shared<Yeager::Object>(m_new_object_name, m_app);
+        auto obj = std::make_shared<Yeager::Object>(m_NewObjectName, m_Application);
         obj->GenerateObjectGeometry(shape);
-        m_app->GetScene()->GetObjects()->push_back(obj);
-        m_new_object_name.clear();
-        m_add_geometry_shape_cube = false;
-        m_add_imported_object_window_open = false;
-        m_app->GetCamera()->SetShouldMove(true);
-        m_app->GetInput()->SetCursorCanDisappear(true);
-        m_app->GetInput()->SetCameraCursorToWindowState(false);
+        m_Application->GetScene()->GetObjects()->push_back(obj);
+        m_NewObjectName.clear();
+        m_AddGeometryShapeCube = false;
+        m_AddImportedObjectWindowOpen = false;
+        m_Application->GetCamera()->SetShouldMove(true);
+        m_Application->GetInput()->SetCursorCanDisappear(true);
+        m_Application->GetInput()->SetCameraCursorToWindowState(false);
       }
-      m_everything_fine_to_create = true;
+      m_EverythingFineToCreate = true;
     }
     SameLine();
     if (Button("Cancel")) {
-      m_new_object_name.clear();
-      m_add_geometry_shape_cube = false;
-      m_everything_fine_to_create = false;
-      m_add_geometry_window_open = false;
-      m_app->GetCamera()->SetShouldMove(true);
-      m_app->GetInput()->SetCursorCanDisappear(true);
-      m_app->GetInput()->SetCameraCursorToWindowState(false);
+      m_NewObjectName.clear();
+      m_AddGeometryShapeCube = false;
+      m_EverythingFineToCreate = false;
+      m_AddGeometryWindowOpen = false;
+      m_Application->GetCamera()->SetShouldMove(true);
+      m_Application->GetInput()->SetCursorCanDisappear(true);
+      m_Application->GetInput()->SetCameraCursorToWindowState(false);
     }
     End();
   }
@@ -146,61 +146,111 @@ void EditorExplorer::AddGeometryObjectWindow()
 void EditorExplorer::AddImportedObjectWindow()
 {
   if (Button("Add Imported Object")) {
-    if (!m_add_geometry_window_open && !m_add_audio_window_open) {
-      m_add_imported_object_window_open = true;
+    if (!m_AddGeometryWindowOpen && !m_AddAudioWindowOpen) {
+      m_AddImportedObjectWindowOpen = true;
     }
   }
-  if (m_add_imported_object_window_open) {
-    m_app->GetInput()->SetCameraCursorToWindowState(true);
-    m_app->GetInterface()->CenteredWindow(400, 150);
+  if (m_AddImportedObjectWindowOpen) {
+    m_Application->GetInput()->SetCameraCursorToWindowState(true);
+    m_Application->GetInterface()->CenteredWindow(400, 150);
     Begin("Add Imported Object", NULL, kWindowStatic);
-    InputText("Object's name", &m_new_object_name, 100);
+    InputText("Object's name", &m_NewObjectName, 100);
 
     if (Button("Select Imported Object file")) {
-      auto selection = pfd::open_file("Select .obj file", GetPath("/Assets/imported_models/").c_str(), {"*"}, false);
+      auto selection = pfd::open_file("Select .obj file", GetPath("/Assets/ImportedModels/").c_str(), {"*"}, false);
       if (!selection.result().empty()) {
-        m_new_object_path = selection.result()[0].c_str();
+        m_NewObjectPath = selection.result()[0].c_str();
       }
     }
 
-    Text("Path: %s", m_new_object_path.c_str());
-    m_app->GetCamera()->SetShouldMove(false);
-    m_app->GetInput()->SetCursorCanDisappear(false);
+    Text("Path: %s", m_NewObjectPath.c_str());
+    m_Application->GetCamera()->SetShouldMove(false);
+    m_Application->GetInput()->SetCursorCanDisappear(false);
 
-    Checkbox("Flip texture", &m_imported_object_flip_tex);
+    Checkbox("Flip texture", &m_ImportedObjectFlipTexture);
+    Checkbox("Animated", &m_AddObjectIsAnimated);
+    Checkbox("Instanced", &m_AddObjectIsInstanced);
+    if (m_AddObjectIsInstanced) {
+      InputInt("Grid factor", &m_InstancedGridFactor);
+      InputInt("Count", &m_InstancedObjectsCount);
+    }
 
     if (Button("Create")) {
-      if (m_new_object_name.empty() || m_new_object_path.empty()) {
-        m_app->GetInterface()->AddWarningWindow("Imported Model must have a name and path!");
-        m_everything_fine_to_create = false;
+      if (m_NewObjectName.empty() || m_NewObjectPath.empty()) {
+        m_Application->GetInterface()->AddWarningWindow("Imported Model must have a name and path!");
+        m_EverythingFineToCreate = false;
       }
 
-      if (m_everything_fine_to_create) {
-        auto obj = std::make_shared<Yeager::Object>(m_new_object_name, m_app);
-        if (obj->ImportObjectFromFile(m_new_object_path.c_str(), m_imported_object_flip_tex)) {
-          m_app->GetScene()->GetObjects()->push_back(obj);
-          m_new_object_name.clear();
-          m_new_object_path.clear();
-          m_add_imported_object_window_open = false;
-          m_app->GetCamera()->SetShouldMove(true);
-          m_app->GetInput()->SetCursorCanDisappear(true);
-          m_app->GetInput()->SetCameraCursorToWindowState(false);
+      if (m_EverythingFineToCreate) {
+        if (!m_AddObjectIsAnimated) {
+          auto obj = std::make_shared<Yeager::Object>(m_NewObjectName, m_Application);
+          if (obj->ImportObjectFromFile(m_NewObjectPath.c_str(), m_ImportedObjectFlipTexture)) {
+            m_Application->GetScene()->GetObjects()->push_back(obj);
+            m_NewObjectName.clear();
+            m_NewObjectPath.clear();
+            m_AddImportedObjectWindowOpen = false;
+            m_Application->GetCamera()->SetShouldMove(true);
+            m_Application->GetInput()->SetCursorCanDisappear(true);
+            m_Application->GetInput()->SetCameraCursorToWindowState(false);
+          } else {
+            m_Application->GetInterface()->AddWarningWindow("Error processing the path from the imported model!");
+            m_EverythingFineToCreate = false;
+          }
         } else {
-          m_app->GetInterface()->AddWarningWindow("Error processing the path from the imported model!");
-          m_everything_fine_to_create = false;
+          if (m_AddObjectIsInstanced) {
+            auto obj = std::make_shared<Yeager::InstancedAnimatedObject>(m_NewObjectName, m_Application,
+                                                                         m_InstancedObjectsCount);
+            if (obj->ImportObjectFromFile(m_NewObjectPath.c_str(), m_ImportedObjectFlipTexture)) {
+              std::vector<YgVector3> pos;
+              for (int x = 0; x < m_InstancedObjectsCount; x++) {
+                YgVector3 vec;
+                vec.x = 1 * x * m_InstancedGridFactor;
+                vec.y = 0;
+                vec.z = 0;
+                pos.push_back(vec);
+              }
+              obj->BuildAnimation(m_NewObjectPath);
+              //obj->BuildProp(pos, ShaderFromVarName("SimpleAnimated"));
+              m_Application->GetScene()->GetInstancedAnimatedObjects()->push_back(obj);
+              m_NewObjectName.clear();
+              m_NewObjectPath.clear();
+              m_AddImportedObjectWindowOpen = false;
+              m_Application->GetCamera()->SetShouldMove(true);
+              m_Application->GetInput()->SetCursorCanDisappear(true);
+              m_Application->GetInput()->SetCameraCursorToWindowState(false);
+            } else {
+              m_Application->GetInterface()->AddWarningWindow("Error processing the path from the imported model!");
+              m_EverythingFineToCreate = false;
+            }
+          } else {
+            auto obj = std::make_shared<Yeager::AnimatedObject>(m_NewObjectName, m_Application);
+            if (obj->ImportObjectFromFile(m_NewObjectPath.c_str(), m_ImportedObjectFlipTexture)) {
+              obj->BuildAnimation(m_NewObjectPath);
+              m_Application->GetScene()->GetAnimatedObject()->push_back(obj);
+              m_NewObjectName.clear();
+              m_NewObjectPath.clear();
+              m_AddImportedObjectWindowOpen = false;
+              m_Application->GetCamera()->SetShouldMove(true);
+              m_Application->GetInput()->SetCursorCanDisappear(true);
+              m_Application->GetInput()->SetCameraCursorToWindowState(false);
+            } else {
+              m_Application->GetInterface()->AddWarningWindow("Error processing the path from the imported model!");
+              m_EverythingFineToCreate = false;
+            }
+          }
         }
       }
-      m_everything_fine_to_create = true;
+      m_EverythingFineToCreate = true;
     }
     SameLine();
     if (Button("Cancel")) {
-      m_new_object_name.clear();
-      m_new_object_path.clear();
-      m_everything_fine_to_create = false;
-      m_add_imported_object_window_open = false;
-      m_app->GetCamera()->SetShouldMove(true);
-      m_app->GetInput()->SetCursorCanDisappear(true);
-      m_app->GetInput()->SetCameraCursorToWindowState(false);
+      m_NewObjectName.clear();
+      m_NewObjectPath.clear();
+      m_EverythingFineToCreate = false;
+      m_AddImportedObjectWindowOpen = false;
+      m_Application->GetCamera()->SetShouldMove(true);
+      m_Application->GetInput()->SetCursorCanDisappear(true);
+      m_Application->GetInput()->SetCameraCursorToWindowState(false);
     }
     End();
   }
@@ -215,15 +265,15 @@ void EditorExplorer::DrawExplorer()
   AddGeometryObjectWindow();
 
   Text("Main Scene");
-  for (unsigned int x = 0; x < m_app->GetScene()->GetToolboxs()->size(); x++) {
-    Yeager::ToolBoxObject* obj = m_app->GetScene()->GetToolboxs()->at(x).get();
+  for (unsigned int x = 0; x < m_Application->GetScene()->GetToolboxs()->size(); x++) {
+    Yeager::ToolBoxObject* obj = m_Application->GetScene()->GetToolboxs()->at(x).get();
     YgString label = "[" + ExplorerTypeToString(obj->GetType()) + "] " + obj->GetEntity()->GetName();
     if (Selectable(label.c_str(), &obj->m_selected, ImGuiSelectableFlags_AllowDoubleClick)) {
-      m_first_time_toolbox = false;
-      toolbox_selected = m_app->GetScene()->GetToolboxs()->at(x).get();
+      m_FirstTimeToolbox = false;
+      m_ToolboxSelected = m_Application->GetScene()->GetToolboxs()->at(x).get();
     }
   }
-  if (m_first_time_toolbox) {
-    toolbox_selected = nullptr;
+  if (m_FirstTimeToolbox) {
+    m_ToolboxSelected = YEAGER_NULLPTR;
   }
 }

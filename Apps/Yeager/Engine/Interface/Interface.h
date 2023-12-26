@@ -137,6 +137,8 @@ struct OpenProjectsDisplay {
 
 enum class ScreenShotMode { EFullScreen, EMiddleFixedSized, ECustomSizedAndPosition };
 
+extern void InputVector3(const char* label, YgVector3* v, const char* format = "%.3f", ImGuiInputTextFlags flags = 0);
+
 /// @brief Class that holds the interface management, use ImGui as library, the current program must be running just one instance of this class
 /// @attention In the future, we need to write a self-custom GUI library in C for this Engine
 /// @attention so we can have more control over the drawing methods and increase performance
@@ -169,8 +171,8 @@ class Interface {
   void RequestRestartInterface(Window* window);
 
   /// @brief The main function to be called, it check switch current mode the program is at, and pass to the correct function for the GUI rendering
-  void RenderUI(Yeager::Launcher* launcher = nullptr);
-  bool RenderLauncher(Yeager::Launcher* launcher = nullptr);
+  void RenderUI(Yeager::Launcher* launcher = YEAGER_NULLPTR);
+  bool RenderLauncher(Yeager::Launcher* launcher = YEAGER_NULLPTR);
   /// @brief ImGui have a function that let the user choice the next window position, this function does the same
   /// @param size_x Window width
   /// @param size_y Window height
@@ -218,6 +220,8 @@ class Interface {
    * @brief Renders the window with shaders debugging information
    */
   void ShadersControlWindow();
+
+  void LightHandleControlWindow();
 
  private:
   InterfaceControl m_Control;
