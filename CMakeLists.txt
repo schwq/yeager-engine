@@ -66,5 +66,5 @@ set(SOURCEFILES
 )
 
 add_executable(${projectName} ${SOURCEFILES})
-target_link_libraries(${projectName} glfw GLU dl assimp IrrKlang yaml-cpp)
+target_link_libraries(${projectName} glfw dl assimp IrrKlang yaml-cpp)
 add_definitions(-w)

@@ -72,10 +72,19 @@ class ApplicationCore {
   YgMatrix4 GetProjection() { return m_WorldMatrices.Projection; }
   YgMatrix4 GetView() { return m_WorldMatrices.View; }
 
+  YgString GetExternalFolder() const {
+    return m_EngineExternalFolder;
+  }
+
+  YgString GetPathRelativeToExternalFolder(YgString path) const;
+
  private:
+  void ValidatesExternalEngineFolder();
   void ManifestShaderProps(Yeager::Shader* shader);
   void OpenGLFunc();
   void OpenGLClear();
+
+  YgString m_EngineExternalFolder = YEAGER_NULL_LITERAL;
 
   void BuildApplicationCoreCompoments();
   YgString RequestWindowEngineName(const LauncherProjectPicker& project);

@@ -115,7 +115,7 @@ void EditorExplorer::AddGeometryObjectWindow()
       if (m_EverythingFineToCreate) {
         Yeager::ObjectGeometryType shape;
         if (m_AddGeometryShapeCube) {
-          shape = Yeager::ObjectGeometryType::ECube;
+          shape = Yeager::ObjectGeometryType::ESphere;
         }
         auto obj = std::make_shared<Yeager::Object>(m_NewObjectName, m_Application);
         obj->GenerateObjectGeometry(shape);

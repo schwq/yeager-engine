@@ -132,6 +132,7 @@ struct OpenProjectsDisplay {
   YgString SceneType;
   YgString RendererType;
   YgString Path;
+  YgString FolderPath;
   InterfaceImage ScreenShot;
 };
 

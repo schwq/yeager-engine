@@ -1,6 +1,12 @@
 #include "Utilities.h"
 #include "LogEngine.h"
 
+#ifdef YEAGER_SYSTEM_LINUX
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
+#endif
+
 Yeager::MemoryManagement Yeager::s_MemoryManagement;
 
 glm::mat4 Yeager::ConvertAssimpMatrixToGLMFormat(const aiMatrix4x4& from)
@@ -142,12 +148,27 @@ extern YgTime_t CurrentTimeToTimeType()
   return time;
 }
 
-void Yeager::ValidatesPath(const std::filesystem::path& p, std::filesystem::file_status s)
+bool Yeager::ValidatesPath(const std::filesystem::path& p, std::filesystem::file_status s)
 {
   YgString status = (std::filesystem::status_known(s) ? std::filesystem::exists(s) : std::filesystem::exists(p))
                         ? "Validated!"
                         : "Not Validated!";
 #ifdef YEAGER_DEBUG
-  Yeager::Log(INFO, "File validation: Path: {}, Status [{}]", p.c_str(), status);
+  Yeager::Log((status == "Validated!" ? INFO : ERROR), "File validation: Path: {}, Status [{}]", p.c_str(), status);
 #endif
+  return (status == "Validated!");
 }
+
+#ifdef YEAGER_SYSTEM_LINUX 
+YgString GetLinuxHomeDirectory() {
+  const char* homeDir;
+  /* The $HOME env varaible does not exist */
+  if((homeDir = getenv("HOME")) == NULL) {
+    homeDir = getpwuid(getuid())->pw_dir;
+    return YgString(homeDir);
+  } else {
+    /* The $HOME env variable exists!*/
+    return YgString(getenv("HOME"));
+  }
+}
+#endif

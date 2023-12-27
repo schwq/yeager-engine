@@ -9,7 +9,21 @@ using namespace Yeager;
 
 ApplicationCore::ApplicationCore()
 {
+  ValidatesExternalEngineFolder();
   Setup();
+}
+
+YgString ApplicationCore::GetPathRelativeToExternalFolder(YgString path) const {
+  return m_EngineExternalFolder + path;
+}
+
+void ApplicationCore::ValidatesExternalEngineFolder() 
+{
+#ifdef YEAGER_SYSTEM_LINUX
+  if(!Yeager::ValidatesPath(GetLinuxHomeDirectory() + "/.YeagerEngine")) {
+    Yeager::Log(ERROR, "Could not find the .YeagerEngine folder in the home directory of the machine!");
+  }
+#endif
 }
 
 LauncherProjectPicker ApplicationCore::RequestLauncher()
@@ -59,10 +73,10 @@ void ApplicationCore::Setup()
     m_mode = Yeager::AppEditor;
     m_Window->RegenerateMainWindow(1920, 1080, RequestWindowEngineName(project), m_Input->MouseCallback);
     m_Interface->RequestRestartInterface(m_Window);
-    m_Scene = new Yeager::Scene(project.m_Name, project.m_SceneType, project.m_SceneRenderer, this);
+    m_Scene = new Yeager::Scene(project.m_Name, project.m_SceneType, project.m_ProjectPath, project.m_SceneRenderer, this);
     m_Scene->GetSerial().ReadEditorVariables(EditorVariablesPath.c_str());
     m_Scene->GetSerial().ReadSceneShadersConfig(GetPath("/Configuration/Editor/Shaders/default_shaders.yaml"));
-    m_Launcher->GetNewProjectLaoded() ? m_Scene->Save() : m_Scene->Load(project.m_ProjectPath);
+    m_Launcher->GetNewProjectLaoded() ? m_Scene->Save() : m_Scene->Load(project.m_SceneConfigPath);
 
   } else {
     TerminateAudioEngine();
@@ -112,7 +126,26 @@ void ApplicationCore::Render()
   OpenGLFunc();
 
   Yeager::Skybox skybox("Skybox", ObjectGeometryType::ESphere, this, false);
-  skybox.BuildSkyboxFromImport(GetPath("/Assets/ImportedModels/skybox/skybox.obj"));
+  skybox.BuildSkyboxFromImport(GetPath("/Assets/ImportedModels/Skybox/skybox.obj"));
+
+  std::vector<Transformation> trans;
+  for(int x = 0; x < 10; x++) {
+    for(int y = 0; y < 10; y++) {
+      Transformation tr;
+      tr.position.x = x * 2;
+      tr.position.y = 0;
+      tr.position.z = y * 2;
+      tr.scale = YgVector3(1.0f);
+      tr.rotation = YgVector3(0.0);
+      trans.push_back(tr);
+    }
+  }
+
+  InstancedAnimatedObject obj("test", this, 100);
+  obj.ImportObjectFromFile(GetPath("/Assets/ImportedModels/Salsa/Samba Dancing.dae").c_str(), false);
+  obj.BuildProp(trans, ShaderFromVarName("SimpleInstancedAnimated"));
+  obj.BuildAnimation(GetPath("/Assets/ImportedModels/Salsa/Samba Dancing.dae").c_str());
+
 
   while (ShouldRender()) {
     glfwPollEvents();
@@ -122,6 +155,7 @@ void ApplicationCore::Render()
 
     UpdateDeltaTime();
     UpdateWorldMatrices();
+    
     UpdateListenerPosition();
 
     ManifestShaderProps(ShaderFromVarName("Skybox"));
@@ -135,6 +169,10 @@ void ApplicationCore::Render()
 
     ManifestShaderProps(ShaderFromVarName("SimpleAnimated"));
     ManifestShaderProps(ShaderFromVarName("SimpleInstancedAnimated"));
+    ShaderFromVarName("SimpleInstancedAnimated")->UseShader();
+    obj.UpdateAnimation(m_DeltaTime);
+    obj.BuildAnimationMatrices(ShaderFromVarName("SimpleInstancedAnimated"));
+    obj.Draw(ShaderFromVarName("SimpleInstancedAnimated"));
 
     VerifyCollisions();
     DrawObjects();

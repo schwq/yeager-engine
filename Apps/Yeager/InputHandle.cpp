@@ -4,7 +4,7 @@
 #include "Engine/Editor/Camera.h"
 using namespace Yeager;
 
-std::vector<KeyMap> Yeager::KeyMapping = {KeyMap(GLFW_MOUSE_BUTTON_1), KeyMap(GLFW_MOUSE_BUTTON_2)};
+std::vector<KeyMap> Yeager::KeyMapping = {KeyMap(GLFW_MOUSE_BUTTON_1), KeyMap(GLFW_MOUSE_BUTTON_2), KeyMap(GLFW_KEY_E)};
 KeyMap* Yeager::FindKeyMap(uint8_t key)
 {
   for (auto& keymap : KeyMapping) {
@@ -26,7 +26,7 @@ void Input::KeyboardKeyCallback(GLFWwindow* window, int key, int scancode, int a
   if (m_Application->GetMode() == ApplicationMode::AppEditor) {
     switch (key) {
       case GLFW_KEY_E:
-        if (FindKeyMap(GLFW_MOUSE_BUTTON_1)->AddStateAwaitAction(action)) {
+        if (FindKeyMap(GLFW_KEY_E)->AddStateAwaitAction(action)) {
           if (m_Application->GetCamera()->GetShouldMove()) {
             m_Application->GetCamera()->SetShouldMove(false);
             m_FirstMouse = true;

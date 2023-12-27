@@ -51,15 +51,24 @@ YgString Yeager::SceneRendererToString(SceneRenderer renderer)
   }
 }
 
-Scene::Scene(YgString name, SceneType type, SceneRenderer renderer, Yeager::ApplicationCore* app) : m_Application(app)
+Scene::Scene(YgString name, SceneType type, YgString folder_path, SceneRenderer renderer, Yeager::ApplicationCore* app) : m_Application(app)
 {
   m_Context.m_name = name;
   m_Context.m_type = type;
   m_Context.m_renderer = renderer;
-  m_Context.m_file_path = GetSceneFilePath();
+  m_Context.m_ProjectFolderPath = folder_path;
+  m_Context.m_ProjectSavePath = GetConfigurationFilePath(m_Context.m_ProjectFolderPath);
   m_Serial = Yeager::Serialization(m_Application);
 
   Log(INFO, "Created Scene name {}", m_Context.m_name);
+}
+
+YgString Scene::GetConfigurationFilePath(YgString path) {
+  #ifdef YEAGER_SYSTEM_LINUX
+  return path + "/" + m_Context.m_name + ".yml";
+  #elif defined(YEAGER_SYSTEM_WINDOWS_x64)
+  return path + "\\" + m_Context.m_name + ".yml";
+  #endif
 }
 
 Scene::~Scene()
@@ -67,16 +76,25 @@ Scene::~Scene()
   Log(INFO, "Destroring Scene name {}", m_Context.m_name);
 }
 
-inline YgString Scene::GetSceneFilePath()
-{
-  YgString conf = GetPath("/Configuration/Scenes/");
-  YgString path = conf + m_Context.m_name + ".yaml";
-  return path;
+YgString Scene::GetPathRelative(YgString path) {
+  #ifdef YEAGER_SYSTEM_LINUX
+  YgString str = m_Context.m_ProjectFolderPath + path;
+  Yeager::ValidatesPath(str);
+  return str;
+  #elif defined(YEAGER_SYSTEM_WINDOWS_x64) 
+  std::replace(path.begin(), path.end(), '/', '\\');
+  YgString str = m_Context.m_ProjectFolderPath + path;
+  Yeager::ValidatesPath(str);
+  return str;
+  #else 
+  Yeager::Log("This engine build does not support system other that Windows_x64 and Linux, Scene cannot return a decent path relative to the project folder!");
+  return YEAGER_NULL_LITERAL;
+  #endif
 }
 
 void Scene::Save()
 {
-  m_Serial.SerializeScene(this, m_Context.m_file_path);
+  m_Serial.SerializeScene(this, m_Context.m_ProjectSavePath);
 }
 
 void Scene::LoadEditorColorscheme(Interface* intr)
@@ -87,6 +105,10 @@ void Scene::LoadEditorColorscheme(Interface* intr)
 void Scene::Load(YgString path)
 {
   m_Serial.DeserializeScene(this, path);
+}
+
+void Scene::LoadSceneSave() {
+  m_Serial.DeserializeScene(this, m_Context.m_ProjectSavePath);
 }
 
 void Scene::SetContextType(SceneType type)

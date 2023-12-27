@@ -42,32 +42,30 @@ extern SceneRenderer StringToSceneRenderer(YgString str);
 struct SceneContext {
   YgString m_name = YEAGER_NULL_LITERAL;
   YgString m_file_path = YEAGER_NULL_LITERAL;
+  YgString m_ProjectFolderPath = YEAGER_NULL_LITERAL;
+  YgString m_ProjectRelativeConfigurationPath = YEAGER_NULL_LITERAL;
+  YgString m_ProjectSavePath = YEAGER_NULL_LITERAL;
   SceneType m_type = SceneType::Scene2D;
   SceneRenderer m_renderer = SceneRenderer::OpenGL3_3;
 };
 
 class Scene {
  public:
-  Scene(YgString name, SceneType type, SceneRenderer renderer, Yeager::ApplicationCore* app);
-  ~Scene();
+  Scene(YgString name, SceneType type, YgString folder_path, SceneRenderer renderer, Yeager::ApplicationCore* app);
+  ~Scene(); 
   Scene() {}
-  Yeager::Scene& operator=(const Yeager::Scene& rhs)
-  {
-    this->m_Context.m_name = rhs.m_Context.m_name;
-    this->m_Context.m_type = rhs.m_Context.m_type;
-    this->m_Context.m_renderer = rhs.m_Context.m_renderer;
-    this->m_Context.m_file_path = rhs.m_Context.m_file_path;
-    this->m_Serial = Yeager::Serialization(rhs.m_Application);
-  }
 
   void Save();
   void Load(YgString path);
   void LoadEditorColorscheme(Interface* intr);
 
+
   SceneContext GetContext() { return m_Context; }
   Serialization GetSerial() { return m_Serial; }
   void SetContextType(SceneType type);
   void SetContextRenderer(SceneRenderer renderer);
+  void LoadSceneSave();
+  YgString GetPathRelative(YgString path);
 
   /**
    *  Scene Objects and Entities (Everything that is stored where is going to be saved) 
@@ -94,6 +92,6 @@ class Scene {
   std::vector<std::shared_ptr<Yeager::ToolBoxObject>> m_Toolboxes;
   std::vector<std::shared_ptr<Yeager::LightSource>> m_LightSources;
 
-  inline YgString GetSceneFilePath();
+  YgString GetConfigurationFilePath(YgString path);
 };
 }  // namespace Yeager

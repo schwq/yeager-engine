@@ -3,53 +3,50 @@
 #include "Scene.h"
 using namespace Yeager;
 
+/* TODO Remake this struct about project`s information, there are already 3 of them in the engine, must refactor*/
 std::vector<OpenProjectsDisplay> Yeager::ReadProjectsToDisplay(YgString dir)
 {
-  std::vector<OpenProjectsDisplay> rt_proj;
-  for (const auto& entry : std::filesystem::directory_iterator(dir)) {
-    try {
-      YAML::Node node = YAML::LoadFile(entry.path().string());
-      OpenProjectsDisplay proj;
+  std::vector<OpenProjectsDisplay> proj;
+  YAML::Node node = YAML::LoadFile(dir);
+  /* Reads the configuration file in the external folder of the engine, and gather information about projects in the current machine*/
+  if(node["ProjectsLoaded"]) {
+    for(const auto& project : node["ProjectsLoaded"]) {
+      OpenProjectsDisplay disp;
+      
+      if(project["ProjectName"]) {
+        disp.Name = project["ProjectName"].as<YgString>();
+      } 
 
-      proj.Path = entry.path().string();
-
-      if (node["Scene"]) {
-        proj.Name = node["Scene"].as<YgString>();
+      if(project["FolderPath"]) {
+        disp.FolderPath = project["FolderPath"].as<YgString>();
       }
+      /* Reads each project configuration and return basic information about them*/
+      if(project["ConfigurationFile"]) {
+        YAML::Node indiv_proj = YAML::LoadFile(project["ConfigurationFile"].as<YgString>());
+        disp.Path = project["ConfigurationFile"].as<YgString>();
 
-      if (node["Renderer"]) {
-        proj.RendererType = node["Renderer"].as<YgString>();
+        if(indiv_proj["Renderer"]) {
+          disp.RendererType = indiv_proj["Renderer"].as<YgString>(); 
+        }
+
+        if(indiv_proj["SceneType"]) {
+          disp.SceneType = indiv_proj["SceneType"].as<YgString>();
+        }
+
+        if(indiv_proj["Author"]) {
+          disp.Author = indiv_proj["Author"].as<YgString>();
+        }
+      } else {
+        Yeager::Log(ERROR, "Cannot find configuration file path for the associate project {}", disp.Name);
       }
-
-      if (node["SceneType"]) {
-        proj.SceneType = node["SceneType"].as<YgString>();
-      }
-
-      if (node["Author"]) {
-        proj.Author = node["Author"].as<YgString>();
-      }
-
-      rt_proj.push_back(proj);
-
-    } catch (YAML::BadFile bad) {
-      Yeager::Log(ERROR, "Read Projects To Display error, bad file: {}", bad.msg);
-      return std::vector<OpenProjectsDisplay>{0};
+      proj.push_back(disp);
     }
+  } else {
+    Yeager::Log(WARNING, "The current state of the engine does not have any project saved!");
   }
-  return rt_proj;
+  return proj;
 }
-/*
-template <typename Type>
-void Serialization::SerializeSTDVector(YAML::Emitter& out, std::vector<Type> vec, const char* key)
-{
-  out << YAML::Flow;
-  out << YAML::Key << key << YAML::Value << YAML::BeginSeq;
-  for (const auto& it : vec) {
-    out << it;
-  }
-  out << YAML::EndSeq;
-}
-*/
+
 YAML::Emitter& operator<<(YAML::Emitter& out, const YgVector3& vector)
 {
   out << YAML::Flow;

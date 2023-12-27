@@ -73,9 +73,10 @@ unsigned int LoadTextureFromFile(YgString path, bool flip)
     glGenerateMipmap(GL_TEXTURE_2D);
     stbi_image_free(data);
   } else {
-
+    Yeager::Log(ERROR, "Cannot load texture in path: {}", path);
     stbi_image_free(data);
   }
+  Yeager::Log(INFO, "Success in loading texture in {}", path);
   glBindTexture(GL_TEXTURE_2D, NULL);
   return textureID;
 }

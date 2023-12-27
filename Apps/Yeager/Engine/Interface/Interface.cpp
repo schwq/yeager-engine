@@ -22,6 +22,7 @@ void Interface::LightHandleControlWindow()
   /**
    * NOTE Imgui button`s label problem explained where: https://github.com/ocornut/imgui/issues/74
    */
+  Begin("Light Control");
   int label_coflint = 0;
   for (auto& lightsources : *m_Application->GetScene()->GetLightSources()) {
     PushID(label_coflint++);
@@ -68,6 +69,7 @@ void Interface::LightHandleControlWindow()
     }
     PopID();
   }
+  End();
 }
 
 Interface::~Interface()
@@ -314,7 +316,7 @@ void Interface::RenderAwait() {}
 void Interface::DrawConsole()
 {
   //m_ConsoleWindow.Begin(m_Control.DontMoveWindowsEditor ? kWindowStatic : kWindowMoveable);
-  Begin(ICON_FA_TERMINAL " Console", NULL, m_Control.DontMoveWindowsEditor ? kWindowStatic : kWindowMoveable);
+  Begin(ICON_FA_TERMINAL " Console");
 
   kConsole.ReadLog();
 
@@ -345,7 +347,7 @@ void Interface::DrawConsole()
 void Interface::DrawExplorer()
 {
   //m_ExplorerWindow.Begin(m_Control.DontMoveWindowsEditor ? kWindowStatic : kWindowMoveable);
-  Begin(ICON_FA_ADDRESS_BOOK " Explorer", NULL, m_Control.DontMoveWindowsEditor ? kWindowStatic : kWindowMoveable);
+  Begin(ICON_FA_ADDRESS_BOOK " Explorer");
 
   m_Application->GetExplorer()->DrawExplorer();
 
@@ -355,7 +357,7 @@ void Interface::DrawExplorer()
 void Interface::DrawToolbox()
 {
   //m_ToolboxWindow.Begin(m_Control.DontMoveWindowsEditor ? kWindowStatic : kWindowMoveable);
-  Begin(ICON_FA_GEAR " Toolbox", NULL, m_Control.DontMoveWindowsEditor ? kWindowStatic : kWindowMoveable);
+  Begin(ICON_FA_GEAR " Toolbox");
 
   if (m_Application->GetExplorer()->GetSelectedToolbox() != YEAGER_NULLPTR) {
     Yeager::ToolBoxObject* obj = m_Application->GetExplorer()->GetSelectedToolbox();
@@ -415,7 +417,7 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
   SetNextWindowPos(ImVec2(0, 0));
   SetNextWindowSize(ImVec2(ygWindowWidth, ygWindowHeight));
   Begin("Yeager Launcher", NULL,
-        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus);
+        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoTitleBar);
 
   CenteredText("Welcome to the Yeager Engine!");
   CenteredText("This is a small project, being build by one developer with the propose");
@@ -441,7 +443,7 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
 
   if (open_project.AddButton()) {
     m_OpenProjectWindowOpen = true;
-    m_OpenProjectToDisplay = Yeager::ReadProjectsToDisplay(GetPath("/Configuration/Scenes"));
+    m_OpenProjectToDisplay = Yeager::ReadProjectsToDisplay("/home/schwq/.YeagerEngine/External/LoadedProjectsPath.yml");
   }
 
   if (m_OpenProjectWindowOpen && !m_NewProjectWindowOpen) {
@@ -454,14 +456,17 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
       Text("%s", project.Name.c_str());
       Text("%s", project.RendererType.c_str());
       Text("%s", project.SceneType.c_str());
+      Text("%s", project.FolderPath.c_str());
+      Text("%s", project.Path.c_str());
       Text("%s", CurrentTimeFormatToString().c_str());
       YgString labelWithID = "Open##" + project.Name;
       if (Button(labelWithID.c_str())) {
         launcher->SetUserHasSelect(true);
         launcher->GetCurrentProjectPicked()->m_Name = project.Name;
-        launcher->GetCurrentProjectPicked()->m_ProjectPath = project.Path;
         launcher->GetCurrentProjectPicked()->m_SceneRenderer = StringToSceneRenderer(project.RendererType);
         launcher->GetCurrentProjectPicked()->m_SceneType = StringToScreneType(project.SceneType);
+        launcher->GetCurrentProjectPicked()->m_ProjectPath = project.FolderPath;
+        launcher->GetCurrentProjectPicked()->m_SceneConfigPath = project.Path;
       }
     }
     open_project_window.End();

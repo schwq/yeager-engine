@@ -33,6 +33,10 @@ extern YgString kDefaultTexturePath;
 extern YgString GetPath(YgString path);
 extern YgCchar GetShaderPath(YgString shader);
 
+#ifdef YEAGER_SYSTEM_LINUX
+extern YgString GetLinuxHomeDirectory();
+#endif
+
 namespace Yeager {
 struct MemoryManagement {
   uint32_t m_MemoryAllocatedSize = 0;
@@ -42,6 +46,8 @@ struct MemoryManagement {
   uint32_t GetMemortUsage();
 };
 extern MemoryManagement s_MemoryManagement;
+
+
 
 /**
  * @brief Used in switch statements with String
@@ -66,7 +72,7 @@ constexpr inline glm::quat GetGLMQuat(const aiQuaternion& qa)
   return glm::quat(qa.w, qa.x, qa.y, qa.z);
 }
 
-extern void ValidatesPath(const std::filesystem::path& p,
+extern bool ValidatesPath(const std::filesystem::path& p,
                           std::filesystem::file_status s = std::filesystem::file_status());
 
 }  // namespace Yeager

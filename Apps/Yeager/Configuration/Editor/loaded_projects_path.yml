@@ -1,0 +1,5 @@
+# Loaded projects paths goes in this file DO NOT CHANGE!
+ProjectsLoaded:
+  - ProjectName: YeagerProject
+    FolderPath: /home/schwq/Documents/YeagerProject
+    ConfigurationFile: /home/schwq/Documents/YeagerProject/YeagerProject.yml
