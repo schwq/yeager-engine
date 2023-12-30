@@ -42,6 +42,12 @@ struct WorldCharacterMatrices {
   YgVector3 ViewerPos;
 };
 
+struct LoadedProjectHandle {
+  YgString m_ProjectName = YEAGER_NULL_LITERAL;
+  YgString m_ProjectFolderPath = YEAGER_NULL_LITERAL;
+  YgString m_ProjectConfigurationPath = YEAGER_NULL_LITERAL;
+};
+
 class ApplicationCore {
  public:
   ApplicationCore();
@@ -49,7 +55,15 @@ class ApplicationCore {
   ApplicationCore(ApplicationCore&&) = delete;
 
   void Setup();
+  /**
+   * Engine information are stored in $HOME/.YeagerEngine in linux plataforms, and in %appdata%/.YeagerEngine in windows plataforms
+  */
+  void CreateDirectoriesAndFiles();
+  void ReadLoadedProjectsHandles();
+  void WriteLoadedProjectsHandles();
   bool ShouldRender();
+  /* Ever scene must have some default entities, like a proper skybox and some light source*/
+  void LoadSceneDefaultEntities();
 
   LauncherProjectPicker RequestLauncher();
   void Render();
@@ -72,11 +86,11 @@ class ApplicationCore {
   YgMatrix4 GetProjection() { return m_WorldMatrices.Projection; }
   YgMatrix4 GetView() { return m_WorldMatrices.View; }
 
-  YgString GetExternalFolder() const {
-    return m_EngineExternalFolder;
-  }
+  YgString GetExternalFolder() const { return m_EngineExternalFolder; }
 
   YgString GetPathRelativeToExternalFolder(YgString path) const;
+
+  std::vector<LoadedProjectHandle>* GetLoadedProjectsHandles() { return &m_LoadedProjectsHandles; }
 
  private:
   void ValidatesExternalEngineFolder();
@@ -110,6 +124,8 @@ class ApplicationCore {
   EditorCamera* m_EditorCamera;
   Yeager::Scene* m_Scene;
   Yeager::Launcher* m_Launcher;
+
+  std::vector<LoadedProjectHandle> m_LoadedProjectsHandles;
 
   ApplicationState m_state = AppRunning;
   ApplicationMode m_mode = AppLauncher;

@@ -249,6 +249,7 @@ class Interface {
   YgString m_NewProjectAuthorName = "Default";
   YgString m_NewProjectCurrentSceneType = "Default";
   YgString m_NewProjectCurrentPlataformTarget = "Default";
+  YgString m_NewProjectFolder = "NONE";
   std::vector<YgString> m_ProjectsNamesAlreadyTaken;
   bool m_MakeScreenShotWindowShouldAppear = false;
   YgString m_NewScreenShootName;

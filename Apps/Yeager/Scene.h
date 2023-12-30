@@ -31,6 +31,7 @@
 
 namespace Yeager {
 class ApplicationCore;
+class Skybox;
 
 enum SceneType { Scene2D, Scene3D, SceneError };
 enum SceneRenderer { OpenGL3_3, OpenGL4, RendererError };
@@ -45,20 +46,21 @@ struct SceneContext {
   YgString m_ProjectFolderPath = YEAGER_NULL_LITERAL;
   YgString m_ProjectRelativeConfigurationPath = YEAGER_NULL_LITERAL;
   YgString m_ProjectSavePath = YEAGER_NULL_LITERAL;
+  YgString m_ProjectAuthor = YEAGER_NULL_LITERAL;
   SceneType m_type = SceneType::Scene2D;
   SceneRenderer m_renderer = SceneRenderer::OpenGL3_3;
 };
 
 class Scene {
  public:
-  Scene(YgString name, SceneType type, YgString folder_path, SceneRenderer renderer, Yeager::ApplicationCore* app);
-  ~Scene(); 
+  Scene(YgString name, YgString Author, SceneType type, YgString folder_path, SceneRenderer renderer,
+        Yeager::ApplicationCore* app);
+  ~Scene();
   Scene() {}
 
   void Save();
   void Load(YgString path);
   void LoadEditorColorscheme(Interface* intr);
-
 
   SceneContext GetContext() { return m_Context; }
   Serialization GetSerial() { return m_Serial; }
@@ -79,7 +81,12 @@ class Scene {
   std::vector<std::shared_ptr<Yeager::InstancedAnimatedObject>>* GetInstancedAnimatedObjects();
   std::vector<std::shared_ptr<Yeager::LightSource>>* GetLightSources();
 
+  Yeager::Skybox* GetCurrentSkybox() { return m_CurrentSkybox; }
+
  private:
+  void ValidatesCommonFolders();
+  YgString m_AssetsFolderPath = YEAGER_NULL_LITERAL;
+
   SceneContext m_Context;
   Serialization m_Serial;
   Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
@@ -91,6 +98,8 @@ class Scene {
   std::vector<std::shared_ptr<Yeager::InstancedAnimatedObject>> m_InstancedAnimatedObjects;
   std::vector<std::shared_ptr<Yeager::ToolBoxObject>> m_Toolboxes;
   std::vector<std::shared_ptr<Yeager::LightSource>> m_LightSources;
+
+  Yeager::Skybox* m_CurrentSkybox = YEAGER_NULLPTR;
 
   YgString GetConfigurationFilePath(YgString path);
 };

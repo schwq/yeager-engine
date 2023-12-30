@@ -417,7 +417,8 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
   SetNextWindowPos(ImVec2(0, 0));
   SetNextWindowSize(ImVec2(ygWindowWidth, ygWindowHeight));
   Begin("Yeager Launcher", NULL,
-        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoTitleBar);
+        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus |
+            ImGuiWindowFlags_NoTitleBar);
 
   CenteredText("Welcome to the Yeager Engine!");
   CenteredText("This is a small project, being build by one developer with the propose");
@@ -443,13 +444,21 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
 
   if (open_project.AddButton()) {
     m_OpenProjectWindowOpen = true;
-    m_OpenProjectToDisplay = Yeager::ReadProjectsToDisplay("/home/schwq/.YeagerEngine/External/LoadedProjectsPath.yml");
+#ifdef YEAGER_SYSTEM_LINUX
+    m_OpenProjectToDisplay =
+        Yeager::ReadProjectsToDisplay(GetLinuxHomeDirectory() + "/.YeagerEngine/External/LoadedProjectsPath.yml");
+#endif
   }
 
   if (m_OpenProjectWindowOpen && !m_NewProjectWindowOpen) {
     open_project_window.Begin(kWindowStatic);
+
     if (Button("Cancel")) {
       m_OpenProjectWindowOpen = false;
+    }
+
+    if (m_OpenProjectToDisplay.empty()) {
+      Text("No projects :(");
     }
     for (const auto& project : m_OpenProjectToDisplay) {
       Text("%s", project.Author.c_str());
@@ -465,8 +474,8 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
         launcher->GetCurrentProjectPicked()->m_Name = project.Name;
         launcher->GetCurrentProjectPicked()->m_SceneRenderer = StringToSceneRenderer(project.RendererType);
         launcher->GetCurrentProjectPicked()->m_SceneType = StringToScreneType(project.SceneType);
-        launcher->GetCurrentProjectPicked()->m_ProjectPath = project.FolderPath;
-        launcher->GetCurrentProjectPicked()->m_SceneConfigPath = project.Path;
+        launcher->GetCurrentProjectPicked()->m_ProjectFolderPath = project.FolderPath;
+        launcher->GetCurrentProjectPicked()->m_ProjectConfigurationPath = project.Path;
       }
     }
     open_project_window.End();
@@ -477,6 +486,7 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
   if (new_project.AddButton()) {
     m_NewProjectWindowOpen = true;
     m_NewProjectHandle = new Yeager::LauncherProjectPicker();
+    /*
     for (const auto& entry : std::filesystem::directory_iterator(GetPath("/Configuration/Scenes"))) {
       // Removes the extension of the file name, like (file.yaml) becomes (file.)
       YgString str = RemoveSuffixUntilCharacter(entry.path().filename().string(), '.');
@@ -484,6 +494,7 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
       str.erase(str.length() - 1);
       m_ProjectsNamesAlreadyTaken.push_back(str);
     }
+    */
   }
 
   if (m_NewProjectWindowOpen && !m_OpenProjectWindowOpen) {
@@ -503,6 +514,17 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
         m_NewProjectIsOkayToCreate = true;
       }
     }
+    if (Button("Select folder")) {
+      auto selection = pfd::select_folder("Select project folder", GetLinuxHomeDirectory()).result();
+      if (!selection.empty()) {
+        /* This should always return true, but we are making sure the user or the machine deletes the folder selected during the midtime */
+        if (Yeager::ValidatesPath(selection)) {
+          m_NewProjectHandle->m_ProjectFolderPath = selection + YG_PS;
+        }
+      }
+    }
+    SameLine();
+    Text("Project Folder: %s", m_NewProjectHandle->m_ProjectFolderPath.c_str());
 
     InputText("Author`s Name", &m_NewProjectAuthorName);
     m_NewProjectHandle->m_AuthorName = m_NewProjectAuthorName;
@@ -549,9 +571,17 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
       if (m_NewProjectIsOkayToCreate) {
         YgTime_t current_time = CurrentTimeToTimeType();
         m_NewProjectHandle->m_ProjectDateOfCreation = current_time.Date;
+        m_NewProjectHandle->m_ProjectConfigurationPath =
+            m_NewProjectHandle->m_ProjectFolderPath + m_NewProjectHandle->m_Name + ".yml";
+
         launcher->BuildNewProject(*m_NewProjectHandle);
         launcher->SetUserHasSelect(true);
         launcher->SetNewProjectLoaded(true);
+        LoadedProjectHandle handle;
+        handle.m_ProjectName = m_NewProjectHandle->m_Name;
+        handle.m_ProjectFolderPath = m_NewProjectHandle->m_ProjectFolderPath;
+        handle.m_ProjectConfigurationPath = m_NewProjectHandle->m_ProjectConfigurationPath;
+        m_Application->GetLoadedProjectsHandles()->push_back(handle);
         delete m_NewProjectHandle;
       }
     }

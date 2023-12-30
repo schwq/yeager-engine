@@ -30,7 +30,8 @@ void EditorExplorer::AddAudioWindow()
     InputText("Audio's name", &m_NewObjectName, 100);
 
     if (Button("Select Audio file")) {
-      auto selection = pfd::open_file("Select .obj file", GetPath("/Assets/sound/").c_str(), {"*"}, false);
+      auto selection = pfd::open_file(
+          "Select Audio file", m_Application->GetScene()->GetContext().m_ProjectFolderPath.c_str(), {"*"}, false);
       if (!selection.result().empty()) {
         m_NewObjectPath = selection.result()[0].c_str();
       }
@@ -157,7 +158,8 @@ void EditorExplorer::AddImportedObjectWindow()
     InputText("Object's name", &m_NewObjectName, 100);
 
     if (Button("Select Imported Object file")) {
-      auto selection = pfd::open_file("Select .obj file", GetPath("/Assets/ImportedModels/").c_str(), {"*"}, false);
+      auto selection = pfd::open_file(
+          "Select 3D model file", m_Application->GetScene()->GetContext().m_ProjectFolderPath.c_str(), {"*"}, false);
       if (!selection.result().empty()) {
         m_NewObjectPath = selection.result()[0].c_str();
       }

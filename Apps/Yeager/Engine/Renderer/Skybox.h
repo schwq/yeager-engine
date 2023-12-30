@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "../../Application.h"
 #include "../../Common/Common.h"
 #include "../../Common/LogEngine.h"
 #include "../../Common/Utilities.h"
@@ -25,7 +26,6 @@
 #include "Importer.h"
 #include "Object.h"
 #include "ShaderHandle.h"
-#include "../../Application.h"
 namespace Yeager {
 
 enum class SkyboxTextureType { ESamplerCube, ESampler2D };
@@ -41,6 +41,8 @@ class Skybox : public Entity {
   bool BuildSkyboxFromImport(YgString path);
   void Draw(Yeager::Shader* shader, YgMatrix4 view, YgMatrix4 projection);
 
+  YgString GetPath() const { return m_Path; }
+
  private:
   void Setup();
   void SetupModel();
@@ -51,6 +53,7 @@ class Skybox : public Entity {
   bool m_ImageFlip = false;
   unsigned int m_VerticesIndex = 0;
   GLuint m_Vao = -1, m_Vbo = -1, m_Ebo = -1, m_ID = -1;
+  YgString m_Path = YEAGER_NULL_LITERAL;
 
   SkyboxTextureType m_Type;
   ObjectGeometryData m_Data;

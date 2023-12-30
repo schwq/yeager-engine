@@ -33,8 +33,8 @@ class ApplicationCore;
 struct LauncherProjectPicker {
   YgString m_Name = "Default";
   YgString m_AuthorName = "Default";
-  YgString m_ProjectPath = "Default";
-  YgString m_SceneConfigPath = "Default";
+  YgString m_ProjectFolderPath = "Default";
+  YgString m_ProjectConfigurationPath = "Default";
   YgString m_PlataformTarget = "Universal";
   YgDate_t m_ProjectDateOfCreation;
   Yeager::SceneType m_SceneType;
@@ -49,7 +49,7 @@ class Launcher {
   void Render();
   LauncherProjectPicker GetSelectedProject() noexcept { return m_ProjectCurrentSelected; }
   constexpr LauncherProjectPicker* GetSelectedProjectPtr() noexcept { return &m_ProjectCurrentSelected; }
-  
+
   constexpr inline bool UserHasSelect() noexcept { return m_UserDoneSelecting; }
   constexpr inline void SetUserHasSelect(bool selected) noexcept { m_UserDoneSelecting = selected; }
   LauncherProjectPicker* GetCurrentProjectPicked() noexcept { return &m_ProjectCurrentSelected; }

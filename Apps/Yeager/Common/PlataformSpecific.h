@@ -20,3 +20,11 @@
 #include "Common.h"
 #include "LogEngine.h"
 #include "Utilities.h"
+
+#ifdef YEAGER_SYSTEM_WINDOWS_x64
+
+#ifndef DllImport
+#define DllImport __declspec(dllimport)
+#endif
+
+#endif

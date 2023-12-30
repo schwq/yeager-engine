@@ -1,5 +1,6 @@
 #include "Serialization.h"
 #include "Application.h"
+#include "Engine/Renderer/Skybox.h"
 #include "Scene.h"
 using namespace Yeager;
 
@@ -9,37 +10,48 @@ std::vector<OpenProjectsDisplay> Yeager::ReadProjectsToDisplay(YgString dir)
   std::vector<OpenProjectsDisplay> proj;
   YAML::Node node = YAML::LoadFile(dir);
   /* Reads the configuration file in the external folder of the engine, and gather information about projects in the current machine*/
-  if(node["ProjectsLoaded"]) {
-    for(const auto& project : node["ProjectsLoaded"]) {
+  if (node["ProjectsLoaded"]) {
+    for (const auto& project : node["ProjectsLoaded"]) {
       OpenProjectsDisplay disp;
-      
-      if(project["ProjectName"]) {
-        disp.Name = project["ProjectName"].as<YgString>();
-      } 
+      bool exists;
 
-      if(project["FolderPath"]) {
-        disp.FolderPath = project["FolderPath"].as<YgString>();
+      if (project["ProjectName"]) {
+        disp.Name = project["ProjectName"].as<YgString>();
+      }
+
+      if (project["ProjectFolderPath"]) {
+        disp.FolderPath = project["ProjectFolderPath"].as<YgString>();
       }
       /* Reads each project configuration and return basic information about them*/
-      if(project["ConfigurationFile"]) {
-        YAML::Node indiv_proj = YAML::LoadFile(project["ConfigurationFile"].as<YgString>());
-        disp.Path = project["ConfigurationFile"].as<YgString>();
+      if (project["ProjectConfigurationPath"]) {
+        /* The variable inside the configuration file is alright, but the path points to a unknown place, we wouldnt load 
+            TODO make the user choice the right place by displaying a screen for troubleshoot */
+        exists = Yeager::ValidatesPath(project["ProjectConfigurationPath"].as<YgString>());
 
-        if(indiv_proj["Renderer"]) {
-          disp.RendererType = indiv_proj["Renderer"].as<YgString>(); 
-        }
-
-        if(indiv_proj["SceneType"]) {
-          disp.SceneType = indiv_proj["SceneType"].as<YgString>();
-        }
-
-        if(indiv_proj["Author"]) {
-          disp.Author = indiv_proj["Author"].as<YgString>();
+        if (exists) {
+          YAML::Node indiv_proj = YAML::LoadFile(project["ProjectConfigurationPath"].as<YgString>());
+          disp.Path = project["ProjectConfigurationPath"].as<YgString>();
+          if (indiv_proj["Renderer"]) {
+            disp.RendererType = indiv_proj["Renderer"].as<YgString>();
+          }
+          if (indiv_proj["SceneType"]) {
+            disp.SceneType = indiv_proj["SceneType"].as<YgString>();
+          }
+          if (indiv_proj["Author"]) {
+            disp.Author = indiv_proj["Author"].as<YgString>();
+          }
+        } else {
+          Yeager::Log(ERROR,
+                      "The engine external configuration points to a unknown project configuration! Verify if the "
+                      "project configuration file have the same name as the project!");
         }
       } else {
         Yeager::Log(ERROR, "Cannot find configuration file path for the associate project {}", disp.Name);
       }
-      proj.push_back(disp);
+      /* We wont add a invalid project path to the engine display! this will cause a exception been thrown!*/
+      if (exists) {
+        proj.push_back(disp);
+      }
     }
   } else {
     Yeager::Log(WARNING, "The current state of the engine does not have any project saved!");
@@ -154,11 +166,19 @@ void Serialization::SerializeScene(Yeager::Scene* scene, YgString path)
 
   SerializeSystemInfo(out, scene);
   SerializeObject(out, "Scene", scene->GetContext().m_name);
+  SerializeObject(out, "Author", scene->GetContext().m_ProjectAuthor);
   SerializeObject(out, "Renderer", SceneRendererToString(scene->GetContext().m_renderer));
   SerializeObject(out, "SceneType", SceneTypeToString(scene->GetContext().m_type));
   SerializeObject(out, "Camera Position", m_Application->GetCamera()->GetPosition());
   SerializeObject(out, "Camera Direction", m_Application->GetCamera()->GetDirection());
   SerializeBegin(out, "SceneEntities", YAML::BeginSeq);
+
+  if (scene->GetCurrentSkybox() != YEAGER_NULLPTR) {
+    out << YAML::BeginMap;
+    SerializeBasicEntity(out, scene->GetCurrentSkybox()->GetName(), scene->GetCurrentSkybox()->GetId(), "Skybox");
+    SerializeObject(out, "Path", scene->GetCurrentSkybox()->GetPath());
+    out << YAML::EndMap;
+  }
 
   for (unsigned int x = 0; x < scene->GetAudios()->size(); x++) {
     AudioHandle* audio = scene->GetAudios()->at(x).get();
@@ -681,7 +701,7 @@ void inline Serialization::DeserializeEntity(Yeager::Scene* scene, YAML::Node& n
       obj->BuildAnimation(entity["Path"].as<YgString>());
       scene->GetInstancedAnimatedObjects()->push_back(obj);
     }
-  } else if ("LightSource") {
+  } else if (type == "LightSource") {
     YgString drawable_shader_var = entity["DrawableShaderVar"].as<YgString>();
     YgString linked_shader_var = entity["LinkedShaderVar"].as<YgString>();
     auto obj = std::make_shared<Yeager::LightSource>(name, m_Application, ShaderFromVarName(linked_shader_var),
@@ -727,6 +747,9 @@ void inline Serialization::DeserializeEntity(Yeager::Scene* scene, YAML::Node& n
     }
 
     scene->GetLightSources()->push_back(obj);
+  } else if (type == "Skybox") {
+    YgString path = entity["Path"].as<YgString>();
+    scene->GetCurrentSkybox()->BuildSkyboxFromImport(path);
   }
 }
 

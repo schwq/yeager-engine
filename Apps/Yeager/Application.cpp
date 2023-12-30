@@ -10,20 +10,85 @@ using namespace Yeager;
 ApplicationCore::ApplicationCore()
 {
   ValidatesExternalEngineFolder();
+  ReadLoadedProjectsHandles();
   Setup();
 }
 
-YgString ApplicationCore::GetPathRelativeToExternalFolder(YgString path) const {
+YgString ApplicationCore::GetPathRelativeToExternalFolder(YgString path) const
+{
   return m_EngineExternalFolder + path;
 }
 
-void ApplicationCore::ValidatesExternalEngineFolder() 
+void ApplicationCore::ValidatesExternalEngineFolder()
 {
 #ifdef YEAGER_SYSTEM_LINUX
-  if(!Yeager::ValidatesPath(GetLinuxHomeDirectory() + "/.YeagerEngine")) {
-    Yeager::Log(ERROR, "Could not find the .YeagerEngine folder in the home directory of the machine!");
+  if (!Yeager::ValidatesPath(GetLinuxHomeDirectory() + "/.YeagerEngine")) {
+    Yeager::Log(WARNING, "Could not find the .YeagerEngine folder in the home directory of the machine!");
+    if (std::filesystem::create_directory(GetLinuxHomeDirectory() + "/.YeagerEngine")) {
+      Yeager::Log(INFO, "Created the .YeagerEngine folder at the home directory!");
+      CreateDirectoriesAndFiles();
+    } else {
+      Yeager::Log(ERROR,
+                  "std::filesystem::create_directory cannot create the .YeagerEngine folder at the home directory!");
+    }
+  }
+
+  m_EngineExternalFolder = GetLinuxHomeDirectory() + "/.YeagerEngine/External";
+
+#endif
+}
+
+void ApplicationCore::ReadLoadedProjectsHandles()
+{
+#ifdef YEAGER_SYSTEM_LINUX
+  YAML::Node node = YAML::LoadFile(m_EngineExternalFolder + "/LoadedProjectsPath.yml");
+  for (const auto& project : node["ProjectsLoaded"]) {
+    LoadedProjectHandle handle;
+    handle.m_ProjectName = project["ProjectName"].as<YgString>();
+    handle.m_ProjectFolderPath = project["ProjectFolderPath"].as<YgString>();
+    handle.m_ProjectConfigurationPath = project["ProjectConfigurationPath"].as<YgString>();
+    m_LoadedProjectsHandles.push_back(handle);
   }
 #endif
+}
+
+void ApplicationCore::WriteLoadedProjectsHandles()
+{
+#ifdef YEAGER_SYSTEM_LINUX
+  YAML::Emitter out;
+  out << YAML::BeginMap;
+  out << YAML::Key << "ProjectsLoaded" << YAML::Value << YAML::BeginSeq;
+  for (const auto& project : m_LoadedProjectsHandles) {
+    out << YAML::BeginMap;
+    out << YAML::Key << "ProjectName" << YAML::Value << project.m_ProjectName;
+    out << YAML::Key << "ProjectFolderPath" << YAML::Value << project.m_ProjectFolderPath;
+    out << YAML::Key << "ProjectConfigurationPath" << YAML::Value << project.m_ProjectConfigurationPath;
+    out << YAML::EndMap;
+  }
+  out << YAML::EndSeq;
+  out << YAML::EndMap;
+
+  std::ofstream of(m_EngineExternalFolder + "/LoadedProjectsPath.yml");
+  if (of.is_open()) {
+    of << out.c_str();
+  } else {
+    Yeager::Log(ERROR, "Cannot open external project paths configuration file!");
+  }
+  of.close();
+#endif
+}
+
+void ApplicationCore::CreateDirectoriesAndFiles()
+{
+  /** External folder for projects paths and information about the engine loaded in the OS */
+  std::filesystem::create_directory(GetLinuxHomeDirectory() + "/.YeagerEngine/External");
+  std::ofstream LoadedProjectsPathFile(GetLinuxHomeDirectory() + "/.YeagerEngine/External/LoadedProjectsPath.yml");
+  if (LoadedProjectsPathFile.is_open()) {
+    LoadedProjectsPathFile << "ProjectsLoaded: \n []";
+  } else {
+    Yeager::Log(ERROR, "Could not open the .YeagerEngine/External/LoadedProjectsPath.yml for writing!");
+  }
+  LoadedProjectsPathFile.close();
 }
 
 LauncherProjectPicker ApplicationCore::RequestLauncher()
@@ -73,14 +138,28 @@ void ApplicationCore::Setup()
     m_mode = Yeager::AppEditor;
     m_Window->RegenerateMainWindow(1920, 1080, RequestWindowEngineName(project), m_Input->MouseCallback);
     m_Interface->RequestRestartInterface(m_Window);
-    m_Scene = new Yeager::Scene(project.m_Name, project.m_SceneType, project.m_ProjectPath, project.m_SceneRenderer, this);
+    m_Scene = new Yeager::Scene(project.m_Name, project.m_AuthorName, project.m_SceneType, project.m_ProjectFolderPath,
+                                project.m_SceneRenderer, this);
     m_Scene->GetSerial().ReadEditorVariables(EditorVariablesPath.c_str());
     m_Scene->GetSerial().ReadSceneShadersConfig(GetPath("/Configuration/Editor/Shaders/default_shaders.yaml"));
-    m_Launcher->GetNewProjectLaoded() ? m_Scene->Save() : m_Scene->Load(project.m_SceneConfigPath);
+
+    if (m_Launcher->GetNewProjectLaoded()) {
+      /* New project have been loaded*/
+      m_Scene->Save();
+      LoadSceneDefaultEntities();
+    } else {
+      /* The project already exists! */
+      m_Scene->Load(project.m_ProjectConfigurationPath);
+    }
 
   } else {
     TerminateAudioEngine();
   }
+}
+
+void ApplicationCore::LoadSceneDefaultEntities()
+{
+  GetScene()->GetCurrentSkybox()->BuildSkyboxFromImport(GetExternalFolder() + "/Default/Skybox/Skybox.obj");
 }
 
 bool ApplicationCore::ShouldRender()
@@ -90,6 +169,8 @@ bool ApplicationCore::ShouldRender()
 
 ApplicationCore::~ApplicationCore()
 {
+  WriteLoadedProjectsHandles();
+
   delete m_EditorExplorer;
   delete m_EditorCamera;
   delete m_Scene;
@@ -125,27 +206,7 @@ void ApplicationCore::Render()
 {
   OpenGLFunc();
 
-  Yeager::Skybox skybox("Skybox", ObjectGeometryType::ESphere, this, false);
-  skybox.BuildSkyboxFromImport(GetPath("/Assets/ImportedModels/Skybox/skybox.obj"));
-
-  std::vector<Transformation> trans;
-  for(int x = 0; x < 10; x++) {
-    for(int y = 0; y < 10; y++) {
-      Transformation tr;
-      tr.position.x = x * 2;
-      tr.position.y = 0;
-      tr.position.z = y * 2;
-      tr.scale = YgVector3(1.0f);
-      tr.rotation = YgVector3(0.0);
-      trans.push_back(tr);
-    }
-  }
-
-  InstancedAnimatedObject obj("test", this, 100);
-  obj.ImportObjectFromFile(GetPath("/Assets/ImportedModels/Salsa/Samba Dancing.dae").c_str(), false);
-  obj.BuildProp(trans, ShaderFromVarName("SimpleInstancedAnimated"));
-  obj.BuildAnimation(GetPath("/Assets/ImportedModels/Salsa/Samba Dancing.dae").c_str());
-
+  auto source = std::make_shared<LightSource>("Default", this, ShaderFromVarName("Simple"), ShaderFromVarName("Light"));
 
   while (ShouldRender()) {
     glfwPollEvents();
@@ -155,14 +216,18 @@ void ApplicationCore::Render()
 
     UpdateDeltaTime();
     UpdateWorldMatrices();
-    
+
     UpdateListenerPosition();
 
     ManifestShaderProps(ShaderFromVarName("Skybox"));
-    skybox.Draw(ShaderFromVarName("Skybox"), YgMatrix3(m_WorldMatrices.View), m_WorldMatrices.Projection);
+
+    if (GetScene()->GetCurrentSkybox() != YEAGER_NULLPTR) {
+      GetScene()->GetCurrentSkybox()->Draw(ShaderFromVarName("Skybox"), YgMatrix3(m_WorldMatrices.View),
+                                           m_WorldMatrices.Projection);
+    }
 
     ygAudioEngine->update();
-
+    source->BuildShaderProps(GetCamera()->GetPosition(), GetCamera()->GetDirection(), 32);
     ManifestShaderProps(ShaderFromVarName("TerrainGeneration"));
     ManifestShaderProps(ShaderFromVarName("Simple"));
     ManifestShaderProps(ShaderFromVarName("Collision"));
@@ -170,9 +235,6 @@ void ApplicationCore::Render()
     ManifestShaderProps(ShaderFromVarName("SimpleAnimated"));
     ManifestShaderProps(ShaderFromVarName("SimpleInstancedAnimated"));
     ShaderFromVarName("SimpleInstancedAnimated")->UseShader();
-    obj.UpdateAnimation(m_DeltaTime);
-    obj.BuildAnimationMatrices(ShaderFromVarName("SimpleInstancedAnimated"));
-    obj.Draw(ShaderFromVarName("SimpleInstancedAnimated"));
 
     VerifyCollisions();
     DrawObjects();

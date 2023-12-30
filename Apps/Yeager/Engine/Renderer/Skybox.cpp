@@ -4,7 +4,8 @@
 #include "TextureHandle.h"
 using namespace Yeager;
 
-Skybox::Skybox(YgString name, ObjectGeometryType type, ApplicationCore* application, bool flip_image) : Entity(name), m_Geometry(type), m_Application(application)
+Skybox::Skybox(YgString name, ObjectGeometryType type, ApplicationCore* application, bool flip_image)
+    : Entity(name), m_Geometry(type), m_Application(application)
 {
   Yeager::Log(INFO, "Loading skybox {}", name);
   m_ImageFlip = flip_image;
@@ -14,6 +15,7 @@ Skybox::Skybox(YgString name, ObjectGeometryType type, ApplicationCore* applicat
 bool Skybox::BuildSkyboxFromImport(YgString path)
 {
   if (!m_SkyboxDataLoaded) {
+    m_Path = path;
 
     Importer imp;
     m_Model = imp.Import(path.c_str(), m_ImageFlip);
@@ -111,7 +113,7 @@ bool Skybox::BuildSkyboxFrom2DTexture(YgString path)
 
 void Skybox::SetupModel()
 {
-  for(auto& mesh : m_Model.Meshes) {
+  for (auto& mesh : m_Model.Meshes) {
     m_Toolbox->SetType(ExplorerObjectType::kSkybox);
     m_Toolbox->SetEntity(this);
     m_Application->GetScene()->GetToolboxs()->push_back(m_Toolbox);
@@ -126,8 +128,7 @@ void Skybox::SetupModel()
     glBufferData(GL_ARRAY_BUFFER, mesh.Vertices.size() * sizeof(ObjectVertexData), &mesh.Vertices[0], GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.m_Ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.Indices.size() * sizeof(unsigned int), &mesh.Indices[0],
-                 GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.Indices.size() * sizeof(unsigned int), &mesh.Indices[0], GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ObjectVertexData), (void*)0);
@@ -191,10 +192,10 @@ void Skybox::Draw(Yeager::Shader* shader, YgMatrix4 view, YgMatrix4 projection)
     glBindVertexArray(m_Vao);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(m_Type == SkyboxTextureType::ESampler2D ? GL_TEXTURE_2D : GL_TEXTURE_CUBE_MAP, m_ID);
-    if(m_Geometry != ObjectGeometryType::ECustom) {
+    if (m_Geometry != ObjectGeometryType::ECustom) {
       glDrawArrays(GL_TRIANGLES, 0, m_VerticesIndex);
     } else {
-      for(auto& mesh : m_Model.Meshes) {
+      for (auto& mesh : m_Model.Meshes) {
         Yeager::DrawSeparateMesh(&mesh, shader);
       }
     }
