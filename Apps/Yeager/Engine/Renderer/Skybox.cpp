@@ -24,7 +24,7 @@ bool Skybox::BuildSkyboxFromImport(YgString path)
       Yeager::Log(ERROR, "Cannot load model to skybox!");
       return false;
     }
-    m_ID = m_Model.TexturesLoaded[0].ID;
+    m_ID = m_Model.TexturesLoaded[0]->first.ID;
     m_Geometry = ObjectGeometryType::ECustom;
     m_Type = SkyboxTextureType::ESampler2D;
     m_SkyboxDataLoaded = true;
@@ -114,7 +114,7 @@ bool Skybox::BuildSkyboxFrom2DTexture(YgString path)
 void Skybox::SetupModel()
 {
   for (auto& mesh : m_Model.Meshes) {
-    m_Toolbox->SetType(ExplorerObjectType::kSkybox);
+    m_Toolbox->SetType(EExplorerTypeSkybox);
     m_Toolbox->SetEntity(this);
     m_Application->GetScene()->GetToolboxs()->push_back(m_Toolbox);
 
@@ -147,7 +147,7 @@ void Skybox::SetupModel()
 
 void Skybox::Setup()
 {
-  m_Toolbox->SetType(ExplorerObjectType::kSkybox);
+  m_Toolbox->SetType(EExplorerTypeSkybox);
   m_Toolbox->SetEntity(this);
   m_Application->GetScene()->GetToolboxs()->push_back(m_Toolbox);
 

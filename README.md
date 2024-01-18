@@ -5,6 +5,11 @@
 Future implementations are working autonomous modules, a safe engine core, proper UI librarie, and custom compiler. 
 Current working toward asnyc and thread compartibily. 
 
+```
+cmake -DCMAKE_CXX_COMPILER:FILEPATH=<G++ Path> -S ./YeagerEngine -B ./YeagerEngine/build -G Ninja
+cmake --build YeagerEngine/build --config Debug --target all --
+```
+
 # Libraries and Third Party Integrations
 - Serialization : [yaml-cpp](https://github.com/jbeder/yaml-cpp)
 - Window Manager : [glfw](https://github.com/glfw/glfw)

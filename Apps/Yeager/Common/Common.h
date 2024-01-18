@@ -38,6 +38,13 @@
 #define YEAGER_ALPHA_VERSION false
 #define YEAGER_SNAPSHOT_VERSION false
 
+#define YEAGER_CPP_PRE_98_VERSION 1
+#define YEAGER_CPP_98_VERSION 199711L
+#define YEAGER_CPP_11_VERSION 201103L
+#define YEAGER_CPP_14_VERSION 201402L
+#define YEAGER_CPP_17_VERSION 201703L
+#define YEAGER_CPP_20_VERSION 202002L
+
 #if defined(__clang__) && !defined(__ibmxl__)
 #define YEAGER_CLANG_VERSION (__clang_major__ * 100 + __clang_minor)
 #define YEAGER_COMPILER "CLANG"
@@ -51,6 +58,8 @@
 #else
 #define YEAGER_GNU_VERSION 0
 #endif
+
+#define PX_PHYSX_STATIC_LIB 1
 
 #ifdef _MSC_VER
 #define YEAGER_MSC_VERSION _MSC_VER
@@ -93,6 +102,8 @@
 
 #define YEAGER_NULLPTR nullptr
 #define YEAGER_NULLPTR_T nullptr_t
+#define YEAGER_FORCE_INLINE inline
+#define YEAGER_UINT unsigned int
 
 #include <math.h>
 #include <string.h>
@@ -104,6 +115,7 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
+#include <future>
 #include <ios>
 #include <iostream>
 #include <map>
@@ -122,16 +134,16 @@
 #include <glm/gtx/component_wise.hpp>
 //clang-format on
 
-#include "../../../Libraries/imgui/imgui.h"
-#include "../../../Libraries/imgui/imgui_impl_glfw.h"
-#include "../../../Libraries/imgui/imgui_impl_opengl3.h"
-#include "../../../Libraries/imgui/imgui_stdlib.h"
-#include "../../../Libraries/loguru.hpp"
-#include "../../../Libraries/portable-file-dialogs.h"
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+#include "imgui_stdlib.h"
+#include "loguru.hpp"
+#include "portable-file-dialogs.h"
 
 #define FMT_HEADER_ONLY
-#include "../../../Libraries/fmt/core.h"
-#include "../../../Libraries/fmt/format.h"
+#include "core.h"
+#include "format.h"
 
 #include <irrKlang/irrKlang.h>
 

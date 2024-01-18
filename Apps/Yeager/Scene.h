@@ -19,49 +19,53 @@
 
 #pragma once
 
+#include <algorithm>
 #include "Common/Common.h"
 #include "Common/LogEngine.h"
 #include "Common/Utilities.h"
+#include "Engine/Editor/ToolboxObj.h"
+#include "Engine/Lighting/LightHandle.h"
+#include "Engine/Media/AudioHandle.h"
+#include "Engine/Renderer/Object.h"
 #include "Serialization.h"
-#include "Engine/Renderer/Importer.h"
-
-class Yeager::Serialization;
 
 namespace Yeager {
-enum SceneType { Scene2D, Scene3D };
-enum SceneRenderer { OpenGL3_3, OpenGL4 };
+class ApplicationCore;
+
+enum SceneType { Scene2D, Scene3D, SceneError };
+enum SceneRenderer { OpenGL3_3, OpenGL4, RendererError };
+extern YgString SceneTypeToString(SceneType type);
+extern YgString SceneRendererToString(SceneRenderer renderer);
+extern SceneType StringToSceneType(YgString str);
+extern SceneRenderer StringToSceneRenderer(YgString str);
 
 struct SceneContext {
-  yg_string m_name;
-  yg_string m_file_path;
-  SceneType m_type;
-  SceneRenderer m_renderer;
+  YgString m_name = YEAGER_NULL_LITERAL;
+  YgString m_file_path = YEAGER_NULL_LITERAL;
+  YgString m_ProjectFolderPath = YEAGER_NULL_LITERAL;
+  YgString m_ProjectRelativeConfigurationPath = YEAGER_NULL_LITERAL;
+  YgString m_ProjectSavePath = YEAGER_NULL_LITERAL;
+  YgString m_ProjectAuthor = YEAGER_NULL_LITERAL;
+  SceneType m_type = SceneType::Scene2D;
+  SceneRenderer m_renderer = SceneRenderer::OpenGL3_3;
 };
 
 class Scene {
  public:
-  Scene(yg_string name, SceneType type, SceneRenderer renderer);
+  Scene(YgString name, YgString Author, SceneType type, YgString folder_path, SceneRenderer renderer,
+        Yeager::ApplicationCore* app);
   ~Scene();
+  Scene() {}
 
   void Save();
-  void Load(yg_string path);
-  void LoadEditorColorscheme(Interface* interface);
+  void Load(YgString path);
+  void LoadEditorColorscheme(Interface* intr);
 
-<<<<<<< Updated upstream
-  SceneContext GetContext() { return m_context; }
-  Serialization GetSerial() { return m_serial; }
-=======
   SceneContext GetContext() { return m_Context; }
   void SetContextType(SceneType type);
   void SetContextRenderer(SceneRenderer renderer);
   void LoadSceneSave();
   YgString GetPathRelative(YgString path);
-
-  void VerifyAssetsSubFolders();
-  /* Will try to find sound files in the /Assets/Sound folder of the project and return a pair of the file name and the complete path */
-  std::vector<std::pair<YgString, YgString>> VerifySoundsOptionsInAssetFolder();
-  /* Will try to search for folders and model files inside of it on the /Assets/ImportedModels folder of the project, and return a pair of the file name and complete path */
-  std::vector<std::pair<YgString, YgString>> VerifyImportedModelsOptionsInAssetsFolder();
 
   /**
    *  Scene Objects and Entities (Everything that is stored where is going to be saved) 
@@ -78,17 +82,24 @@ class Scene {
   std::vector<std::pair<ImporterThreaded*, Yeager::Object*>>* GetThreadImporters();
   std::vector<std::pair<ImporterThreadedAnimated*, Yeager::AnimatedObject*>>* GetThreadAnimatedImporters();
   void CheckThreadsAndTriggerActions();
->>>>>>> Stashed changes
+
+  void CheckAndAwaitThreadsToFinish();
+
+  void CheckScheduleDeletions();
+  void CheckToolboxesScheduleDeletions();
 
  private:
-  SceneContext m_context;
-  Serialization m_serial;
+  void ValidatesCommonFolders();
+  YgString m_AssetsFolderPath = YEAGER_NULL_LITERAL;
 
-<<<<<<< Updated upstream
-  inline yg_string GetSceneFilePath();
-=======
-  std::vector<std::pair<ImporterThreaded*, Yeager::Object*>> m_ThreadImporters; 
-  std::vector<std::pair<ImporterThreadedAnimated*, Yeager::AnimatedObject*>> m_ThreadAnimatedImporters; 
+  void VerifyAssetsSubFolders();
+  /* Will try to find sound files in the /Assets/Sound folder of the project and return a pair of the file name and the complete path */
+  std::vector<std::pair<YgString, YgString>> VerifySoundsOptionsInAssetFolder();
+  /* Will try to search for folders and model files inside of it on the /Assets/ImportedModels folder of the project, and return a pair of the file name and complete path */
+  std::vector<std::pair<YgString, YgString>> VerifyImportedModelsOptionsInAssetsFolder();
+
+  std::vector<std::pair<ImporterThreaded*, Yeager::Object*>> m_ThreadImporters;
+  std::vector<std::pair<ImporterThreadedAnimated*, Yeager::AnimatedObject*>> m_ThreadAnimatedImporters;
 
   SceneContext m_Context;
   Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
@@ -100,7 +111,7 @@ class Scene {
   std::vector<std::shared_ptr<Yeager::InstancedAnimatedObject>> m_InstancedAnimatedObjects;
   std::vector<std::shared_ptr<Yeager::ToolBoxObject>> m_Toolboxes;
   std::vector<std::shared_ptr<Yeager::LightSource>> m_LightSources;
+
   YgString GetConfigurationFilePath(YgString path);
->>>>>>> Stashed changes
 };
 }  // namespace Yeager

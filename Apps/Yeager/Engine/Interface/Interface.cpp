@@ -22,6 +22,7 @@ void Interface::LightHandleControlWindow()
   /**
    * NOTE Imgui button`s label problem explained where: https://github.com/ocornut/imgui/issues/74
    */
+  /*
   Begin("Light Control");
   int label_coflint = 0;
   for (auto& lightsources : *m_Application->GetScene()->GetLightSources()) {
@@ -70,6 +71,7 @@ void Interface::LightHandleControlWindow()
     PopID();
   }
   End();
+  */
 }
 
 Interface::~Interface()
@@ -359,7 +361,9 @@ void Interface::DrawToolbox()
   //m_ToolboxWindow.Begin(m_Control.DontMoveWindowsEditor ? kWindowStatic : kWindowMoveable);
   Begin(ICON_FA_GEAR " Toolbox");
 
-  if (m_Application->GetExplorer()->GetSelectedToolbox() != YEAGER_NULLPTR) {
+  if (m_Application->GetExplorer()->GetSelectedToolbox() != YEAGER_NULLPTR &&
+      m_Application->GetExplorer()->GetSelectedToolbox()->GetEntity() != YEAGER_NULLPTR &&
+      m_Application->GetExplorer()->GetSelectedToolbox()->GetEntity()->IsValid()) {
     Yeager::ToolBoxObject* obj = m_Application->GetExplorer()->GetSelectedToolbox();
     YgCchar text = obj->GetEntity()->GetName().c_str();
     Text(text);
@@ -473,7 +477,7 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
         launcher->SetUserHasSelect(true);
         launcher->GetCurrentProjectPicked()->m_Name = project.Name;
         launcher->GetCurrentProjectPicked()->m_SceneRenderer = StringToSceneRenderer(project.RendererType);
-        launcher->GetCurrentProjectPicked()->m_SceneType = StringToScreneType(project.SceneType);
+        launcher->GetCurrentProjectPicked()->m_SceneType = StringToSceneType(project.SceneType);
         launcher->GetCurrentProjectPicked()->m_ProjectFolderPath = project.FolderPath;
         launcher->GetCurrentProjectPicked()->m_ProjectConfigurationPath = project.Path;
       }
@@ -547,7 +551,7 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
         bool is_selected = (m_NewProjectCurrentSceneType.c_str() == SceneType[x]);
         if (Selectable(SceneType[x], is_selected)) {
           m_NewProjectCurrentSceneType = SceneType[x];
-          m_NewProjectHandle->m_SceneType = Yeager::StringToScreneType(m_NewProjectCurrentSceneType);
+          m_NewProjectHandle->m_SceneType = Yeager::StringToSceneType(m_NewProjectCurrentSceneType);
         }
         if (is_selected)
           SetItemDefaultFocus();
@@ -676,6 +680,14 @@ void Interface::RenderDebugger()
   if (Button("Reset camera position")) {
     m_Application->GetCamera()->SetPosition(YgVector3(0));
   }
+  if (m_Application->GetScene() != YEAGER_NULLPTR) {
+    Text("Toolboxes Loaded %u", m_Application->GetScene()->GetToolboxs()->size());
+    Text("Objects in Scene %u", m_Application->GetScene()->GetObjects()->size());
+    Text("Animated Objects in Scene %u", m_Application->GetScene()->GetAnimatedObject()->size());
+    Text("Instanced Objects in Scene %u", m_Application->GetScene()->GetInstancedObjects()->size());
+    Text("Instanced Animated Objects in Scene %u", m_Application->GetScene()->GetInstancedAnimatedObjects()->size());
+  }
+
   Text("Frames %u", m_Frames);
   Text("Camera should move: %s", m_Application->GetCamera()->GetShouldMove() ? "true" : "false");
   YgVector3 cameraPos = m_Application->GetCamera()->GetPosition();
@@ -782,9 +794,10 @@ void Interface::PrepareAndMakeScreenShot()
 
 void Interface::ShadersControlWindow()
 {
+  /*
   Begin("Shader Control");
 
-  for (auto& shader_config : ygConfigShaders) {
+  for (auto& shader_config : m_Application) {
     Shader* shader = shader_config.m_shader.get();
     Text("Name: %s", shader->GetName().c_str());
     Text("ID: %u", shader->GetId());
@@ -792,4 +805,5 @@ void Interface::ShadersControlWindow()
   }
 
   End();
+  */
 }

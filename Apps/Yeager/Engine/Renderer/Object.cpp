@@ -48,6 +48,12 @@ Object::Object(YgString name, ApplicationCore* application)
 
 Object::~Object()
 {
+  if (!m_ThreadImporter->IsThreadFinish()) {
+    Yeager::Log(INFO, "Awaiting Object {} thread to finish", GetName());
+    if (m_ThreadImporter->GetThreadPtr()->joinable()) {
+      m_ThreadImporter->GetThreadPtr()->join();
+    }
+  }
   delete m_ThreadImporter;
   if (m_ObjectDataLoaded) {
     if (m_GeometryType == ObjectGeometryType::ECustom) {
@@ -205,13 +211,13 @@ bool Object::GenerateObjectGeometry(ObjectGeometryType geometry)
     Setup();
     m_ObjectDataLoaded = true;
 
-    #ifdef YEAGER_DEBUG
+#ifdef YEAGER_DEBUG
     Yeager::Log(INFO, "Success in loading geometry {}", m_Name);
-    #endif
+#endif
 
     BuildToolbox(EExplorerTypeObject);
     return true;
-  
+
   } else {
     Yeager::Log(WARNING, "Object data already loaded! Trying to load geometry to model {}", m_Name);
     return false;
@@ -223,7 +229,7 @@ bool Object::ImportObjectFromFile(YgCchar path, bool flip_image)
   m_Path = path;
 
   if (!m_ObjectDataLoaded) {
-    Importer imp(m_Name);
+    Importer imp(m_Name, m_Application);
     m_ModelData = imp.Import(path, flip_image);
 
     if (!m_ModelData.SuccessfulLoaded) {
@@ -241,10 +247,10 @@ bool Object::ImportObjectFromFile(YgCchar path, bool flip_image)
       m_EntityLoadedTextures.push_back(&tex->first);
     }
 
-    #ifdef YEAGER_DEBUG
+#ifdef YEAGER_DEBUG
     Yeager::Log(INFO, "Success in loading mode {} path {}", m_Name, path);
-    #endif
-    
+#endif
+
     return true;
 
   } else {
@@ -253,7 +259,8 @@ bool Object::ImportObjectFromFile(YgCchar path, bool flip_image)
   }
 }
 
-bool Object::ThreadImportObjectFromFile(YgCchar path, bool flip_image) {
+bool Object::ThreadImportObjectFromFile(YgCchar path, bool flip_image)
+{
   m_Path = path;
 
   if (!m_ObjectDataLoaded) {
@@ -262,13 +269,15 @@ bool Object::ThreadImportObjectFromFile(YgCchar path, bool flip_image) {
     thread.first = m_ThreadImporter;
     thread.second = this;
     m_Application->GetScene()->GetThreadImporters()->push_back(thread);
+    return true;
   } else {
     Yeager::Log(WARNING, "Model data already loaded! Trying to load imported model to model {} path {}", m_Name, path);
     return false;
   }
- }
+}
 
-void Object::ThreadLoadIncompleteTetxtures() {
+void Object::ThreadLoadIncompleteTetxtures()
+{
   for (auto& tex : m_ModelData.TexturesLoaded) {
     if (tex->first.ImcompleteId) {
       tex->first.ID = LoadTextureFromData(tex->second);
@@ -279,8 +288,9 @@ void Object::ThreadLoadIncompleteTetxtures() {
   }
 }
 
- void Object::ThreadSetup() {
-  
+void Object::ThreadSetup()
+{
+
   m_ModelData = m_ThreadImporter->GetValue();
   m_ThreadImporter->GetThreadPtr()->join();
 
@@ -301,12 +311,13 @@ void Object::ThreadLoadIncompleteTetxtures() {
   for (auto& tex : m_ModelData.TexturesLoaded) {
     m_EntityLoadedTextures.push_back(&tex->first);
   }
-  #ifdef YEAGER_DEBUG
+#ifdef YEAGER_DEBUG
   Yeager::Log(INFO, "Success in loading mode {}", m_Name);
-  #endif
- }
+#endif
+}
 
- bool AnimatedObject::ThreadImportObjectFromFile(YgCchar path, bool flip_image) {
+bool AnimatedObject::ThreadImportObjectFromFile(YgCchar path, bool flip_image)
+{
   m_Path = path;
 
   if (!m_ObjectDataLoaded) {
@@ -315,13 +326,16 @@ void Object::ThreadLoadIncompleteTetxtures() {
     thread.first = m_ThreadImporter;
     thread.second = this;
     m_Application->GetScene()->GetThreadAnimatedImporters()->push_back(thread);
+    return true;
   } else {
-    Yeager::Log(WARNING, "Model Animated data already loaded! Trying to load imported model to model {} path {}", m_Name, path);
+    Yeager::Log(WARNING, "Model Animated data already loaded! Trying to load imported model to model {} path {}",
+                m_Name, path);
     return false;
   }
- }
+}
 
- void AnimatedObject::ThreadSetup() {
+void AnimatedObject::ThreadSetup()
+{
   m_ModelData = m_ThreadImporter->GetValue();
   m_ThreadImporter->GetThreadPtr()->join();
 
@@ -335,7 +349,7 @@ void Object::ThreadLoadIncompleteTetxtures() {
 
   m_GeometryType = ObjectGeometryType::ECustom;
   m_ObjectDataLoaded = true;
-  
+
   Setup();
   BuildToolbox(EExplorerTypeAnimatedObject);
 
@@ -345,16 +359,17 @@ void Object::ThreadLoadIncompleteTetxtures() {
 
   BuildAnimation(m_Path);
 
-  #ifdef YEAGER_DEBUG
+#ifdef YEAGER_DEBUG
   Yeager::Log(INFO, "Success in loading mode {}", m_Name);
-  #endif 
- }
+#endif
+}
 
- void Object::BuildToolbox(ExplorerObjectType type) {
+void Object::BuildToolbox(ExplorerObjectType type)
+{
   m_Toolbox->SetType(type);
   m_Toolbox->SetEntity(this);
   m_Application->GetScene()->GetToolboxs()->push_back(m_Toolbox);
- }
+}
 
 void InstancedObject::DrawGeometry(Yeager::Shader* shader)
 {
@@ -489,7 +504,8 @@ void Object::Setup()
   }
 }
 
-AnimatedObject::AnimatedObject(YgString name, ApplicationCore* application) : Object(name, application) {
+AnimatedObject::AnimatedObject(YgString name, ApplicationCore* application) : Object(name, application)
+{
   SetEntityType(EObjectAnimated);
   m_ThreadImporter = new ImporterThreadedAnimated("ObjectAnimated", m_Application);
 }
@@ -515,7 +531,7 @@ bool AnimatedObject::ImportObjectFromFile(YgCchar path, bool flip_image)
     }
     m_GeometryType = ObjectGeometryType::ECustom;
     m_ObjectDataLoaded = true;
-    
+
     Setup();
     BuildToolbox(EExplorerTypeAnimatedObject);
 
@@ -619,45 +635,33 @@ void AnimatedObject::DrawMeshes(Shader* shader)
   }
 }
 
-// clang-format off 
+// clang-format off
 std::vector<GLfloat> Yeager::GenerateCubeVertices()
 {
   return std::vector<GLfloat>{
-     -0.5f, -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  0.5f,  -0.5f,
-      -0.5f, 0.0f,  0.0f,  -1.0f, 1.0f,  0.0f,  0.5f,  0.5f,  -0.5f, 0.0f,
-      0.0f,  -1.0f, 1.0f,  1.0f,  0.5f,  0.5f,  -0.5f, 0.0f,  0.0f,  -1.0f,
-      1.0f,  1.0f,  -0.5f, 0.5f,  -0.5f, 0.0f,  0.0f,  -1.0f, 0.0f,  1.0f,
-      -0.5f, -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,
+      -0.5f, -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f, 0.0f, 0.0f, 0.5f,  -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f, 1.0f, 0.0f,
+      0.5f,  0.5f,  -0.5f, 0.0f,  0.0f,  -1.0f, 1.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 0.0f,  0.0f,  -1.0f, 1.0f, 1.0f,
+      -0.5f, 0.5f,  -0.5f, 0.0f,  0.0f,  -1.0f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f, 0.0f, 0.0f,
 
-      -0.5f, -0.5f, 0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  0.5f,  -0.5f,
-      0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,  0.5f,  0.5f,  0.5f,  0.0f,
-      0.0f,  1.0f,  1.0f,  1.0f,  0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-      1.0f,  1.0f,  -0.5f, 0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
-      -0.5f, -0.5f, 0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+      -0.5f, -0.5f, 0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 0.0f,
+      0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 1.0f, 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 1.0f,
+      -0.5f, 0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 1.0f, -0.5f, -0.5f, 0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 0.0f,
 
-      -0.5f, 0.5f,  0.5f,  -1.0f, 0.0f,  0.0f,  1.0f,  0.0f,  -0.5f, 0.5f,
-      -0.5f, -1.0f, 0.0f,  0.0f,  1.0f,  1.0f,  -0.5f, -0.5f, -0.5f, -1.0f,
-      0.0f,  0.0f,  0.0f,  1.0f,  -0.5f, -0.5f, -0.5f, -1.0f, 0.0f,  0.0f,
-      0.0f,  1.0f,  -0.5f, -0.5f, 0.5f,  -1.0f, 0.0f,  0.0f,  0.0f,  0.0f,
-      -0.5f, 0.5f,  0.5f,  -1.0f, 0.0f,  0.0f,  1.0f,  0.0f,
+      -0.5f, 0.5f,  0.5f,  -1.0f, 0.0f,  0.0f,  1.0f, 0.0f, -0.5f, 0.5f,  -0.5f, -1.0f, 0.0f,  0.0f,  1.0f, 1.0f,
+      -0.5f, -0.5f, -0.5f, -1.0f, 0.0f,  0.0f,  0.0f, 1.0f, -0.5f, -0.5f, -0.5f, -1.0f, 0.0f,  0.0f,  0.0f, 1.0f,
+      -0.5f, -0.5f, 0.5f,  -1.0f, 0.0f,  0.0f,  0.0f, 0.0f, -0.5f, 0.5f,  0.5f,  -1.0f, 0.0f,  0.0f,  1.0f, 0.0f,
 
-      0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.5f,  0.5f,
-      -0.5f, 1.0f,  0.0f,  0.0f,  1.0f,  1.0f,  0.5f,  -0.5f, -0.5f, 1.0f,
-      0.0f,  0.0f,  0.0f,  1.0f,  0.5f,  -0.5f, -0.5f, 1.0f,  0.0f,  0.0f,
-      0.0f,  1.0f,  0.5f,  -0.5f, 0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
-      0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+      0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.5f,  0.5f,  -0.5f, 1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+      0.5f,  -0.5f, -0.5f, 1.0f,  0.0f,  0.0f,  0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+      0.5f,  -0.5f, 0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-      -0.5f, -0.5f, -0.5f, 0.0f,  -1.0f, 0.0f,  0.0f,  1.0f,  0.5f,  -0.5f,
-      -0.5f, 0.0f,  -1.0f, 0.0f,  1.0f,  1.0f,  0.5f,  -0.5f, 0.5f,  0.0f,
-      -1.0f, 0.0f,  1.0f,  0.0f,  0.5f,  -0.5f, 0.5f,  0.0f,  -1.0f, 0.0f,
-      1.0f,  0.0f,  -0.5f, -0.5f, 0.5f,  0.0f,  -1.0f, 0.0f,  0.0f,  0.0f,
-      -0.5f, -0.5f, -0.5f, 0.0f,  -1.0f, 0.0f,  0.0f,  1.0f,
+      -0.5f, -0.5f, -0.5f, 0.0f,  -1.0f, 0.0f,  0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 0.0f,  -1.0f, 0.0f,  1.0f, 1.0f,
+      0.5f,  -0.5f, 0.5f,  0.0f,  -1.0f, 0.0f,  1.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  0.0f,  -1.0f, 0.0f,  1.0f, 0.0f,
+      -0.5f, -0.5f, 0.5f,  0.0f,  -1.0f, 0.0f,  0.0f, 0.0f, -0.5f, -0.5f, -0.5f, 0.0f,  -1.0f, 0.0f,  0.0f, 1.0f,
 
-      -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.5f,  0.5f,
-      -0.5f, 0.0f,  1.0f,  0.0f,  1.0f,  1.0f,  0.5f,  0.5f,  0.5f,  0.0f,
-      1.0f,  0.0f,  1.0f,  0.0f,  0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-      1.0f,  0.0f,  -0.5f, 0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
-      -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.0f,  1.0f};
+      -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
+      0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f, 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+      -0.5f, 0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.0f, 1.0f};
 }
 // clang-format on
 std::vector<GLuint> Yeager::GenerateCubeIndices()

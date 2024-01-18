@@ -30,22 +30,15 @@ class GameEntity;
 class Entity;
 class AudioHandle;
 }  // namespace Yeager
-enum class ExplorerObjectType {
-  kShapes = 0,
-  kScene,
-  kShader,
-  kTexture,
-  kPlayer,
-  kNetwork,
-  kImage,
-  kVideo,
-  kAudio,
-  k3DAudio,
-  kSkybox,
-  kImportedObject,
-  kPointLight,
-  kNone,
-  kNoChange
+enum ExplorerObjectType {
+  EExplorerTypeObject,
+  EExplorerTypeAnimatedObject,
+  EExplorerTypeShader,
+  EExplorerTypeSkybox,
+  EExplorerTypeInstancedObject,
+  EExplorerTypeAnimatedInstancedObject,
+  EExplorerTypeAudio,
+  EExplorerTypeAudio3D
 };
 
 extern YgString ExplorerTypeToString(ExplorerObjectType type);
@@ -53,30 +46,30 @@ namespace Yeager {
 class ToolBoxObject {
  public:
   ToolBoxObject(){};
-  ToolBoxObject(Yeager::GameEntity* entity, ExplorerObjectType type, Yeager::EntityPhysics* physics)
-      : m_entity(entity), m_type(type), m_physics(physics){};
+  ToolBoxObject(Yeager::GameEntity* entity, ExplorerObjectType type) : m_entity(entity), m_type(type){};
   Yeager::Transformation* GetTransformation() { return m_entity->GetTransformationPtr(); }
 
   Yeager::GameEntity* GetEntity() { return m_entity; }
-  constexpr void SetTransformation(Yeager::GameEntity* entity) { m_entity = entity; }
 
   void DrawObject();
   constexpr void SetType(ExplorerObjectType type) { m_type = type; }
   ExplorerObjectType GetType() { return m_type; }
-  void SetPhysics(Yeager::EntityPhysics* physics) { m_physics = physics; }
-  Yeager::EntityPhysics* GetPhysics() { return m_physics; }
-  void SetAudio(Yeager::AudioHandle* audio);
-  void Set3DAudio(Yeager::Audio3DHandle* audio);
 
   constexpr void SetEntity(Yeager::Entity* entity) { m_entity = (GameEntity*)entity; }
 
   bool m_selected = false;
 
+  constexpr void SetScheduleDeletion(bool deletion) { m_ScheduleDeletion = deletion; }
+  constexpr bool GetScheduleDeletion() const { return m_ScheduleDeletion; }
+
  private:
   ExplorerObjectType m_type;
   Yeager::GameEntity* m_entity = YEAGER_NULLPTR;
-  Yeager::EntityPhysics* m_physics = YEAGER_NULLPTR;
-  Yeager::Audio3DHandle* m_audio = YEAGER_NULLPTR;
+
+  void DrawToolboxObjectType();
+  void DrawToolboxObjectAnimated();
+  void DrawToolboxAudio();
+  void DrawToolboxAudio3D();
 
   float obj_weight = 1.0f;
   float obj_gravity_const = 1.0f;
@@ -85,8 +78,7 @@ class ToolBoxObject {
   bool m_gravity_checkbox = true;
   bool m_reverse_gravity_checkbox = false;
   float m_3d_audio_position[3];
+  bool m_ScheduleDeletion = false;
   irrklang::ik_f32 m_sound_volume = 0.5f;
 };
 }  // namespace Yeager
-extern Yeager::ToolBoxObject GetDefaultToolBoxObject();
-extern std::vector<std::shared_ptr<Yeager::ToolBoxObject>> m_toolboxs;

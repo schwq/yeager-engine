@@ -20,21 +20,11 @@
 
 #include "../../Common/Common.h"
 #include "../../Common/LogEngine.h"
+#include "AABBCollision.h"
 #include "ShaderHandle.h"
-
 
 namespace Yeager {
 
-<<<<<<< Updated upstream
-typedef struct {
-  yg_mat4 model;
-  yg_vec3 position;
-  yg_vec3 rotation;
-  yg_vec3 scale;
-} Transformation;
-
-extern constexpr Transformation GetDefaultTransformation();
-=======
 class ApplicationCore;
 struct ObjectTexture;
 
@@ -52,64 +42,46 @@ class Shader;
 class Texture2D;
 
 enum EntityObjectType {
-    EObject,
-    EObjectAnimated,
-    EObjectInstanced,
-    EObjectInstancedAnimated,
-    EShader,
-    EAudioHandle,
-    EAudio3DHandle,
-    ENull
+  EObject,
+  EObjectAnimated,
+  EObjectInstanced,
+  EObjectInstancedAnimated,
+  EShader,
+  EAudioHandle,
+  EAudio3DHandle,
+  ENull
 };
->>>>>>> Stashed changes
 
 class Entity {
  public:
-  Entity(yg_string name = YEAGER_NULL_LITERAL);
+  Entity(YgString name = YEAGER_NULL_LITERAL);
   ~Entity();
 
-  yg_string GetName();
-  yg_uint GetId();
+  YgString GetName();
+  unsigned int GetId();
 
   void SetEntityType(EntityObjectType type) { m_Type = type; }
   EntityObjectType GetEntityType() { return m_Type; }
 
+  constexpr bool IsValid() const { return m_Valid; }
+
  protected:
-<<<<<<< Updated upstream
-  yg_string m_name;
-  const yg_uint m_id;
-  static yg_uint m_entityCountId;
-=======
   EntityObjectType m_Type = ENull;
   YgString m_Name = YEAGER_NULL_LITERAL;
   bool m_Render = true;
+  bool m_Valid = false;
   const unsigned int m_id;
   static unsigned int m_entityCountId;
->>>>>>> Stashed changes
 };
 
 class GameEntity : public Entity {
  public:
-<<<<<<< Updated upstream
-  GameEntity(yg_string name = YEAGER_NULL_LITERAL, Yeager::Texture2D* texture = nullptr,
-             Yeager::Shader* shader = nullptr);
-=======
   GameEntity(YgString name = YEAGER_NULL_LITERAL, ApplicationCore* app = YEAGER_NULLPTR);
->>>>>>> Stashed changes
   ~GameEntity();
   constexpr Yeager::Texture2D* GetTexture();
   constexpr Yeager::Shader* GetShader();
   Transformation GetTransformation();
   Transformation* GetTransformationPtr();
-<<<<<<< Updated upstream
-  void SetPosition(yg_vec3 pos);
-  void ProcessTransformation(Shader* Shader);
-
- protected:
-  Transformation m_transformation;
-  Yeager::Texture2D* m_texture;
-  Yeager::Shader* m_shader;
-=======
   virtual void ProcessTransformation(Shader* Shader);
   virtual void ProcessTransformationCollision(Shader* shader, AABBCollision* col);
   void inline SetTransformation(const Transformation& trans) { m_EntityTransformation = trans; }
@@ -135,17 +107,35 @@ class GameEntity : public Entity {
    */
   void ForceCollision(bool collision) { m_Collision.SetIsColliding(collision); }
 
+  /**
+   * @brief Sets to true, when the scene calls for search for schedule deletions, it will remove this entity from the 
+   * application, basically, delete it 
+  */
+  constexpr void SetScheduleDeletion(bool deletion) { m_ScheduleDeletion = deletion; }
+
+  /**
+   * @brief returns true if the entity must have been requested for deletion
+  */
+  constexpr bool GetScheduleDeletion() const { return m_ScheduleDeletion; }
+
  protected:
   AABBCollision m_Collision;
   std::vector<ObjectTexture*> m_EntityLoadedTextures;
   Transformation m_EntityTransformation;
   ApplicationCore* m_Application = YEAGER_NULLPTR;
->>>>>>> Stashed changes
+  bool m_ScheduleDeletion = false;
 };
-/* 
-class EditorEntity : public Entity {
+
+class DrawableEntity : public GameEntity {
  public:
+  DrawableEntity(YgString name = YEAGER_NULL_LITERAL, ApplicationCore* app = YEAGER_NULLPTR);
+  ~DrawableEntity();
+
+  virtual void Draw(Shader* shader);
+  virtual void Terminate();
+
  protected:
+  GLuint m_Ebo = 0, m_Vao = 0, m_Vbo = 0;
 };
-*/
+
 }  // namespace Yeager

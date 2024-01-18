@@ -1,6 +1,6 @@
 #include "Window.h"
 
-#include "../../../../Libraries/stb_image.h"
+#include "stb_image.h"
 
 Window::Window(unsigned int window_x, unsigned int window_y, YgString title, GLFWcursorposfun cursor)
 {
@@ -25,6 +25,11 @@ Window::Window(unsigned int window_x, unsigned int window_y, YgString title, GLF
   glfwSetWindowSizeCallback(m_window, ResizeCallback);
   glfwSetWindowSizeLimits(m_window, 700, 700, 2000, 2000);
   glfwSwapInterval(1);
+}
+
+bool Window::CheckIfOpenGLContext()
+{
+  return glfwGetCurrentContext();
 }
 
 bool Window::RegenerateMainWindow(unsigned int window_x, unsigned int window_y, YgString title,

@@ -6,24 +6,38 @@ project(${projectName})
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+option(PHYSX_BUILD_TYPE "The build type of PhysX, i.e., one of {debug, checked, profile, release}" "checked")
+
+include_directories(Include/Physx/include Include/Physx/pvdruntime/include Include/imgui Include/fmt Include/STB_Image/ Include/PFD Include/Loguru)
+
+if(CMAKE_BUILD_TYPE AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message("Building YeagerEngine in debug configuration")
+    add_compile_definitions(DDEBUG)
+    link_directories("Libraries/Physx/linux.clang/debug")
+else()
+    message("Building YeagerEngine in release configuration with Physx ${PHYSX_BUILD_TYPE} configuration")
+    add_compile_definitions(NDEBUG)
+    link_directories("Libraries/Physx/linux.clang/${PHYSX_BUILD_TYPE}")
+endif() 
+
 set(LIBRARIES
-    Libraries/glad.c
-    Libraries/loguru.cpp 
-    Libraries/loguru.hpp
-    Libraries/stb_image.h
-    Libraries/stb_image_write.h
-    Libraries/imgui/imgui_impl_opengl3.h
-    Libraries/imgui/imgui_impl_opengl3.cpp
-    Libraries/imgui/imgui_impl_opengl3_loader.h
-    Libraries/imgui/imgui_impl_glfw.h
-    Libraries/imgui/imgui_impl_glfw.cpp
-    Libraries/imgui/imgui.h
-    Libraries/imgui/imgui.cpp
-    Libraries/imgui/imgui_draw.cpp
-    Libraries/imgui/imgui_tables.cpp
-    Libraries/imgui/imgui_widgets.cpp
-    Libraries/imgui/imgui_demo.cpp
-    Libraries/imgui/imgui_stdlib.cpp
+    Apps/Yeager/ThirdParty/OpenGL/glad.c
+    Include/Loguru/loguru.cpp 
+    Include/Loguru/loguru.hpp
+    Include/STB_Image/stb_image.h
+    Include/STB_Image/stb_image_write.h
+    Include/imgui/imgui_impl_opengl3.h
+    Include/imgui/imgui_impl_opengl3.cpp
+    Include/imgui/imgui_impl_opengl3_loader.h
+    Include/imgui/imgui_impl_glfw.h
+    Include/imgui/imgui_impl_glfw.cpp
+    Include/imgui/imgui.h
+    Include/imgui/imgui.cpp
+    Include/imgui/imgui_draw.cpp
+    Include/imgui/imgui_tables.cpp
+    Include/imgui/imgui_widgets.cpp
+    Include/imgui/imgui_demo.cpp
+    Include/imgui/imgui_stdlib.cpp
 )
 
 set(SOURCEFILES 
@@ -54,6 +68,9 @@ set(SOURCEFILES
     Apps/Yeager/Engine/Editor/Explorer.cpp
     Apps/Yeager/Engine/Editor/ToolboxObj.cpp
     Apps/Yeager/Engine/Physics/PhysicsHandle.cpp
+    Apps/Yeager/Engine/Physics/PhysXHandle.cpp
+    Apps/Yeager/Engine/Physics/PhysXGeometryHandle.cpp
+    Apps/Yeager/Engine/Physics/PhysXGeometryHandle.h
     Apps/Yeager/Common/LogEngine.cpp
     Apps/Yeager/Engine/Lighting/LightHandle.h
     Apps/Yeager/Engine/Lighting/LightHandle.cpp
@@ -63,8 +80,22 @@ set(SOURCEFILES
     Apps/Yeager/Common/Mathematics.h
     Apps/Yeager/Engine/Terrain/PerlinNoise.cpp
     Apps/Yeager/Engine/Terrain/PerlinNoise.h
+    Apps/Yeager/Kernel/HardwareInfo.h
+    Apps/Yeager/Kernel/HardwareInfo.cpp
+    Apps/Yeager/Kernel/NvidiaCuda.h 
+    Apps/Yeager/Kernel/NvidiaCuda.cpp
 )
 
 add_executable(${projectName} ${SOURCEFILES})
-target_link_libraries(${projectName} glfw dl assimp IrrKlang yaml-cpp)
+target_link_libraries(${projectName} glfw dl assimp IrrKlang yaml-cpp 
+PhysXExtensions_static_64
+PhysX_static_64
+PhysXPvdSDK_static_64
+PhysXCommon_static_64
+PhysXFoundation_static_64
+PhysXCooking_static_64
+PVDRuntime_64
+pthread
+dl)
+
 add_definitions(-w)

@@ -2,7 +2,42 @@
 using namespace irrklang;
 using namespace Yeager;
 
-irrklang::ISoundEngine* ygAudioEngine;
+bool AudioEngineHandle::InitAudioEngine()
+{
+  if (!Engine) {
+    if ((Engine = createIrrKlangDevice()) == 0) {
+      Engine->setSoundVolume(1.0f);
+      Yeager::Log(ERROR, "Cannot create the main Audio Engine!");
+      return false;
+    } else {
+      Yeager::Log(INFO, "Success in creating the main Audio Engine!");
+      return true;
+    }
+  } else {
+    Yeager::Log(WARNING, "Audio Engine already created!");
+    return true;
+  }
+}
+
+void AudioEngineHandle::TerminateAudioEngine()
+{
+  if (Engine) {
+
+    Engine->drop();
+  }
+}
+
+irrklang::vec3df AudioEngineHandle::GetListernerPos()
+{
+  return ListernerPos;
+}
+
+void AudioEngineHandle::SetListernerPos(irrklang::vec3df pos, irrklang::vec3df lookDir, irrklang::vec3df velocity,
+                                        irrklang::vec3df upVec)
+{
+  ListernerPos = pos;
+  Engine->setListenerPosition(pos, lookDir, velocity, upVec);
+}
 
 void AudioHandle::EnableSoundEffect(AudioHandleSoundEffects effect)
 {
@@ -154,34 +189,10 @@ bool Yeager::AudioHandle::CheckIfSoundEffectIsSupported()
   return false;
 }
 
-bool InitAudioEngine()
+AudioHandle::AudioHandle(YgString path, YgString name, AudioEngineHandle* handle, bool looped)
+    : GameEntity(name), m_EngineHandle(handle), m_path(path), m_looped(looped)
 {
-  if (!ygAudioEngine) {
-    if ((ygAudioEngine = createIrrKlangDevice()) == 0) {
-      ygAudioEngine->setSoundVolume(1.0f);
-      Yeager::Log(ERROR, "Cannot create the main Audio Engine!");
-      return false;
-    } else {
-      Yeager::Log(INFO, "Success in creating the main Audio Engine!");
-      return true;
-    }
-  } else {
-    Yeager::Log(WARNING, "Audio Engine already created!");
-    return true;
-  }
-}
-
-void TerminateAudioEngine()
-{
-  if (ygAudioEngine) {
-
-    ygAudioEngine->drop();
-  }
-}
-
-AudioHandle::AudioHandle(YgString path, YgString name, bool looped) : GameEntity(name), m_path(path), m_looped(looped)
-{
-  m_sound_source = ygAudioEngine->addSoundSourceFromFile(path.c_str(), ESM_AUTO_DETECT, false);
+  m_sound_source = m_EngineHandle->Engine->addSoundSourceFromFile(path.c_str(), ESM_AUTO_DETECT, false);
   if (!m_sound_source) {
     Yeager::Log(ERROR, "Cannot Create AudioHandle name {} ID {}", m_Name, m_id);
   } else {
@@ -191,23 +202,23 @@ AudioHandle::AudioHandle(YgString path, YgString name, bool looped) : GameEntity
 
 bool AudioHandle::isPlaying()
 {
-  if (ygAudioEngine && m_sound_source) {
-    return ygAudioEngine->isCurrentlyPlaying(m_sound_source);
+  if (m_EngineHandle->Engine && m_sound_source) {
+    return m_EngineHandle->Engine->isCurrentlyPlaying(m_sound_source);
   }
   return false;
 }
 
 void AudioHandle::StopAll()
 {
-  if (ygAudioEngine) {
-    ygAudioEngine->stopAllSounds();
+  if (m_EngineHandle->Engine) {
+    m_EngineHandle->Engine->stopAllSounds();
   }
 }
 
 void AudioHandle::Update()
 {
-  if (ygAudioEngine) {
-    ygAudioEngine->update();
+  if (m_EngineHandle->Engine) {
+    m_EngineHandle->Engine->update();
   }
 }
 
@@ -233,7 +244,7 @@ void AudioHandle::SetVolume(ik_f32 volume)
 void AudioHandle::Play()
 {
   if (m_stopped) {
-    m_sound = ygAudioEngine->play2D(m_sound_source, m_looped, false, true, true);
+    m_sound = m_EngineHandle->Engine->play2D(m_sound_source, m_looped, false, true, true);
     if (!m_sound) {
       Yeager::Log(ERROR, "Cannot play music! ISound* havent been initialized! Name {} ID {}", m_Name, m_id);
     } else {
@@ -271,8 +282,8 @@ void AudioHandle::Pause()
 
 void AudioHandle::Resume()
 {
-  if (m_paused && ygAudioEngine) {
-    m_sound = ygAudioEngine->play2D(m_sound_source, m_looped, false, true, true);
+  if (m_paused && m_EngineHandle->Engine) {
+    m_sound = m_EngineHandle->Engine->play2D(m_sound_source, m_looped, false, true, true);
     m_sound->setPlayPosition(m_paused_play_pos);
     m_paused = false;
     m_sound_effects = m_sound->getSoundEffectControl();
@@ -289,7 +300,7 @@ irrklang::ik_u32 AudioHandle::GetLenght()
 
 irrklang::ISoundEngine* AudioHandle::GetEngine()
 {
-  return ygAudioEngine;
+  return m_EngineHandle->Engine;
 }
 
 irrklang::ik_u32 AudioHandle::GetSoundPos()
@@ -320,8 +331,9 @@ void Audio3DHandle::SetAudioPos(irrklang::vec3df pos)
   }
 }
 
-Audio3DHandle::Audio3DHandle(YgString path, YgString name, bool looped, irrklang::vec3df position)
-    : AudioHandle(path, name, looped), m_audio_pos(position)
+Audio3DHandle::Audio3DHandle(YgString path, YgString name, AudioEngineHandle* handle, bool looped,
+                             irrklang::vec3df position)
+    : AudioHandle(path, name, handle, looped), m_audio_pos(position)
 {
   if (m_sound_source) {
     Yeager::Log(INFO, "Create Audio3DHandle name {} ID {} Position {} {} {}", m_Name, m_id, position.X, position.Y,
@@ -337,7 +349,7 @@ Audio3DHandle::~Audio3DHandle()
 void Audio3DHandle::Play()
 {
   if (m_stopped) {
-    m_sound = ygAudioEngine->play3D(m_sound_source, m_audio_pos, m_looped, false, true, true);
+    m_sound = m_EngineHandle->Engine->play3D(m_sound_source, m_audio_pos, m_looped, false, true, true);
     if (!m_sound) {
       Yeager::Log(ERROR, "Cannot play music! ISound* havent been initialized! Name {} ID {}", m_Name, m_id);
     } else {
@@ -357,8 +369,8 @@ void Audio3DHandle::Play()
 }
 void Audio3DHandle::Resume()
 {
-  if (m_paused && ygAudioEngine) {
-    m_sound = ygAudioEngine->play3D(m_sound_source, m_audio_pos, m_looped, false, true, true);
+  if (m_paused && m_EngineHandle->Engine) {
+    m_sound = m_EngineHandle->Engine->play3D(m_sound_source, m_audio_pos, m_looped, false, true, true);
     m_sound->setPlayPosition(m_paused_play_pos);
     m_paused = false;
     m_sound_effects = m_sound->getSoundEffectControl();
@@ -380,17 +392,6 @@ YgVector3 Audio3DHandle::GetVector3Position()
   } else {
     return YgVector3(0.0f);
   }
-}
-irrklang::vec3df GetListernerPos()
-{
-  return ygAudioListernerPos;
-}
-
-void Yeager::SetListernerPos(irrklang::vec3df pos, irrklang::vec3df lookDir, irrklang::vec3df velocity,
-                             irrklang::vec3df upVec)
-{
-  ygAudioListernerPos = pos;
-  ygAudioEngine->setListenerPosition(pos, lookDir, velocity, upVec);
 }
 
 YgVector3 Yeager::Vec3df_to_YgVec3(irrklang::vec3df vec)

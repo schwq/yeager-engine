@@ -14,7 +14,7 @@
 
 #elif defined(__APPLE__) || defined(__MACH__)
 #define YEAGER_SYSTEM_MACOS
-#error "This engine does not support MacOS build
+#error "This engine does not support MacOS build"
 
 #elif defined(__ANDROID__)
 #define YEAGER_SYSTEM_ANDROID

@@ -47,8 +47,6 @@ struct MemoryManagement {
 };
 extern MemoryManagement s_MemoryManagement;
 
-
-
 /**
  * @brief Used in switch statements with String
  * @note Thanks to: https://stackoverflow.com/questions/16388510/evaluate-a-string-with-a-switch-in-c
@@ -72,7 +70,7 @@ constexpr inline glm::quat GetGLMQuat(const aiQuaternion& qa)
   return glm::quat(qa.w, qa.x, qa.y, qa.z);
 }
 
-extern bool ValidatesPath(const std::filesystem::path& p,
+extern bool ValidatesPath(const std::filesystem::path& p, bool declare = true,
                           std::filesystem::file_status s = std::filesystem::file_status());
 
 }  // namespace Yeager
@@ -82,6 +80,7 @@ extern void operator delete(void* ptr, size_t s);
 
 extern YgString RemoveSuffixUntilCharacter(YgString expression, char characterToStop);
 extern YgString RemovePreffixUntilCharacter(YgString expression, char characterToStop);
+extern YgString ReadSuffixUntilCharacter(YgString expression, char characterToStop);
 extern size_t NumberOfFilesInDir(YgString path);
 
 struct YgDate_t {

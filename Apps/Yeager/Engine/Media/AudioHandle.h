@@ -24,11 +24,18 @@
 #include "../../Common/LogEngine.h"
 #include "../Renderer/Entity.h"
 
-bool InitAudioEngine();
-void TerminateAudioEngine();
-extern irrklang::ISoundEngine* ygAudioEngine;
-
 namespace Yeager {
+
+struct AudioEngineHandle {
+  bool InitAudioEngine();
+  void TerminateAudioEngine();
+  irrklang::ISoundEngine* Engine = YEAGER_NULLPTR;
+  irrklang::vec3df ListernerPos = irrklang::vec3df(0.0f, 0.0f, 0.0f);
+  irrklang::vec3df GetListernerPos();
+  void SetListernerPos(irrklang::vec3df pos, irrklang::vec3df lookDir, irrklang::vec3df velocity,
+                       irrklang::vec3df upVec);
+};
+
 enum AudioHandleSoundEffects {
   Chorus,
   Compressor,
@@ -43,7 +50,7 @@ enum AudioHandleSoundEffects {
 
 class AudioHandle : public GameEntity {
  public:
-  AudioHandle(YgString path, YgString name, bool looped);
+  AudioHandle(YgString path, YgString name, AudioEngineHandle* handle, bool looped);
   ~AudioHandle();
 
   void SetVolume(irrklang::ik_f32 volume);
@@ -72,22 +79,19 @@ class AudioHandle : public GameEntity {
   irrklang::ISound* m_sound = YEAGER_NULLPTR;
   irrklang::ISoundSource* m_sound_source = YEAGER_NULLPTR;
   irrklang::ISoundEffectControl* m_sound_effects = YEAGER_NULLPTR;
+  AudioEngineHandle* m_EngineHandle = YEAGER_NULLPTR;
   YgString m_path;
   bool m_looped = false;
   bool m_paused = false;
   bool m_stopped = true;
 };
 
-static irrklang::vec3df ygAudioListernerPos;
-static irrklang::vec3df GetListernerPos();
-extern void SetListernerPos(irrklang::vec3df pos, irrklang::vec3df lookDir, irrklang::vec3df velocity,
-                            irrklang::vec3df upVec);
 extern YgVector3 Vec3df_to_YgVec3(irrklang::vec3df vec);
 extern irrklang::vec3df YgVec3_to_Vec3df(YgVector3 vec);
 
 class Audio3DHandle : public AudioHandle {
  public:
-  Audio3DHandle(YgString path, YgString name, bool looped, irrklang::vec3df position);
+  Audio3DHandle(YgString path, YgString name, AudioEngineHandle* handle, bool looped, irrklang::vec3df position);
   ~Audio3DHandle();
 
   void Play();

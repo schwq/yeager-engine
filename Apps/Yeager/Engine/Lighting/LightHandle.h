@@ -85,7 +85,7 @@ struct ObjectPointLight : public PointLight {
 
 class LightHandle : public GameEntity {
  public:
-  LightHandle(YgString name, ApplicationCore* app, Shader* shader);
+  LightHandle(YgString name, ApplicationCore* app, std::vector<Shader*> link_shaders);
   ~LightHandle() {}
 
   std::vector<PointLight>* GetPointLights() { return &m_PointLights; }
@@ -95,7 +95,7 @@ class LightHandle : public GameEntity {
   SpotLight* GetSpotLight() { return &spotLight; }
   virtual void BuildShaderProps(YgVector3 viewPos, YgVector3 front, float shininess);
 
-  Shader* GetLinkedShader() const { return m_LinkedShader; }
+  std::vector<Shader*>* GetLinkedShader() { return &m_LinkedShader; }
 
  protected:
   std::vector<PointLight> m_PointLights;
@@ -104,12 +104,12 @@ class LightHandle : public GameEntity {
   Viewer m_Viewer;
   SpotLight spotLight;
   ApplicationCore* m_Application = YEAGER_NULLPTR;
-  Shader* m_LinkedShader = YEAGER_NULLPTR;
+  std::vector<Shader*> m_LinkedShader;
 };
 
 class LightSource : public LightHandle {
  public:
-  LightSource(YgString name, ApplicationCore* app, Shader* link_shader, Shader* draw_shader);
+  LightSource(YgString name, ApplicationCore* app, std::vector<Shader*> link_shader, Shader* draw_shader);
   ~LightSource();
 
   void AddObjectPointLight(const ObjectPointLight& obj, Transformation& trans);

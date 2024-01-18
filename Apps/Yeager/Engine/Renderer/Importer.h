@@ -21,6 +21,7 @@
 #include "../../Common/Common.h"
 #include "../../Common/LogEngine.h"
 #include "../../Common/Utilities.h"
+#include "TextureHandle.h"
 
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -37,20 +38,19 @@ class ApplicationCore;
   aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_FlipUVs
 
 enum ThreadType {
-    ESingleThreaded,
-    EMultiThreaded,
+  ESingleThreaded,
+  EMultiThreaded,
 };
 
 /// @brief this class can be used to import 2d and 3d models and assets to the editor by using assimp
-class Importer
-{
+class Importer {
  public:
   Importer(YgString source = YEAGER_IMPORTER_DEFAULT_SOURCE, ApplicationCore* app = YEAGER_NULLPTR);
   ~Importer();
 
-   ObjectModelData Import(YgCchar path, bool flip_image = false,
+  ObjectModelData Import(YgCchar path, bool flip_image = false,
                          unsigned int assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS);
-   AnimatedObjectModelData ImportAnimated(YgCchar path, bool flip_image = false,
+  AnimatedObjectModelData ImportAnimated(YgCchar path, bool flip_image = false,
                                          unsigned int assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS_ANIMATED);
 
   static unsigned int GetModelsCount() { return m_ImportedModelsCount; };
@@ -59,7 +59,7 @@ class Importer
   void ProcessNode(aiNode* node, const aiScene* scene, ObjectModelData* data);
   ObjectMeshData ProcessMesh(aiMesh* mesh, const aiScene* scene, ObjectModelData* data);
   std::vector<ObjectTexture*> LoadMaterialTexture(aiMaterial* material, aiTextureType type, YgString typeName,
-                                                 CommonModelData* data);
+                                                  CommonModelData* data);
   STBIDataOutput* LoadStbiDataOutput(YgString path, bool flip = false);
 
   void ProcessAnimatedNode(aiNode* node, const aiScene* scene, AnimatedObjectModelData* data);
@@ -77,30 +77,29 @@ class Importer
 
 class ImporterThreaded : public Importer {
  public:
-  
   ImporterThreaded(YgString source, ApplicationCore* app);
   ~ImporterThreaded();
-  virtual void ThreadImport(YgCchar path, bool flip_image = false, unsigned int assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS);
+  virtual void ThreadImport(YgCchar path, bool flip_image = false,
+                            unsigned int assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS);
   bool IsThreadFinish();
   std::thread* GetThreadPtr() { return &m_Thread; }
-  ObjectModelData GetValue() const { return m_FutureObject._Get_value(); }
+  ObjectModelData GetValue() { return m_FutureObject.get(); }
 
  protected:
- 
   std::promise<ObjectModelData> m_PromiseObject;
   std::future<ObjectModelData> m_FutureObject;
   std::atomic<bool> m_ThreadFinished = false;
   std::thread m_Thread;
-  aiScene* m_Scene = YEAGER_NULLPTR; 
+  aiScene* m_Scene = YEAGER_NULLPTR;
   ObjectModelData m_Data;
 };
 
 class ImporterThreadedAnimated : public ImporterThreaded {
-  public:
+ public:
   ImporterThreadedAnimated(YgString source, ApplicationCore* app);
-   ~ImporterThreadedAnimated();
-   void ThreadImport(YgCchar path, bool flip_image = false, unsigned int assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS);
-   AnimatedObjectModelData GetValue() const { return m_FutureObject._Get_value(); }
+  ~ImporterThreadedAnimated();
+  void ThreadImport(YgCchar path, bool flip_image = false, unsigned int assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS);
+  AnimatedObjectModelData GetValue() { return m_FutureObject.get(); }
 
  private:
   AnimatedObjectModelData m_Data;

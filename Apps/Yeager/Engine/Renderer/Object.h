@@ -42,7 +42,8 @@ struct BoneInfo {
 
 struct ObjectTexture {
   bool FlipImage = true;
-  bool ImcompleteId = false;;
+  bool ImcompleteId = false;
+  ;
   YgString Path = YEAGER_NULL_LITERAL;
   YgString Type = YEAGER_NULL_LITERAL;
   YgString Name = YEAGER_NULL_LITERAL;
@@ -153,11 +154,13 @@ class Object : public GameEntity {
   constexpr inline void SetGeometry(ObjectGeometryType type) { m_GeometryType = type; }
   constexpr inline ObjectModelData* GetModelData() { return &m_ModelData; }
   constexpr inline ObjectGeometryData* GetGeometryData() { return &m_GeometryData; }
-  constexpr inline EntityPhysics* GetPhysics() { return &m_Physics; }
   inline YgString GetPath() { return m_Path; }
-  constexpr inline bool IsLoaded() const { return m_ObjectDataLoaded;}
+  constexpr inline bool IsLoaded() const { return m_ObjectDataLoaded; }
 
   virtual void BuildToolbox(ExplorerObjectType type);
+  EntityPhysics* GetPhysics() { return &m_Physics; }
+
+  Yeager::ToolBoxObject* GetToolbox() { return m_Toolbox.get(); }
 
  protected:
   virtual void Setup();
@@ -185,7 +188,6 @@ class InstancedObject : public Object {
     m_InstancedObjs = number;
   }
   ~InstancedObject() {}
-
   void Draw(Yeager::Shader* shader, int amount);
   void BuildProp(std::vector<Transformation>& positions, Shader* shader);
   std::vector<Transformation>* GetProps() { return &m_Props; }
@@ -206,7 +208,7 @@ class AnimatedObject : public Object {
   bool ImportObjectFromFile(YgCchar path, bool flip_image = false);
   virtual void Draw(Shader* shader);
   bool ThreadImportObjectFromFile(YgCchar path, bool flip_image = false);
-  void ThreadSetup();
+  virtual void ThreadSetup();
   AnimatedObjectModelData* GetModelData() { return &m_ModelData; }
 
   void UpdateAnimation(float delta);
@@ -233,7 +235,6 @@ class InstancedAnimatedObject : public AnimatedObject {
     m_Props.reserve(number);
   }
   ~InstancedAnimatedObject() {}
-
   void Draw(Yeager::Shader* shader);
   void BuildProp(std::vector<Transformation>& positions, Shader* shader);
   std::vector<Transformation>* GetProps() { return &m_Props; }

@@ -1,7 +1,7 @@
 #include "ImageUtilities.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "../../../../Libraries/stb_image_write.h"
+#include "stb_image_write.h"
 using namespace Yeager;
 
 bool MakeScreenShot(YgCchar output) noexcept

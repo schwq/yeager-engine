@@ -51,21 +51,23 @@ void EditorExplorer::AddAudioWindow()
 
       if (m_EverythingFineToCreate) {
         if (m_AddAudioIs3D) {
-          auto audio = std::make_shared<Yeager::Audio3DHandle>(m_NewObjectPath, m_NewObjectName, m_LoopedAudio,
-                                                               irrklang::vec3df(0.0f, 0.0f, 0.0f));
+          auto audio =
+              std::make_shared<Yeager::Audio3DHandle>(m_NewObjectPath, m_NewObjectName, m_Application->GetAudioEngine(),
+                                                      m_LoopedAudio, irrklang::vec3df(0.0f, 0.0f, 0.0f));
           auto toolbox = std::make_shared<Yeager::ToolBoxObject>();
-          toolbox->SetType(ExplorerObjectType::k3DAudio);
-          toolbox->SetAudio(audio.get());
+          toolbox->SetType(EExplorerTypeAudio3D);
+          toolbox->SetEntity(audio.get());
           m_Application->GetScene()->GetAudios3D()->push_back(audio);
           m_Application->GetScene()->GetToolboxs()->push_back(toolbox);
 
         } else {
-          auto audio = std::make_shared<Yeager::AudioHandle>(m_NewObjectPath, m_NewObjectName, m_LoopedAudio);
+          auto audio = std::make_shared<Yeager::AudioHandle>(m_NewObjectPath, m_NewObjectName,
+                                                             m_Application->GetAudioEngine(), m_LoopedAudio);
           auto toolbox = std::make_shared<Yeager::ToolBoxObject>();
-          toolbox->SetType(ExplorerObjectType::kAudio);
-          toolbox->SetAudio(audio.get());
+          toolbox->SetType(EExplorerTypeAudio);
+          toolbox->SetEntity(audio.get());
           m_Application->GetScene()->GetAudios()->push_back(audio);
-          m_toolboxs.push_back(toolbox);
+          m_Application->GetScene()->GetToolboxs()->push_back(toolbox);
         }
         m_NewObjectName.clear();
         m_NewObjectPath.clear();
@@ -269,10 +271,15 @@ void EditorExplorer::DrawExplorer()
   Text("Main Scene");
   for (unsigned int x = 0; x < m_Application->GetScene()->GetToolboxs()->size(); x++) {
     Yeager::ToolBoxObject* obj = m_Application->GetScene()->GetToolboxs()->at(x).get();
-    YgString label = "[" + ExplorerTypeToString(obj->GetType()) + "] " + obj->GetEntity()->GetName();
-    if (Selectable(label.c_str(), &obj->m_selected, ImGuiSelectableFlags_AllowDoubleClick)) {
-      m_FirstTimeToolbox = false;
-      m_ToolboxSelected = m_Application->GetScene()->GetToolboxs()->at(x).get();
+    if (obj->GetEntity()->IsValid()) {
+      YgString label = obj->GetEntity()->GetName() + "##";
+      // = "[" + ExplorerTypeToString(obj->GetType()) + "] " + obj->GetEntity()->GetName();
+      if (Selectable(label.c_str(), &obj->m_selected, ImGuiSelectableFlags_AllowDoubleClick)) {
+        m_FirstTimeToolbox = false;
+        m_ToolboxSelected = m_Application->GetScene()->GetToolboxs()->at(x).get();
+      }
+    } else {
+      m_ToolboxSelected = YEAGER_NULLPTR;
     }
   }
   if (m_FirstTimeToolbox) {

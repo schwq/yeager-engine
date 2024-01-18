@@ -1,8 +1,8 @@
 #include "Importer.h"
-#include "TextureHandle.h"
 #include "../../Application.h"
+#include "TextureHandle.h"
 
-#include "../../../../Libraries/stb_image.h"
+#include "stb_image.h"
 
 using namespace Yeager;
 
@@ -87,7 +87,7 @@ ObjectMeshData Importer::ProcessMesh(aiMesh* mesh, const aiScene* scene, ObjectM
       indices.push_back(face.mIndices[y]);
     }
   }
-  
+
   if (mesh->mMaterialIndex >= 0) {
     aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
     std::vector<ObjectTexture*> diffuseMaps =
@@ -103,73 +103,82 @@ ObjectMeshData Importer::ProcessMesh(aiMesh* mesh, const aiScene* scene, ObjectM
         LoadMaterialTexture(material, aiTextureType_DIFFUSE_ROUGHNESS, "texture_roughness", data);
     textures.insert(textures.end(), roughnessMaps.begin(), roughnessMaps.end());
   }
-  
 
   return ObjectMeshData(indices, vertices, textures);
 }
 
 std::vector<ObjectTexture*> Importer::LoadMaterialTexture(aiMaterial* material, aiTextureType type, YgString typeName,
-                                                         CommonModelData* data)
+                                                          CommonModelData* data)
 {
-    std::vector<ObjectTexture*> textures;
-    for (unsigned int x = 0; x < material->GetTextureCount(type); x++) {
-      aiString str;
-      material->GetTexture(type, x, &str);
-      bool skip = false;
-      for (unsigned int y = 0; y < data->TexturesLoaded.size(); y++) {
-        YgString cmp_path = RemoveSuffixUntilCharacter(m_FullPath, YG_PS, "cmp_path");
+  std::vector<ObjectTexture*> textures;
+  for (unsigned int x = 0; x < material->GetTextureCount(type); x++) {
+    aiString str;
+    material->GetTexture(type, x, &str);
+    bool skip = false;
+    for (unsigned int y = 0; y < data->TexturesLoaded.size(); y++) {
+      YgString cmp_path = RemoveSuffixUntilCharacter(m_FullPath, YG_PS);
+      if (Yeager::ValidatesPath(str.C_Str(), false)) {
+        // Texture path in the mtl file is a complete path, we just assign the complete path to the compare_path without adding to it
+        cmp_path = str.C_Str();
+      } else {
         cmp_path += str.C_Str();
-        if (std::strcmp(data->TexturesLoaded[y]->first.Path.data(), cmp_path.data()) == 0) {
-          ObjectTexture* rt = &data->TexturesLoaded[y]->first;
-          textures.push_back(rt);
-          skip = true;
-          break;
-        }
       }
-
-      if (!skip) {
-        YgString path_suffix_removed = RemoveSuffixUntilCharacter(m_FullPath, YG_PS, "suffix_removed");
-        YgString path = path_suffix_removed + str.C_Str();
-        
-        /* Checks if the texture path written in the mtl file isnt using / on windows build*/
-        #ifdef YEAGER_SYSTEM_WINDOWS_x64
-        std::replace(path.begin(), path.end(), '/', '\\');
-        #endif
-        auto tex = std::make_shared<std::pair<ObjectTexture, STBIDataOutput*>>();
-        /* If the texture loading have been called in a thread without the openGL context loaded intro to it, the texture id will ALWAYS be 0, meaning it wont load, 
-        we check if the current thread is with the openGL context, if not, the boolean incompleteID is set to true, and the texture loading is done after the thread is finished! */
-        if (!m_Application->GetWindow()->CheckIfOpenGLContext()) {
-          tex->first.ImcompleteId = true;
-          tex->second = LoadStbiDataOutput(path, m_ImageFlip);
-          #ifdef YEAGER_DEBUG
-          Yeager::Log(INFO, "Thread trying to use openGL context");
-          #endif
-        } else {
-          tex->first.ID = LoadTextureFromFile(path, m_ImageFlip);
-        }
-        tex->first.Name = typeName.c_str();
-        tex->first.Path = path;
-        ObjectTexture* rt = &tex->first;
+      if (std::strcmp(data->TexturesLoaded[y]->first.Path.data(), cmp_path.data()) == 0) {
+        ObjectTexture* rt = &data->TexturesLoaded[y]->first;
         textures.push_back(rt);
-        data->TexturesLoaded.push_back(tex);
+        skip = true;
+        break;
       }
     }
-    return textures;
+
+    if (!skip) {
+      YgString path_suffix_removed = RemoveSuffixUntilCharacter(m_FullPath, YG_PS);
+      YgString path;
+      if (Yeager::ValidatesPath(str.C_Str(), false)) {
+        path = str.C_Str();
+      } else {
+        path = path_suffix_removed + str.C_Str();
+      }
+/* Checks if the texture path written in the mtl file isnt using / on windows build*/
+#ifdef YEAGER_SYSTEM_WINDOWS_x64
+      std::replace(path.begin(), path.end(), '/', '\\');
+#endif
+      auto tex = std::make_shared<std::pair<ObjectTexture, STBIDataOutput*>>();
+      /* If the texture loading have been called in a thread without the openGL context loaded intro to it, the texture id will ALWAYS be 0, meaning it wont load, 
+        we check if the current thread is with the openGL context, if not, the boolean incompleteID is set to true, and the texture loading is done after the thread is finished! */
+      if (!m_Application->GetWindow()->CheckIfOpenGLContext()) {
+        tex->first.ImcompleteId = true;
+        tex->second = LoadStbiDataOutput(path, m_ImageFlip);
+#ifdef YEAGER_DEBUG
+        Yeager::Log(INFO, "Thread trying to use openGL context");
+#endif
+      } else {
+        tex->first.ID = LoadTextureFromFile(path, m_ImageFlip);
+      }
+      tex->first.Name = typeName.c_str();
+      tex->first.Path = path;
+      ObjectTexture* rt = &tex->first;
+      textures.push_back(rt);
+      data->TexturesLoaded.push_back(tex);
+    }
+  }
+  return textures;
+}
+
+STBIDataOutput* Importer::LoadStbiDataOutput(YgString path, bool flip)
+{
+  STBIDataOutput* output = new STBIDataOutput;
+
+  stbi_set_flip_vertically_on_load(flip);
+  ValidatesPath(path);
+  output->Data = stbi_load(path.c_str(), &output->Width, &output->Height, &output->NrComponents, 0);
+  output->OriginalPath = path;
+
+  if (output->Data == YEAGER_NULLPTR) {
+    Yeager::Log(ERROR, "Cannot load data to STBIDataOutput! Path: {}, Reason {}", path, stbi_failure_reason());
   }
 
-STBIDataOutput* Importer::LoadStbiDataOutput(YgString path, bool flip) {
-    STBIDataOutput *output = new STBIDataOutput();
-    
-    stbi_set_flip_vertically_on_load(flip);
-    ValidatesPath(path);
-    output->Data = stbi_load(path.c_str(), &output->Width, &output->Height, &output->NrComponents, 0);
-    output->OriginalPath = path;
-
-    if (output->Data == YEAGER_NULLPTR) {
-      Yeager::Log(ERROR, "Cannot load data to STBIDataOutput! Path: {}", path);
-    }
-
-    return output;
+  return output;
 }
 
 AnimatedObjectModelData Importer::ImportAnimated(YgCchar path, bool flip_image, unsigned int assimp_flags)
@@ -247,7 +256,8 @@ AnimatedObjectMeshData Importer::ProcessAnimatedMesh(aiMesh* mesh, const aiScene
     std::vector<ObjectTexture*> specularMaps =
         LoadMaterialTexture(material, aiTextureType_SPECULAR, "texture_specular", data);
     textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
-    std::vector<ObjectTexture*> normalMaps = LoadMaterialTexture(material, aiTextureType_HEIGHT, "texture_normal", data);
+    std::vector<ObjectTexture*> normalMaps =
+        LoadMaterialTexture(material, aiTextureType_HEIGHT, "texture_normal", data);
     textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
     std::vector<ObjectTexture*> heightMaps =
         LoadMaterialTexture(material, aiTextureType_AMBIENT, "texture_height", data);
@@ -318,8 +328,7 @@ ImporterThreaded::ImporterThreaded(YgString source, ApplicationCore* app) : Impo
 
 ImporterThreaded::~ImporterThreaded() {}
 
-void ImporterThreaded::ThreadImport(YgCchar path, bool flip_image,
-                                  unsigned int assimp_flags)
+void ImporterThreaded::ThreadImport(YgCchar path, bool flip_image, unsigned int assimp_flags)
 {
   m_ImageFlip = flip_image;
 
@@ -340,14 +349,15 @@ void ImporterThreaded::ThreadImport(YgCchar path, bool flip_image,
   });
 }
 
-ImporterThreadedAnimated::ImporterThreadedAnimated(YgString source, ApplicationCore* app) : ImporterThreaded(source, app) {
+ImporterThreadedAnimated::ImporterThreadedAnimated(YgString source, ApplicationCore* app)
+    : ImporterThreaded(source, app)
+{
   m_FutureObject = m_PromiseObject.get_future();
   Yeager::Log(INFO, "Intialize Thread Importer from {}", source.c_str());
 }
 ImporterThreadedAnimated::~ImporterThreadedAnimated() {}
 
-void ImporterThreadedAnimated::ThreadImport(YgCchar path, bool flip_image,
-    unsigned int assimp_flags)
+void ImporterThreadedAnimated::ThreadImport(YgCchar path, bool flip_image, unsigned int assimp_flags)
 {
   m_ImageFlip = flip_image;
 

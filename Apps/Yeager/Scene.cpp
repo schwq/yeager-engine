@@ -1,16 +1,8 @@
 #include "Scene.h"
+#include "Application.h"
+#include "Engine/Renderer/Importer.h"
 using namespace Yeager;
 
-Scene::Scene(yg_string name, SceneType type, SceneRenderer renderer)
-{
-  m_context.m_name = name;
-  m_context.m_type = type;
-  m_context.m_renderer = renderer;
-  m_context.m_file_path = GetSceneFilePath();
-
-<<<<<<< Updated upstream
-  Log(INFO, kSystem, "Created Scene name {}", m_context.m_name);
-=======
 SceneRenderer Yeager::StringToSceneRenderer(YgString str)
 {
   switch (Yeager::StringToInteger(str.c_str())) {
@@ -47,6 +39,19 @@ YgString Yeager::SceneRendererToString(SceneRenderer renderer)
   }
 }
 
+SceneType Yeager::StringToSceneType(YgString str)
+{
+  switch (StringToInteger(str.c_str())) {
+    case StringToInteger("Scene2D"):
+      return Scene2D;
+    case StringToInteger("Scene3D"):
+      return Scene3D;
+    default:
+      Yeager::Log(WARNING, "Invalid string to scene type! {}", str);
+      return Scene3D;
+  };
+}
+
 Scene::Scene(YgString name, YgString Author, SceneType type, YgString folder_path, SceneRenderer renderer,
              Yeager::ApplicationCore* app)
     : m_Application(app)
@@ -64,89 +69,110 @@ Scene::Scene(YgString name, YgString Author, SceneType type, YgString folder_pat
 
 YgString Scene::GetConfigurationFilePath(YgString path)
 {
-    return path + YG_PS + m_Context.m_name + ".yml";
+  return path + YG_PS + m_Context.m_name + ".yml";
 }
 
-void Scene::VerifyAssetsSubFolders() {
-    YgString assetsFolder = m_Context.m_ProjectFolderPath + YG_PS + "Assets";
-    if (!Yeager::ValidatesPath(assetsFolder)) {
-        Yeager::Log(WARNING, "Cannot verify assets sub folders! Assets folder doesnt exists!");
-        return;
-    }
+void Scene::VerifyAssetsSubFolders()
+{
+  YgString assetsFolder = m_Context.m_ProjectFolderPath + YG_PS + "Assets";
+  if (!Yeager::ValidatesPath(assetsFolder)) {
+    Yeager::Log(WARNING, "Cannot verify assets sub folders! Assets folder doesnt exists!");
+    return;
+  }
 
-    if (!Yeager::ValidatesPath(assetsFolder + YG_PS + "Sound")) {
-        std::filesystem::create_directory(assetsFolder + YG_PS + "Sound");
-    }
+  if (!Yeager::ValidatesPath(assetsFolder + YG_PS + "Sound")) {
+    std::filesystem::create_directory(assetsFolder + YG_PS + "Sound");
+  }
 
-    if (!Yeager::ValidatesPath(assetsFolder + YG_PS + "ImportedModels")) {
-        std::filesystem::create_directory(assetsFolder + YG_PS + "ImportedModels");
-    }
+  if (!Yeager::ValidatesPath(assetsFolder + YG_PS + "ImportedModels")) {
+    std::filesystem::create_directory(assetsFolder + YG_PS + "ImportedModels");
+  }
 }
 
 std::vector<std::pair<YgString, YgString>> Scene::VerifyImportedModelsOptionsInAssetsFolder()
 {
-    YgString assetsFolder = m_Context.m_ProjectFolderPath + YG_PS + "Assets";
-    std::vector<std::pair<YgString, YgString>> models;
-    if (!Yeager::ValidatesPath(assetsFolder + YG_PS + "ImportedModels", false)) {
-        Yeager::Log(WARNING, "Assets sub folder ImportedModels doesnt not exist, options and help wont be avaliable!");
-        return models;
-    }
+  YgString assetsFolder = m_Context.m_ProjectFolderPath + YG_PS + "Assets";
+  std::vector<std::pair<YgString, YgString>> models;
+  if (!Yeager::ValidatesPath(assetsFolder + YG_PS + "ImportedModels", false)) {
+    Yeager::Log(WARNING, "Assets sub folder ImportedModels doesnt not exist, options and help wont be avaliable!");
+    return models;
+  }
 
-    for (const auto& item : std::filesystem::directory_iterator(assetsFolder + YG_PS + "ImportedModels")) {
-      if (item.is_directory()) {
-        for (const auto& folder : std::filesystem::directory_iterator(item)) {
-            if (folder.path().extension() == ".obj") {
-                std::pair<YgString, YgString> model;
-                YgString path = folder.path().u8string();
-                model.second = path;
-                YgString name = ReadSuffixUntilCharacter(path, YG_PS);
-                name = name.substr(1);
-                model.first = name;
-                models.push_back(model);
-            }
-        }
-      } else {
-        if (item.path().extension() == ".obj") {
-            std::pair<YgString, YgString> model;
-            YgString path = item.path().u8string();
-            model.second = path;
-            YgString name = ReadSuffixUntilCharacter(path, YG_PS);
-            name = name.substr(1);
-            model.first = name;
-            models.push_back(model);
+  for (const auto& item : std::filesystem::directory_iterator(assetsFolder + YG_PS + "ImportedModels")) {
+    if (item.is_directory()) {
+      for (const auto& folder : std::filesystem::directory_iterator(item)) {
+        if (folder.path().extension() == ".obj") {
+          std::pair<YgString, YgString> model;
+          YgString path = folder.path().string();
+          model.second = path;
+          YgString name = ReadSuffixUntilCharacter(path, YG_PS);
+          name = name.substr(1);
+          model.first = name;
+          models.push_back(model);
         }
       }
-        
+    } else {
+      if (item.path().extension() == ".obj") {
+        std::pair<YgString, YgString> model;
+        YgString path = item.path().string();
+        model.second = path;
+        YgString name = ReadSuffixUntilCharacter(path, YG_PS);
+        name = name.substr(1);
+        model.first = name;
+        models.push_back(model);
+      }
     }
-    return models;
+  }
+  return models;
 }
 
 std::vector<std::pair<YgString, YgString>> Scene::VerifySoundsOptionsInAssetFolder()
 {
-    YgString assetsFolder = m_Context.m_ProjectFolderPath + YG_PS + "Assets";
-    std::vector<std::pair<YgString, YgString>> audios;
-    if (!Yeager::ValidatesPath(assetsFolder + YG_PS + "Sound", false)) {
-        Yeager::Log(WARNING, "Assets sub folder Sound doesnt not exist, options and help wont be avaliable!");
-        return audios;
-    }
-
-    for (const auto& file : std::filesystem::directory_iterator(assetsFolder + YG_PS + "Sound")) {
-        YgString path = file.path().u8string();
-
-        if (file.path().extension() == ".wav") {
-        std::pair<YgString, YgString> audio_file;
-        audio_file.second = path;
-        YgString name = ReadSuffixUntilCharacter(path, YG_PS);
-        // Remove preffix
-        name = name.substr(1);
-        audio_file.first = name; 
-        audios.push_back(audio_file);
-        }
-    }
-
+  YgString assetsFolder = m_Context.m_ProjectFolderPath + YG_PS + "Assets";
+  std::vector<std::pair<YgString, YgString>> audios;
+  if (!Yeager::ValidatesPath(assetsFolder + YG_PS + "Sound", false)) {
+    Yeager::Log(WARNING, "Assets sub folder Sound doesnt not exist, options and help wont be avaliable!");
     return audios;
+  }
+
+  for (const auto& file : std::filesystem::directory_iterator(assetsFolder + YG_PS + "Sound")) {
+    YgString path = file.path().string();
+
+    if (file.path().extension() == ".wav") {
+      std::pair<YgString, YgString> audio_file;
+      audio_file.second = path;
+      YgString name = ReadSuffixUntilCharacter(path, YG_PS);
+      // Remove preffix
+      name = name.substr(1);
+      audio_file.first = name;
+      audios.push_back(audio_file);
+    }
+  }
+
+  return audios;
 }
 
+void Scene::CheckScheduleDeletions()
+{
+  for (YEAGER_UINT x = 0; x < m_Objects.size(); x++) {
+    Yeager::Object* obj = m_Objects.at(x).get();
+    if (obj->GetScheduleDeletion()) {
+      m_Objects.erase(m_Objects.begin() + x);
+      obj->GetToolbox()->SetScheduleDeletion(true);
+    }
+  }
+  CheckToolboxesScheduleDeletions();
+}
+
+void Scene::CheckToolboxesScheduleDeletions()
+{
+  for (YEAGER_UINT x = 0; x < m_Toolboxes.size(); x++) {
+    Yeager::ToolBoxObject* obj = m_Toolboxes.at(x).get();
+    if (obj->GetScheduleDeletion()) {
+      m_Toolboxes.erase(m_Toolboxes.begin() + x);
+    }
+  }
+}
 
 void Scene::ValidatesCommonFolders()
 {
@@ -163,25 +189,11 @@ void Scene::ValidatesCommonFolders()
   if (!Yeager::ValidatesPath(m_Context.m_ProjectFolderPath + YG_PS + "Main")) {
     std::filesystem::create_directory(m_Context.m_ProjectFolderPath + YG_PS + "Main");
   }
-
-  
->>>>>>> Stashed changes
 }
 
 Scene::~Scene()
 {
-<<<<<<< Updated upstream
-  Log(INFO, kSystem, "Destroring Scene name {}", m_context.m_name);
-=======
-  Log(INFO, "Destroring Scene name {}", m_Context.m_name);
->>>>>>> Stashed changes
-}
-
-inline yg_string Scene::GetSceneFilePath()
-{
-  yg_string conf = GetPath("/Configuration/Scenes/");
-  yg_string path = conf + m_context.m_name + ".yaml";
-  return path;
+  Yeager::Log(INFO, "Destroring Scene name {}", m_Context.m_name);
 }
 
 std::vector<std::pair<ImporterThreaded*, Yeager::Object*>>* Scene::GetThreadImporters()
@@ -194,25 +206,49 @@ std::vector<std::pair<ImporterThreadedAnimated*, Yeager::AnimatedObject*>>* Scen
   return &m_ThreadAnimatedImporters;
 }
 
-void Scene::CheckThreadsAndTriggerActions() {
+void Scene::CheckAndAwaitThreadsToFinish()
+{
+  Yeager::Log(INFO, "Awaiting threads to finish before closing the program");
+  for (unsigned int x = 0; x < m_ThreadImporters.size(); x++) {
+    std::pair<ImporterThreaded*, Yeager::Object*>* obj = &m_ThreadImporters.at(x);
+    if (obj->first->IsThreadFinish()) {
+      m_ThreadImporters.erase(m_ThreadImporters.begin() + x);
+    } else {
+      obj->first->GetThreadPtr()->join();
+      m_ThreadImporters.erase(m_ThreadImporters.begin() + x);
+    }
+  }
+
+  for (unsigned int x = 0; x < m_ThreadAnimatedImporters.size(); x++) {
+    std::pair<ImporterThreadedAnimated*, Yeager::AnimatedObject*>* obj = &m_ThreadAnimatedImporters.at(x);
+    if (obj->first->IsThreadFinish()) {
+      m_ThreadAnimatedImporters.erase(m_ThreadAnimatedImporters.begin() + x);
+    } else {
+      obj->first->GetThreadPtr()->join();
+      m_ThreadAnimatedImporters.erase(m_ThreadAnimatedImporters.begin() + x);
+    }
+  }
+}
+
+void Scene::CheckThreadsAndTriggerActions()
+{
   try {
     for (unsigned int x = 0; x < m_ThreadImporters.size(); x++) {
-        std::pair<ImporterThreaded*, Yeager::Object*>* obj = &m_ThreadImporters.at(x);
-        if (obj->first->IsThreadFinish()) {
-            Yeager::Log(INFO, "Object importer thread {} has finished! Detaching", obj->second->GetName());
-            obj->second->ThreadSetup();
-            m_ThreadImporters.erase(m_ThreadImporters.begin() + x);
-        }
+      std::pair<ImporterThreaded*, Yeager::Object*>* obj = &m_ThreadImporters.at(x);
+      if (obj->first->IsThreadFinish()) {
+        Yeager::Log(INFO, "Object importer thread {} has finished! Detaching", obj->second->GetName());
+        obj->second->ThreadSetup();
+        m_ThreadImporters.erase(m_ThreadImporters.begin() + x);
+      }
     }
 
     for (unsigned int x = 0; x < m_ThreadAnimatedImporters.size(); x++) {
-        std::pair<ImporterThreadedAnimated*, Yeager::AnimatedObject*>* obj =
-            &m_ThreadAnimatedImporters.at(x);
-        if (obj->first->IsThreadFinish()) {
-            Yeager::Log(INFO, "Object importer thread {} has finished! Detaching", obj->second->GetName());
-            obj->second->ThreadSetup();
-            m_ThreadAnimatedImporters.erase(m_ThreadAnimatedImporters.begin() + x);
-        }
+      std::pair<ImporterThreadedAnimated*, Yeager::AnimatedObject*>* obj = &m_ThreadAnimatedImporters.at(x);
+      if (obj->first->IsThreadFinish()) {
+        Yeager::Log(INFO, "Object importer thread {} has finished! Detaching", obj->second->GetName());
+        obj->second->ThreadSetup();
+        m_ThreadAnimatedImporters.erase(m_ThreadAnimatedImporters.begin() + x);
+      }
     }
 
   } catch (std::exception e) {
@@ -222,21 +258,11 @@ void Scene::CheckThreadsAndTriggerActions() {
 
 void Scene::Save()
 {
-<<<<<<< Updated upstream
-  m_serial.SerializeScene(this, m_context.m_file_path);
-=======
   m_Application->GetSerial()->SerializeScene(this, m_Context.m_ProjectSavePath);
->>>>>>> Stashed changes
 }
 
-void Scene::LoadEditorColorscheme(Interface* interface)
+void Scene::LoadEditorColorscheme(Interface* intr)
 {
-<<<<<<< Updated upstream
-  interface->ApplyColorscheme(m_serial.ReadColorschemeConfig());
-}
-
-void Scene::Load(yg_string path) {}
-=======
   intr->ApplyColorscheme(m_Application->GetSerial()->ReadColorschemeConfig());
 }
 
@@ -296,4 +322,3 @@ std::vector<std::shared_ptr<Yeager::LightSource>>* Scene::GetLightSources()
 {
   return &m_LightSources;
 }
->>>>>>> Stashed changes

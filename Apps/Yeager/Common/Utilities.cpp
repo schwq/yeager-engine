@@ -2,9 +2,9 @@
 #include "LogEngine.h"
 
 #ifdef YEAGER_SYSTEM_LINUX
-#include <unistd.h>
-#include <sys/types.h>
 #include <pwd.h>
+#include <sys/types.h>
+#include <unistd.h>
 #endif
 
 Yeager::MemoryManagement Yeager::s_MemoryManagement;
@@ -148,22 +148,38 @@ extern YgTime_t CurrentTimeToTimeType()
   return time;
 }
 
-bool Yeager::ValidatesPath(const std::filesystem::path& p, std::filesystem::file_status s)
+bool Yeager::ValidatesPath(const std::filesystem::path& p, bool declare, std::filesystem::file_status s)
 {
   YgString status = (std::filesystem::status_known(s) ? std::filesystem::exists(s) : std::filesystem::exists(p))
                         ? "Validated!"
                         : "Not Validated!";
 #ifdef YEAGER_DEBUG
-  Yeager::Log((status == "Validated!" ? INFO : ERROR), "File validation: Path: {}, Status [{}]", p.c_str(), status);
+  if (declare)
+    Yeager::Log((status == "Validated!" ? INFO : ERROR), "File validation: Path: {}, Status [{}]", p.c_str(), status);
 #endif
   return (status == "Validated!");
 }
 
-#ifdef YEAGER_SYSTEM_LINUX 
-YgString GetLinuxHomeDirectory() {
+YgString ReadSuffixUntilCharacter(YgString expression, char characterToStop)
+{
+  if (expression.empty() || expression.find(characterToStop) == std::string::npos) {
+    Yeager::Log(ERROR,
+                "The string is empty or the character cannot be found in the expression! Expression: {}, Character {}",
+                expression, characterToStop);
+    return YgString();
+  }
+  size_t pos = expression.find_last_of(characterToStop);
+  expression.substr(pos, expression.length());
+
+  return expression;
+}
+
+#ifdef YEAGER_SYSTEM_LINUX
+YgString GetLinuxHomeDirectory()
+{
   const char* homeDir;
   /* The $HOME env varaible does not exist */
-  if((homeDir = getenv("HOME")) == NULL) {
+  if ((homeDir = getenv("HOME")) == NULL) {
     homeDir = getpwuid(getuid())->pw_dir;
     return YgString(homeDir);
   } else {

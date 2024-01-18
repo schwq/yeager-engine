@@ -34,6 +34,16 @@ namespace Yeager {
 
 class Shader;
 
+struct STBIDataOutput {
+  unsigned char* Data = YEAGER_NULLPTR;
+  int Width = 0;
+  int Height = 0;
+  int NrComponents = 0;
+  YgString OriginalPath = YEAGER_NULL_LITERAL;
+};
+
+GLuint LoadTextureFromData(STBIDataOutput* output);
+
 class Texture2D {
  public:
   Texture2D(YgCchar texturePath, YgString name = "DEFAULT");

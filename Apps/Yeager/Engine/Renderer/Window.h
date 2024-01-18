@@ -34,6 +34,7 @@ class Window {
   bool RegenerateMainWindow(unsigned int window_x, unsigned int window_y, YgString title,
                             GLFWcursorposfun cursor) noexcept;
   static void ResizeCallback(GLFWwindow* window, int width, int height);
+  bool CheckIfOpenGLContext();
 
  private:
   GLFWwindow* m_window = YEAGER_NULLPTR;

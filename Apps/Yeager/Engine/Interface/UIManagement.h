@@ -132,12 +132,10 @@ class InterfaceWindow {
   InterfaceWindow* m_ParentWindow = YEAGER_NULLPTR;
   WindowRelativePos m_RelativePosition;
   WindowRelativePos m_GlfwRelativePosition;
-  ImVec2 m_ParentRelativePosition  = ImVec2(0.0f, 0.0f);
+  ImVec2 m_ParentRelativePosition = ImVec2(0.0f, 0.0f);
   ImVec2 m_Size = ImVec2(100, 100);
   ImVec2 m_ScreenPosition = ImVec2(0.0f, 0.0f);
   ImVec2 m_TempSize = ImVec2(0, 0);
   WindowsRulesContext m_WindowRules;
 };
 }  // namespace Yeager
-
-static inline void StringToWindowWidth(YgString str, unsigned int window_x, unsigned int window_y);

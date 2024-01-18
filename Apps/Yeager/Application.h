@@ -24,6 +24,7 @@
 #include "Engine/Editor/Camera.h"
 #include "Engine/Editor/Explorer.h"
 #include "Engine/Interface/Interface.h"
+#include "Engine/Physics/PhysXHandle.h"
 #include "Engine/Renderer/Window.h"
 #include "InputHandle.h"
 #include "Launcher.h"
@@ -59,8 +60,6 @@ class ApplicationCore {
    * Engine information are stored in $HOME/.YeagerEngine in linux plataforms, and in %appdata%/.YeagerEngine in windows plataforms
   */
   void CreateDirectoriesAndFiles();
-  void ReadLoadedProjectsHandles();
-  void WriteLoadedProjectsHandles();
   bool ShouldRender();
   /* Ever scene must have some default entities, like a proper skybox and some light source*/
   void LoadSceneDefaultEntities();
@@ -92,7 +91,17 @@ class ApplicationCore {
 
   std::vector<LoadedProjectHandle>* GetLoadedProjectsHandles() { return &m_LoadedProjectsHandles; }
 
+  void AddConfigShader(std::shared_ptr<Yeager::Shader> shader, YgString var) noexcept;
+  Shader* ShaderFromVarName(YgString var);
+
+  Serialization* GetSerial() { return m_Serial; }
+
+  AudioEngineHandle* GetAudioEngine() { return m_AudioEngine; }
+
+  std::vector<std::pair<std::shared_ptr<Shader>, YgString>>* GetConfigShaders() { return &m_ConfigShaders; }
+
  private:
+  YgString GetExternalFolderLocation();
   void ValidatesExternalEngineFolder();
   void ManifestShaderProps(Yeager::Shader* shader);
   void OpenGLFunc();
@@ -117,6 +126,9 @@ class ApplicationCore {
 
   void VerifyCollisions();
 
+  std::vector<std::pair<std::shared_ptr<Shader>, YgString>> m_ConfigShaders;
+  void ManifestAllShaders();
+  Serialization* m_Serial = YEAGER_NULLPTR;
   Interface* m_Interface;
   Input* m_Input;
   Window* m_Window;
@@ -124,6 +136,8 @@ class ApplicationCore {
   EditorCamera* m_EditorCamera;
   Yeager::Scene* m_Scene;
   Yeager::Launcher* m_Launcher;
+  Yeager::PhysXHandle* m_PhysXHandle = YEAGER_NULLPTR;
+  AudioEngineHandle* m_AudioEngine = YEAGER_NULLPTR;
 
   std::vector<LoadedProjectHandle> m_LoadedProjectsHandles;
 

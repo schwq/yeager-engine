@@ -1,23 +1,9 @@
 #include "ShaderHandle.h"
 using namespace Yeager;
 
-unsigned int Shader::m_shader_count = 0;
-std::vector<ShaderFromYaml> Yeager::ygConfigShaders;
-Yeager::Shader* Yeager::ShaderFromVarName(YgString var)
-{
-  for (auto shader : ygConfigShaders) {
-    if (shader.m_varName == var) {
-      return shader.m_shader.get();
-    }
-  }
-  Yeager::Log(ERROR, "Cannot find shader from var name [{}]!", var);
-  return YEAGER_NULLPTR;
-}
-
 Shader::Shader(YgCchar fragmentPath, YgCchar vertexPath, YgString name)
 {
   m_Name = name;
-  m_shader_num = m_shader_count++;
   unsigned int vt = CreateVertexGL(vertexPath);
   unsigned int fg = CreateFragmentGL(fragmentPath);
   if (m_fragment_build && m_vertex_build) {
