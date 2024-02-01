@@ -59,7 +59,6 @@ class Skybox : public Entity {
   ObjectGeometryData m_Data;
   ObjectModelData m_Model;
   ObjectGeometryType m_Geometry;
-  ApplicationCore* m_Application = YEAGER_NULLPTR;
   std::shared_ptr<ToolBoxObject> m_Toolbox = YEAGER_NULLPTR;
 };
 

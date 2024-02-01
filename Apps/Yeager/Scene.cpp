@@ -57,12 +57,13 @@ Scene::Scene(YgString name, YgString Author, SceneType type, YgString folder_pat
     : m_Application(app)
 {
   m_Context.m_name = name;
-  m_Context.m_type = type;
+  m_Context.m_ExplorerType = type;
   m_Context.m_ProjectAuthor = Author;
   m_Context.m_renderer = renderer;
   m_Context.m_ProjectFolderPath = folder_path;
   m_Context.m_ProjectSavePath = GetConfigurationFilePath(m_Context.m_ProjectFolderPath);
   ValidatesCommonFolders();
+  m_AssetsFolderPath = m_Context.m_ProjectFolderPath + YG_PS + "Assets";
 
   Log(INFO, "Created Scene name {}", m_Context.m_name);
 }
@@ -71,6 +72,8 @@ YgString Scene::GetConfigurationFilePath(YgString path)
 {
   return path + YG_PS + m_Context.m_name + ".yml";
 }
+
+void Scene::RemoveDuplicatesEntities() {}
 
 void Scene::VerifyAssetsSubFolders()
 {
@@ -152,16 +155,41 @@ std::vector<std::pair<YgString, YgString>> Scene::VerifySoundsOptionsInAssetFold
   return audios;
 }
 
+void Scene::CheckDuplicatesLightSources()
+{
+  std::vector<size_t> pos = CheckDuplicatesEntities<PhysicalLightHandle>(&m_LightSources);
+  for (const auto& index : pos) {
+    PhysicalLightHandle* light = m_LightSources.at(index).get();
+
+    light->ScheduleDeletionOfPointLights();
+    m_LightSources.erase(m_LightSources.begin() + index);
+    for (auto& indexMinus : pos) {
+      indexMinus--;
+    }
+  }
+#ifdef YEAGER_DEBUG
+  Yeager::Log(INFO, "Removed {} Duplicates Light Sources", pos.size());
+#endif
+}
+
 void Scene::CheckScheduleDeletions()
 {
   for (YEAGER_UINT x = 0; x < m_Objects.size(); x++) {
     Yeager::Object* obj = m_Objects.at(x).get();
     if (obj->GetScheduleDeletion()) {
-      m_Objects.erase(m_Objects.begin() + x);
       obj->GetToolbox()->SetScheduleDeletion(true);
+      m_Objects.erase(m_Objects.begin() + x);
     }
   }
+
   CheckToolboxesScheduleDeletions();
+
+  for (YEAGER_UINT x = 0; x < m_LightSources.size(); x++) {
+    Yeager::PhysicalLightHandle* light = m_LightSources.at(x).get();
+    if (light->GetScheduleDeletion()) {
+      m_LightSources.erase(m_LightSources.begin() + x);
+    }
+  }
 }
 
 void Scene::CheckToolboxesScheduleDeletions()
@@ -169,8 +197,16 @@ void Scene::CheckToolboxesScheduleDeletions()
   for (YEAGER_UINT x = 0; x < m_Toolboxes.size(); x++) {
     Yeager::ToolBoxObject* obj = m_Toolboxes.at(x).get();
     if (obj->GetScheduleDeletion()) {
+      CheckToolboxIsSelectedAndDisable(obj);
       m_Toolboxes.erase(m_Toolboxes.begin() + x);
     }
+  }
+}
+
+void Scene::CheckToolboxIsSelectedAndDisable(Yeager::ToolBoxObject* toolbox)
+{
+  if (m_Application->GetExplorer()->GetSelectedToolbox() == toolbox) {
+    m_Application->GetExplorer()->ResetSelectedToolbox();
   }
 }
 
@@ -178,6 +214,7 @@ void Scene::ValidatesCommonFolders()
 {
   if (!Yeager::ValidatesPath(m_Context.m_ProjectFolderPath + YG_PS + "Assets")) {
     std::filesystem::create_directory(m_Context.m_ProjectFolderPath + YG_PS + "Assets");
+
     VerifyAssetsSubFolders();
   }
   if (!Yeager::ValidatesPath(m_Context.m_ProjectFolderPath + YG_PS + "Configuration")) {
@@ -278,7 +315,7 @@ void Scene::LoadSceneSave()
 
 void Scene::SetContextType(SceneType type)
 {
-  m_Context.m_type = type;
+  m_Context.m_ExplorerType = type;
 }
 void Scene::SetContextRenderer(SceneRenderer renderer)
 {
@@ -318,7 +355,7 @@ std::vector<std::shared_ptr<Yeager::InstancedAnimatedObject>>* Scene::GetInstanc
   return &m_InstancedAnimatedObjects;
 }
 
-std::vector<std::shared_ptr<Yeager::LightSource>>* Scene::GetLightSources()
+std::vector<std::shared_ptr<Yeager::PhysicalLightHandle>>* Scene::GetLightSources()
 {
   return &m_LightSources;
 }

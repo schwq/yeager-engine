@@ -6,8 +6,31 @@
 #include <sys/types.h>
 #include <unistd.h>
 #endif
+using namespace Yeager;
 
 Yeager::MemoryManagement Yeager::s_MemoryManagement;
+
+std::map<YgString, FileType> Yeager::ExtensionTypesToRawExtensions = {
+    {".obj", FileType("3D Model Object", EExtensitonType3DModel)},
+    {".fbx", FileType("3D Model Object", EExtensitonType3DModel)},
+    {".blend", FileType("3D Model Blender Object", EExtensitonType3DModel)},
+    {".yml", FileType("Configuration Serialization Data", EExtensionTypeConfiguration)},
+    {".yaml", FileType("Configuration Serialization Data", EExtensionTypeConfiguration)},
+    {".wav", FileType("Audio File", EExtensionTypeAudio)},
+    {".mp3", FileType("Audio File", EExtensionTypeAudio)},
+    {".cpp", FileType("C++ Source File", EExtensionTypeSource)},
+    {".cc", FileType("C++ Source File", EExtensionTypeSource)},
+    {".cxx", FileType("C++ Source File", EExtensionTypeSource)},
+    {".c", FileType("C Source File", EExtensionTypeSource)},
+    {".h", FileType("C Header File", EExtensionTypeSource)},
+    {".hpp", FileType("C++ Header File", EExtensionTypeSource)},
+    {".hxx", FileType("C++ Header File", EExtensionTypeSource)},
+    {".hh", FileType("C++ Header File", EExtensionTypeSource)}};
+
+YgString Yeager::ExtractExtensionTypenameFromPath(YgString filename)
+{
+  return ExtensionTypesToRawExtensions[ExtractExtensionFromFilename(filename)].Typename;
+}
 
 glm::mat4 Yeager::ConvertAssimpMatrixToGLMFormat(const aiMatrix4x4& from)
 {
@@ -31,14 +54,14 @@ glm::mat4 Yeager::ConvertAssimpMatrixToGLMFormat(const aiMatrix4x4& from)
   return to;
 }
 
-size_t NumberOfFilesInDir(YgString path)
+size_t Yeager::NumberOfFilesInDir(YgString path)
 {
   std::filesystem::path check_p = path;
   using std::filesystem::directory_iterator;
   return std::distance(directory_iterator(check_p), directory_iterator{});
 }
 
-YgString RemoveSuffixUntilCharacter(YgString expression, char characterToStop)
+YgString Yeager::RemoveSuffixUntilCharacter(YgString expression, char characterToStop)
 {
   bool finished = false;
   while (!finished) {
@@ -49,7 +72,7 @@ YgString RemoveSuffixUntilCharacter(YgString expression, char characterToStop)
   }
   return expression;
 }
-YgString RemovePreffixUntilCharacter(YgString expression, char characterToStop)
+YgString Yeager::RemovePreffixUntilCharacter(YgString expression, char characterToStop)
 {
   bool finished = false;
   while (!finished) {
@@ -64,11 +87,12 @@ YgString RemovePreffixUntilCharacter(YgString expression, char characterToStop)
 YgString kPath = std::filesystem::current_path().string();
 
 #ifdef YEAGER_SYSTEM_WINDOWS_x64
-YgCchar kOperatingSystem = "WIN32";
+YgCchar Yeager::kOperatingSystem = "WIN32";
 #elif defined(YEAGER_SYSTEM_LINUX)
-YgCchar kOperatingSystem = "LINUX";
+YgCchar Yeager::kOperatingSystem = "LINUX";
 #endif
-YgCchar GetShaderPath(YgString shader)
+
+YgCchar Yeager::GetShaderPath(YgString shader)
 {
   YgString path = GetPath("Assets/shader") + YG_PS + shader;
   YgCchar rt = path.c_str();
@@ -95,7 +119,7 @@ uint32_t Yeager::MemoryManagement::GetMemortUsage()
   return m_MemoryAllocatedSize - m_MemoryFreedSize;
 }
 
-YgString GetPath(YgString path)
+YgString Yeager::GetPath(YgString path)
 {
   if (kOperatingSystem == "LINUX") {
     Yeager::ValidatesPath(kPath + "/Apps/Yeager" + path);
@@ -116,18 +140,18 @@ YgString GetPath(YgString path)
   }
 };
 
-YgString kDefaultTexturePath = GetPath("/Assets/textures/default.jpg");
+YgString Yeager::kDefaultTexturePath = Yeager::GetPath("/Assets/textures/default.jpg");
 
-unsigned int ygWindowWidth = 1300;
-unsigned int ygWindowHeight = 720;
+unsigned int Yeager::ygWindowWidth = 1300;
+unsigned int Yeager::ygWindowHeight = 720;
 
-extern YgString CurrentTimeFormatToString()
+extern YgString Yeager::CurrentTimeFormatToString()
 {
   std::time_t current_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
   YgString s_time = std::ctime(&current_time);
   return s_time;
 }
-extern YgTime_t CurrentTimeToTimeType()
+extern Yeager::YgTime_t Yeager::CurrentTimeToTimeType()
 {
   YgTime_t time;
 
@@ -155,12 +179,12 @@ bool Yeager::ValidatesPath(const std::filesystem::path& p, bool declare, std::fi
                         : "Not Validated!";
 #ifdef YEAGER_DEBUG
   if (declare)
-    Yeager::Log((status == "Validated!" ? INFO : ERROR), "File validation: Path: {}, Status [{}]", p.c_str(), status);
+  //Yeager::Log((status == "Validated!" ? INFO : ERROR), "File validation: Path: {}, Status [{}]", p.c_str(), status);
 #endif
-  return (status == "Validated!");
+    return (status == "Validated!");
 }
 
-YgString ReadSuffixUntilCharacter(YgString expression, char characterToStop)
+YgString Yeager::ReadSuffixUntilCharacter(YgString expression, char characterToStop)
 {
   if (expression.empty() || expression.find(characterToStop) == std::string::npos) {
     Yeager::Log(ERROR,
@@ -169,14 +193,14 @@ YgString ReadSuffixUntilCharacter(YgString expression, char characterToStop)
     return YgString();
   }
   size_t pos = expression.find_last_of(characterToStop);
-  expression.substr(pos, expression.length());
+  expression = expression.substr(pos, expression.length());
 
   return expression;
 }
 
-#ifdef YEAGER_SYSTEM_LINUX
-YgString GetLinuxHomeDirectory()
+YgString Yeager::GetExternalFolderPath()
 {
+#ifdef YEAGER_SYSTEM_LINUX
   const char* homeDir;
   /* The $HOME env varaible does not exist */
   if ((homeDir = getenv("HOME")) == NULL) {
@@ -186,5 +210,40 @@ YgString GetLinuxHomeDirectory()
     /* The $HOME env variable exists!*/
     return YgString(getenv("HOME"));
   }
-}
+#elif defined(YEAGER_SYSTEM_WINDOWS_x64)
+
+  TCHAR szPath[MAX_PATH];
+  if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, szPath))) {
+    return szPath;
+  } else {
+    Yeager::Log(ERROR, "SHGetFolderPath from win32 api cannot find appdata folder!");
+    return YgString();
+  }
 #endif
+}
+
+YgString Yeager::RemoveExtensionFromFilename(YgString filename)
+{
+  if (filename.empty())
+    return YgString(YEAGER_STRING_ERROR("RemoveExtensionFromFilename, String empty"));
+
+  size_t pos = filename.find_last_of('.');
+  if (pos == YgString::npos) {
+    Yeager::Log(ERROR, "Remove extension from filename {}, . character cannot be found in the expression!", filename);
+    return YgString(YEAGER_STRING_ERROR("Character not found!"));
+  }
+  return filename.substr(0, pos);
+}
+
+YgString Yeager::ExtractExtensionFromFilename(YgString filename)
+{
+  if (filename.empty())
+    return YgString(YEAGER_STRING_ERROR("ExtractExtensionFromFilename, String empty"));
+
+  size_t pos = filename.find_last_of('.');
+  if (pos == YgString::npos) {
+    Yeager::Log(ERROR, "Extract extension from filename {}, . character cannot be found in the expression!", filename);
+    return YgString(YEAGER_STRING_ERROR("Character not found!"));
+  }
+  return filename.substr(pos, filename.length());
+}

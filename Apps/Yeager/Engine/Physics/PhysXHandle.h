@@ -23,11 +23,14 @@
 #include "../../Common/Utilities.h"
 #include "../../Kernel/HardwareInfo.h"
 
+#include "PhysXCharacterController.h"
+#include "PhysXGeometryHandle.h"
 #include "PhysxAllocator.h"
 
 #define PVD_HOST "127.0.0.1"
 
 namespace Yeager {
+class ApplicationCore;
 
 extern physx::PxVec3 YgVector3ToPxVec3(const YgVector3& vec);
 extern YgVector3 PxVec3ToYgVector3(const physx::PxVec3& vec);
@@ -42,7 +45,8 @@ class YgPxErrorCallback : public physx::PxErrorCallback {
 
 class PhysXHandle {
  public:
-  PhysXHandle() {}
+  PhysXHandle(Yeager::ApplicationCore* app);
+
   bool InitPxEngine();
   void TerminateEngine();
 
@@ -69,6 +73,19 @@ class PhysXHandle {
   void StartSimulation(float deltaTime);
   void EndSimulation();
 
+  std::vector<Yeager::PhysXCapsule*>* GetCapsules() { return &m_Capsules; }
+  std::vector<PhysXTriangleMesh*>* GetTrianglesMeshes() { return &m_TriangleMeshes; }
+
+  Yeager::PhysXGeometryHandle* GetGeometryHandle() { return m_PhysXGeometryHandle; }
+
+  /**
+   * The engine physics engine must keep track about pointer from physX, or otherwise it can be overrided by the system
+   * \return Pointer to vector of PxRigidActor pointers
+   */
+  YEAGER_FORCE_INLINE std::vector<physx::PxRigidActor*>* GetActorsHandle() { return &m_ActorHandle; }
+
+  YEAGER_FORCE_INLINE Yeager::PhysXCharacterController* GetCharacterController() { return m_CharacterController; }
+
  private:
   physx::PxFoundation* m_PxFoundation = YEAGER_NULLPTR;
   physx::PxPhysics* m_PxPhysics = YEAGER_NULLPTR;
@@ -78,11 +95,18 @@ class PhysXHandle {
   physx::PxPvd* m_PxPvd = YEAGER_NULLPTR;
   physx::PxPvdTransport* m_PxPvdTransport = YEAGER_NULLPTR;
   physx::PxPvdSceneClient* m_PxPvdClient = YEAGER_NULLPTR;
+  Yeager::PhysXGeometryHandle* m_PhysXGeometryHandle = YEAGER_NULLPTR;
+  Yeager::PhysXCharacterController* m_CharacterController = YEAGER_NULLPTR;
   YgPxErrorCallback m_PxErrorCallback;
   YgPxAllocatorCallback m_PxAllocatorCallback;
   std::vector<physx::PxActor*> m_PxActors;
   bool m_Initialized = false;
   bool m_PxExtensionsEnabled = true;
   bool m_PxPvdEnabled = true;
+  Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
+  std::vector<PhysXCapsule*> m_Capsules;
+  std::vector<PhysXTriangleMesh*> m_TriangleMeshes;
+
+  std::vector<physx::PxRigidActor*> m_ActorHandle;
 };
 }  // namespace Yeager

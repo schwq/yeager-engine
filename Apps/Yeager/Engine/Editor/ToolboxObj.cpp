@@ -6,9 +6,35 @@
 using namespace ImGui;
 using namespace Yeager;
 
+YgString Yeager::ExplorerTypeToString(ExplorerObjectType type)
+{
+  switch (type) {
+    case EExplorerTypeObject:
+      return "Object";
+    case EExplorerTypeAnimatedObject:
+      return "Animated Object";
+    case EExplorerTypeShader:
+      return "Shader";
+    case EExplorerTypeSkybox:
+      return "Skybox";
+    case EExplorerTypeInstancedObject:
+      return "Instanced Object";
+    case EExplorerTypeAnimatedInstancedObject:
+      return "Animated Instanced Object";
+    case EExplorerTypeAudio:
+      return "Audio";
+    case EExplorerTypeAudio3D:
+      return "Audio 3D";
+    case EExplorerTypeNull:
+      return "NULL";
+    default:
+      return "ERROR_NOT_DEFINED";
+  }
+}
+
 void ToolBoxObject::DrawObject()
 {
-  switch (m_type) {
+  switch (m_ExplorerType) {
     case EExplorerTypeObject:
       DrawToolboxObjectType();
       break;
@@ -29,7 +55,7 @@ void ToolBoxObject::DrawObject()
 
 void ToolBoxObject::DrawToolboxObjectType()
 {
-  Yeager::Object* obj = (Yeager::Object*)m_entity;
+  Yeager::Object* obj = (Yeager::Object*)m_GameEntityPtr;
   if (!obj->IsLoaded() || !obj->IsValid())
     return;
 
@@ -48,30 +74,30 @@ void ToolBoxObject::DrawToolboxObjectType()
 
   Text("Rotation");
   SameLine();
-  Checkbox("Random Rotation", &m_random_rotation_checkbox);
-  InputFloat("Random Rotation Power", &m_random_rotation_pow);
-  if (m_random_rotation_checkbox) {
+  Checkbox("Random Rotation", &m_RandomRotationCheckbox);
+  InputFloat("Random Rotation Power", &m_RandomRotationPower);
+  if (m_RandomRotationCheckbox) {
     float angles = glfwGetTime();
-    trans->rotation.x = 10.0f * angles * m_random_rotation_pow;
-    trans->rotation.y = 20.0f * angles * m_random_rotation_pow;
-    trans->rotation.z = 15.0f * angles * m_random_rotation_pow;
+    trans->rotation.x = 10.0f * angles * m_RandomRotationPower;
+    trans->rotation.y = 20.0f * angles * m_RandomRotationPower;
+    trans->rotation.z = 15.0f * angles * m_RandomRotationPower;
   }
   InputVector3("Rotation", &trans->rotation);
   InputVector3("Scale", &trans->scale);
 
-  Checkbox("Gravity Enabled", &m_gravity_checkbox);
-  physics->GravityEnabled(m_gravity_checkbox);
-  Checkbox("Reverse Gravity", &m_reverse_gravity_checkbox);
-  if (m_reverse_gravity_checkbox) {
+  Checkbox("Gravity Enabled", &m_PhysicGravityCheckbox);
+  physics->GravityEnabled(m_PhysicGravityCheckbox);
+  Checkbox("Reverse Gravity", &m_PhysicReverseGravityCheckbox);
+  if (m_PhysicReverseGravityCheckbox) {
     physics->GravityReversed(true);
   } else {
     physics->GravityReversed(false);
   }
-  InputFloat("Weight", &obj_weight);
-  InputFloat("Gravity Const", &obj_gravity_const);
-  physics->ChangeGravity(obj_gravity_const, obj_weight);
+  InputFloat("Weight", &m_ObjectPhysicWeight);
+  InputFloat("Gravity Const", &m_ObjectPhysicGravityConst);
+  physics->ChangeGravity(m_ObjectPhysicGravityConst, m_ObjectPhysicWeight);
 
-  for (auto& tex : *m_entity->GetLoadedTextures()) {
+  for (auto& tex : *m_GameEntityPtr->GetLoadedTextures()) {
 
     ImGui::Text("%s", tex->Name.c_str());
     ImGui::Text("%s", tex->Type.c_str());
@@ -79,12 +105,17 @@ void ToolBoxObject::DrawToolboxObjectType()
   }
 }
 
-void ToolBoxObject::DrawToolboxObjectAnimated() {}
+void ToolBoxObject::DrawToolboxObjectAnimated()
+{
+  DrawToolboxObjectType();
+}
 
 void ToolBoxObject::DrawToolboxAudio()
 {
-  Yeager::AudioHandle* m_audio = (Yeager::AudioHandle*)m_entity;
+  Yeager::AudioHandle* m_audio = (Yeager::AudioHandle*)m_GameEntityPtr;
 
+  YgString extensionName = ExtractExtensionTypenameFromPath(m_audio->GetPath());
+  Text("Extension %s : %s", ExtractExtensionFromFilename(m_audio->GetPath()).c_str(), extensionName.c_str());
   Text("Driver name %s", m_audio->GetEngine()->getDriverName());
   if (Button(ICON_FA_PLAY " Play")) {
     m_audio->Play();
@@ -108,8 +139,8 @@ void ToolBoxObject::DrawToolboxAudio()
   if (Button(ICON_FA_BACKWARD " Back 10s")) {
     m_audio->SetSoundPos(m_audio->GetSoundPos() - 10 * 1000);
   }
-  SliderFloat(ICON_FA_VOLUME_HIGH " Volume", &m_sound_volume, 0.0f, 1.0f);
-  m_audio->SetVolume(m_sound_volume);
+  SliderFloat(ICON_FA_VOLUME_HIGH " Volume", &m_AudioVolume, 0.0f, 1.0f);
+  m_audio->SetVolume(m_AudioVolume);
 
   unsigned int time_reimander = (m_audio->GetLenght() - m_audio->GetSoundPos()) / 1000;
   unsigned int seconds = time_reimander % 60;
@@ -128,8 +159,8 @@ void ToolBoxObject::DrawToolboxAudio()
 void ToolBoxObject::DrawToolboxAudio3D()
 {
   DrawToolboxAudio();
-  Yeager::Audio3DHandle* m_audio = (Yeager::Audio3DHandle*)m_entity;
-  InputFloat3("Audio Position", m_3d_audio_position);
-  irrklang::vec3df position = irrklang::vec3df(m_3d_audio_position[0], m_3d_audio_position[1], m_3d_audio_position[2]);
+  Yeager::Audio3DHandle* m_audio = (Yeager::Audio3DHandle*)m_GameEntityPtr;
+  InputFloat3("Audio Position", m_Audio3DPosition);
+  irrklang::vec3df position = irrklang::vec3df(m_Audio3DPosition[0], m_Audio3DPosition[1], m_Audio3DPosition[2]);
   m_audio->SetAudioPos(position);
 }

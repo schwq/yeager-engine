@@ -20,12 +20,13 @@
 
 #include "../../Common/Common.h"
 #include "../../Common/LogEngine.h"
-#include "AABBCollision.h"
-#include "ShaderHandle.h"
 
 namespace Yeager {
 
 class ApplicationCore;
+class Shader;
+class Texture2D;
+class ToolBoxObject;
 struct ObjectTexture;
 
 typedef struct {
@@ -38,74 +39,66 @@ typedef struct {
 extern Transformation GetDefaultTransformation();
 extern void ProcessTransformation(Transformation* trans);
 
-class Shader;
-class Texture2D;
-
-enum EntityObjectType {
-  EObject,
-  EObjectAnimated,
-  EObjectInstanced,
-  EObjectInstancedAnimated,
-  EShader,
-  EAudioHandle,
-  EAudio3DHandle,
-  ENull
+struct EntityObjectType {
+  enum Enum {
+    eOBJECT,
+    eOBJECT_ANIMATED,
+    eOBJECT_INSTANCED,
+    eOBJECT_INSTANCED_ANIMATED,
+    eAUDIO_HANDLE,
+    eAUDIO_3D_HANDLE,
+    eTEXTURE,
+    eLIGHT_HANDLE,
+    eSKYBOX,
+    eCAMERA,
+    eNULL
+  };
 };
-
+/**
+ * @brief Entities are the most basic type of class that almost all classes in this engine inherit, it contains variables that all classes share in common
+ * like the name and global id, also it can be used to set a object to non serialization status, where the object doesnt get saved in the configuration file.
+ * Entity object type are enums that can be used to modify simple entity pointer to a more complex pointer, like a AnimatedObject for example.
+ */
 class Entity {
  public:
-  Entity(YgString name = YEAGER_NULL_LITERAL);
+  Entity(EntityObjectType::Enum type, Yeager::ApplicationCore* app, YgString name = YEAGER_NULL_LITERAL);
   ~Entity();
 
   YgString GetName();
   unsigned int GetId();
 
-  void SetEntityType(EntityObjectType type) { m_Type = type; }
-  EntityObjectType GetEntityType() { return m_Type; }
+  void SetEntityType(EntityObjectType::Enum type) { m_Type = type; }
+  EntityObjectType::Enum GetEntityType() const { return m_Type; }
 
   constexpr bool IsValid() const { return m_Valid; }
 
+  YEAGER_FORCE_INLINE bool CanBeSerialize() const { return m_CanBeSerialize; }
+  YEAGER_FORCE_INLINE void SetCanBeSerialize(bool serial) { m_CanBeSerialize = serial; }
+
  protected:
-  EntityObjectType m_Type = ENull;
+  EntityObjectType::Enum m_Type = EntityObjectType::eNULL;
+  Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
   YgString m_Name = YEAGER_NULL_LITERAL;
   bool m_Render = true;
   bool m_Valid = false;
+  bool m_CanBeSerialize = true;
   const unsigned int m_id;
   static unsigned int m_entityCountId;
 };
 
-class GameEntity : public Entity {
+/**
+ * @brief Editor entity is a entity that show proprieties on the editor, like having a toolbox selecteable and having 
+ * events that track the status of this entity to been show on the editor screen, like a alert for critical problems or needing to reload or 
+ * visualize it, like a texture. This class has made mainly from two other classes (shader and texture) that exists in the engine context, but
+ * dont have the need to have a collision or physic tracker, like the game entity
+ */
+class EditorEntity : public Entity {
  public:
-  GameEntity(YgString name = YEAGER_NULL_LITERAL, ApplicationCore* app = YEAGER_NULLPTR);
-  ~GameEntity();
-  constexpr Yeager::Texture2D* GetTexture();
-  constexpr Yeager::Shader* GetShader();
-  Transformation GetTransformation();
-  Transformation* GetTransformationPtr();
-  virtual void ProcessTransformation(Shader* Shader);
-  virtual void ProcessTransformationCollision(Shader* shader, AABBCollision* col);
-  void inline SetTransformation(const Transformation& trans) { m_EntityTransformation = trans; }
+  EditorEntity(EntityObjectType::Enum type, Yeager::ApplicationCore* app, YgString name = YEAGER_NULL_LITERAL);
+  ~EditorEntity();
 
-  constexpr inline std::vector<ObjectTexture*>* GetLoadedTextures() { return &m_EntityLoadedTextures; };
-  constexpr AABBCollision* GetCollision() noexcept { return &m_Collision; }
-
-  /**
-   * @brief This is used by the verify collision loop, is the collision have been already set to true during the frame, it wont be set to false when comparing to other object that isnt make collision
-   * @param collision Boolean if the collision is happening
-   */
-  void MakeCollision(bool collision)
-  {
-    if (m_Collision.GetIsColliding()) {
-      return;
-    }
-    m_Collision.SetIsColliding(collision);
-  }
-
-  /**
-   * @brief This force the collision to be set to another state, used in the start of the frame
-   * @param collision Boolean if the collision is happening
-   */
-  void ForceCollision(bool collision) { m_Collision.SetIsColliding(collision); }
+  void SetToolbox(const std::shared_ptr<ToolBoxObject>& toolbox) { m_Toolbox = toolbox; }
+  std::shared_ptr<ToolBoxObject> GetToolbox() { return m_Toolbox; }
 
   /**
    * @brief Sets to true, when the scene calls for search for schedule deletions, it will remove this entity from the 
@@ -119,23 +112,28 @@ class GameEntity : public Entity {
   constexpr bool GetScheduleDeletion() const { return m_ScheduleDeletion; }
 
  protected:
-  AABBCollision m_Collision;
-  std::vector<ObjectTexture*> m_EntityLoadedTextures;
-  Transformation m_EntityTransformation;
-  ApplicationCore* m_Application = YEAGER_NULLPTR;
+  std::shared_ptr<ToolBoxObject> m_Toolbox = YEAGER_NULLPTR;
   bool m_ScheduleDeletion = false;
 };
 
-class DrawableEntity : public GameEntity {
+/**
+ * @brief Game entities have proprieties like editor entities, they have a toolbox, and can interact with the engine itself, also, this kind of entity 
+ * makes part of the game itself, so it have some other proprieties that the editor and the basic entities doesnt have, like a transformation. 
+ */
+class GameEntity : public EditorEntity {
  public:
-  DrawableEntity(YgString name = YEAGER_NULL_LITERAL, ApplicationCore* app = YEAGER_NULLPTR);
-  ~DrawableEntity();
+  GameEntity(EntityObjectType::Enum type, Yeager::ApplicationCore* app, YgString name = YEAGER_NULL_LITERAL);
+  ~GameEntity();
+  Transformation GetTransformation();
+  Transformation* GetTransformationPtr();
+  virtual void ProcessTransformation(Shader* Shader);
+  void inline SetTransformation(const Transformation& trans) { m_EntityTransformation = trans; }
 
-  virtual void Draw(Shader* shader);
-  virtual void Terminate();
+  constexpr inline std::vector<ObjectTexture*>* GetLoadedTextures() { return &m_EntityLoadedTextures; };
 
  protected:
-  GLuint m_Ebo = 0, m_Vao = 0, m_Vbo = 0;
+  std::vector<ObjectTexture*> m_EntityLoadedTextures;
+  Transformation m_EntityTransformation;
 };
 
 }  // namespace Yeager

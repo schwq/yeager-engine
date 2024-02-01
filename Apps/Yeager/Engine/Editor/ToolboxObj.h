@@ -29,7 +29,7 @@ class Texture2D;
 class GameEntity;
 class Entity;
 class AudioHandle;
-}  // namespace Yeager
+
 enum ExplorerObjectType {
   EExplorerTypeObject,
   EExplorerTypeAnimatedObject,
@@ -38,47 +38,59 @@ enum ExplorerObjectType {
   EExplorerTypeInstancedObject,
   EExplorerTypeAnimatedInstancedObject,
   EExplorerTypeAudio,
-  EExplorerTypeAudio3D
+  EExplorerTypeAudio3D,
+  EExplorerTypeNull
 };
 
 extern YgString ExplorerTypeToString(ExplorerObjectType type);
-namespace Yeager {
+
+/**
+ * @brief ToolBoxObject represent the selectable object from the toolbox window, listing objects, audios, skyboxes of the current scene to be
+ * selected and modify it
+ */
 class ToolBoxObject {
  public:
-  ToolBoxObject(){};
-  ToolBoxObject(Yeager::GameEntity* entity, ExplorerObjectType type) : m_entity(entity), m_type(type){};
-  Yeager::Transformation* GetTransformation() { return m_entity->GetTransformationPtr(); }
+  ToolBoxObject() { m_Valid = true; };
+  ToolBoxObject(Yeager::GameEntity* entity, ExplorerObjectType type) : m_GameEntityPtr(entity), m_ExplorerType(type)
+  {
+    m_Valid = true;
+  };
+  ~ToolBoxObject() { m_Valid = false; }
 
-  Yeager::GameEntity* GetEntity() { return m_entity; }
+  Yeager::Transformation* GetTransformation() { return m_GameEntityPtr->GetTransformationPtr(); }
+  Yeager::GameEntity* GetEntity() { return m_GameEntityPtr; }
 
   void DrawObject();
-  constexpr void SetType(ExplorerObjectType type) { m_type = type; }
-  ExplorerObjectType GetType() { return m_type; }
 
-  constexpr void SetEntity(Yeager::Entity* entity) { m_entity = (GameEntity*)entity; }
-
-  bool m_selected = false;
-
+  constexpr void SetType(ExplorerObjectType type) { m_ExplorerType = type; }
+  ExplorerObjectType GetType() const { return m_ExplorerType; }
+  constexpr void SetEntity(Yeager::Entity* entity) { m_GameEntityPtr = (GameEntity*)entity; }
   constexpr void SetScheduleDeletion(bool deletion) { m_ScheduleDeletion = deletion; }
   constexpr bool GetScheduleDeletion() const { return m_ScheduleDeletion; }
+  constexpr bool IsValid() const { return m_Valid; }
+  constexpr bool* IsSelected() { return &m_SelectedToolbox; }
+  constexpr void SetSelected(bool selected) { m_SelectedToolbox = selected; }
 
  private:
-  ExplorerObjectType m_type;
-  Yeager::GameEntity* m_entity = YEAGER_NULLPTR;
+  ExplorerObjectType m_ExplorerType = EExplorerTypeNull;
+  Yeager::GameEntity* m_GameEntityPtr = YEAGER_NULLPTR;
+
+  bool m_Valid = false;
+  bool m_SelectedToolbox = false;
 
   void DrawToolboxObjectType();
   void DrawToolboxObjectAnimated();
   void DrawToolboxAudio();
   void DrawToolboxAudio3D();
 
-  float obj_weight = 1.0f;
-  float obj_gravity_const = 1.0f;
-  float m_random_rotation_pow = 1.0f;
-  bool m_random_rotation_checkbox = false;
-  bool m_gravity_checkbox = true;
-  bool m_reverse_gravity_checkbox = false;
-  float m_3d_audio_position[3];
+  float m_ObjectPhysicWeight = 1.0f;
+  float m_ObjectPhysicGravityConst = 1.0f;
+  float m_RandomRotationPower = 1.0f;
+  bool m_RandomRotationCheckbox = false;
+  bool m_PhysicGravityCheckbox = true;
+  bool m_PhysicReverseGravityCheckbox = false;
+  float m_Audio3DPosition[3] = {0.0f, 0.0f, 0.0f};
   bool m_ScheduleDeletion = false;
-  irrklang::ik_f32 m_sound_volume = 0.5f;
+  irrklang::ik_f32 m_AudioVolume = 0.5f;
 };
 }  // namespace Yeager

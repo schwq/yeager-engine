@@ -26,6 +26,8 @@
 
 namespace Yeager {
 
+class ApplicationCore;
+
 struct AudioEngineHandle {
   bool InitAudioEngine();
   void TerminateAudioEngine();
@@ -50,7 +52,7 @@ enum AudioHandleSoundEffects {
 
 class AudioHandle : public GameEntity {
  public:
-  AudioHandle(YgString path, YgString name, AudioEngineHandle* handle, bool looped);
+  AudioHandle(YgString path, YgString name, AudioEngineHandle* handle, bool looped, Yeager::ApplicationCore* app = YEAGER_NULLPTR);
   ~AudioHandle();
 
   void SetVolume(irrklang::ik_f32 volume);
@@ -91,7 +93,7 @@ extern irrklang::vec3df YgVec3_to_Vec3df(YgVector3 vec);
 
 class Audio3DHandle : public AudioHandle {
  public:
-  Audio3DHandle(YgString path, YgString name, AudioEngineHandle* handle, bool looped, irrklang::vec3df position);
+  Audio3DHandle(YgString path, YgString name, AudioEngineHandle* handle, bool looped, irrklang::vec3df position, Yeager::ApplicationCore* app = YEAGER_NULLPTR);
   ~Audio3DHandle();
 
   void Play();

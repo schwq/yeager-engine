@@ -17,61 +17,99 @@ void Yeager::InputVector3(const char* label, YgVector3* v, const char* format, I
   InputFloat3(label, *ver, format, flags);
 }
 
+void Yeager::DisplayDirectionalLightControl(Yeager::PhysicalLightHandle* source)
+{
+  InputVector3("Directions##Directional", &source->GetDirectionalLight()->Direction);
+  InputVector3("Ambients##Directional", &source->GetDirectionalLight()->Ambient);
+  InputVector3("Diffuses##Directional", &source->GetDirectionalLight()->Diffuse);
+  InputVector3("Speculars##Directional", &source->GetDirectionalLight()->Specular);
+  InputVector3("Colors##Directional", &source->GetDirectionalLight()->Color);
+}
+
+void Yeager::DisplaySpotLightControl(Yeager::PhysicalLightHandle* source)
+{
+  InputVector3("Position##SpotLight", &source->GetSpotLight()->Position);
+  InputVector3("Direction##SpotLight", &source->GetSpotLight()->Direction);
+  InputFloat("CutOff##SpotLight", &source->GetSpotLight()->CutOff);
+  InputFloat("OuterCutOff##SpotLight", &source->GetSpotLight()->OuterCutOff);
+  InputFloat("Constant##SpotLight", &source->GetSpotLight()->Constant);
+  InputFloat("Linear##SpotLight", &source->GetSpotLight()->Linear);
+  InputFloat("Quadratic##SpotLight", &source->GetSpotLight()->Quadratic);
+  InputVector3("Ambient##SpotLight", &source->GetSpotLight()->Ambient);
+  InputVector3("Diffuse##SpotLight", &source->GetSpotLight()->Diffuse);
+  InputVector3("Specular##SpotLight", &source->GetSpotLight()->Specular);
+  Checkbox("Active##SpotLight", &source->GetSpotLight()->Active);
+}
+
+void Yeager::DisplayPointLightControl(Yeager::ObjectPointLight* source)
+{
+  InputVector3("Position##PointLight", &source->ObjSource->GetTransformationPtr()->position);
+  InputVector3("Scale##PointLight", &source->ObjSource->GetTransformationPtr()->scale);
+  InputVector3("Rotation##PointLight", &source->ObjSource->GetTransformationPtr()->rotation);
+  InputFloat("Constant##PointLight", &source->Constant);
+  InputFloat("Linear##PointLight", &source->Linear);
+  InputFloat("Quadratic##PointLight", &source->Quadratic);
+  InputVector3("Ambient##PointLight", &source->Ambient);
+  InputVector3("Specular##PointLight", &source->Specular);
+  InputVector3("Diffuse##PointLight", &source->Diffuse);
+  InputVector3("Color##PointLight", &source->Color);
+  Checkbox("Active##PointLight", &source->Active);
+}
+
 void Interface::LightHandleControlWindow()
 {
   /**
    * NOTE Imgui button`s label problem explained where: https://github.com/ocornut/imgui/issues/74
    */
-  /*
-  Begin("Light Control");
-  int label_coflint = 0;
+
+  Begin(ICON_FA_LIGHTBULB " Light Control");
+  int label_id = 0;
   for (auto& lightsources : *m_Application->GetScene()->GetLightSources()) {
-    PushID(label_coflint++);
+    PushID(label_id++);
+    if (Button("Add Light Source")) {
+      ObjectPointLight light;
+      Transformation trans;
+      trans.position = m_Application->GetCamera()->GetPosition() + m_Application->GetCamera()->GetDirection();
+      trans.scale = YgVector3(0.1f);
+      lightsources->AddObjectPointLight(light, trans);
+    }
 
-    Text("Light Source: %s", lightsources->GetLinkedShader()->GetName().c_str());
-    SeparatorText("Directional Light");
-    InputVector3("Directions##Directional", &lightsources->GetDirectionalLight()->Direction);
-    InputVector3("Ambients##Directional", &lightsources->GetDirectionalLight()->Ambient);
-    InputVector3("Diffuses##Directional", &lightsources->GetDirectionalLight()->Diffuse);
-    InputVector3("Speculars##Directional", &lightsources->GetDirectionalLight()->Specular);
-    InputVector3("Colors##Directional", &lightsources->GetDirectionalLight()->Color);
+    SameLine();
+    if (Button("Delete")) {
+      lightsources->SetScheduleDeletion(true);
+    }
 
-    SeparatorText("Spot Light");
-    InputVector3("Position##SpotLight", &lightsources->GetSpotLight()->Position);
-    InputVector3("Direction##SpotLight", &lightsources->GetSpotLight()->Direction);
-    InputFloat("CutOff##SpotLight", &lightsources->GetSpotLight()->CutOff);
-    InputFloat("OuterCutOff##SpotLight", &lightsources->GetSpotLight()->OuterCutOff);
-    InputFloat("Constant##SpotLight", &lightsources->GetSpotLight()->Constant);
-    InputFloat("Linear##SpotLight", &lightsources->GetSpotLight()->Linear);
-    InputFloat("Quadratic##SpotLight", &lightsources->GetSpotLight()->Quadratic);
-    InputVector3("Ambient##SpotLight", &lightsources->GetSpotLight()->Ambient);
-    InputVector3("Diffuse##SpotLight", &lightsources->GetSpotLight()->Diffuse);
-    InputVector3("Specular##SpotLight", &lightsources->GetSpotLight()->Specular);
-    Checkbox("Active##SpotLight", &lightsources->GetSpotLight()->Active);
+    if (CollapsingHeader("Linked Shaders")) {
+      for (const auto& shader : *lightsources->GetLinkedShaders()) {
+        Text("%s", shader->GetName().c_str());
+      }
+    }
 
-    int point_light_label = 0;
-    for (auto& pointlights : *lightsources->GetObjectPointLights()) {
-      PushID(point_light_label++);
-
-      Text("Object Point Light: %s", pointlights.ObjSource->GetName().c_str());
-      InputVector3("Position##PointLight", &pointlights.ObjSource->GetTransformationPtr()->position);
-      InputVector3("Scale##PointLight", &pointlights.ObjSource->GetTransformationPtr()->scale);
-      InputVector3("Rotation##PointLight", &pointlights.ObjSource->GetTransformationPtr()->rotation);
-      InputFloat("Constant##PointLight", &pointlights.Constant);
-      InputFloat("Linear##PointLight", &pointlights.Linear);
-      InputFloat("Quadratic##PointLight", &pointlights.Quadratic);
-      InputVector3("Ambient##PointLight", &pointlights.Ambient);
-      InputVector3("Specular##PointLight", &pointlights.Specular);
-      InputVector3("Diffuse##PointLight", &pointlights.Diffuse);
-      InputVector3("Color##PointLight", &pointlights.Color);
-      Checkbox("Active##PointLight", &pointlights.Active);
-
+    if (TreeNode("Directional Light")) {
+      PushID(label_id++);
+      DisplayDirectionalLightControl(lightsources.get());
       PopID();
+      TreePop();
+    }
+
+    if (TreeNode("Spot Light")) {
+      PushID(label_id++);
+      DisplaySpotLightControl(lightsources.get());
+      PopID();
+      TreePop();
+    }
+
+    if (TreeNode("Point Lights")) {
+      for (auto& obj_light : *lightsources->GetObjectPointLights()) {
+        PushID(label_id++);
+        DisplayPointLightControl(&obj_light);
+        PopID();
+      }
+      TreePop();
     }
     PopID();
   }
   End();
-  */
 }
 
 Interface::~Interface()
@@ -242,7 +280,7 @@ Interface::Interface(Window* window, Yeager::ApplicationCore* app) : m_Applicati
   config.GlyphMinAdvanceX = 13.0f;
   static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
 
-  m_imgui_io.Fonts->AddFontFromFileTTF(GetPath("/Assets/Fonts/InconsolataNerdFont-Bold.ttf").c_str(), m_Fonts.PixelSize,
+  m_imgui_io.Fonts->AddFontFromFileTTF(GetPath("/Assets/Fonts/IosevkaNerdFont-Medium.ttf").c_str(), m_Fonts.PixelSize,
                                        &config, icon_ranges);
 
   m_imgui_io.Fonts->Build();
@@ -293,11 +331,11 @@ void Interface::RenderUI(Yeager::Launcher* launcher)
   m_Frames++;
 
   switch (m_Application->GetMode()) {
-    case Yeager::AppLauncher:
+    case YgApplicationMode::eAPPLICATION_LAUNCHER:
       RenderLauncher(launcher);
       DisplayWarningWindow();
       break;
-    case Yeager::AppEditor:
+    case YgApplicationMode::eAPPLICATION_EDITOR:
       if (m_MakeScreenShotWindowShouldAppear) {
         ScreenShotWindow();
       }
@@ -361,12 +399,13 @@ void Interface::DrawToolbox()
   //m_ToolboxWindow.Begin(m_Control.DontMoveWindowsEditor ? kWindowStatic : kWindowMoveable);
   Begin(ICON_FA_GEAR " Toolbox");
 
+  // TODO clean this mess
   if (m_Application->GetExplorer()->GetSelectedToolbox() != YEAGER_NULLPTR &&
+      m_Application->GetExplorer()->GetSelectedToolbox()->IsValid() &&
       m_Application->GetExplorer()->GetSelectedToolbox()->GetEntity() != YEAGER_NULLPTR &&
       m_Application->GetExplorer()->GetSelectedToolbox()->GetEntity()->IsValid()) {
     Yeager::ToolBoxObject* obj = m_Application->GetExplorer()->GetSelectedToolbox();
-    YgCchar text = obj->GetEntity()->GetName().c_str();
-    Text(text);
+    Text("%s", obj->GetEntity()->GetName().c_str());
     obj->DrawObject();
   }
 
@@ -377,14 +416,38 @@ void Interface::DrawEditorMenu()
 {
   if (ImGui::BeginMainMenuBar()) {
     Yeager::EngineEditorMenuBar.MenuBarSize = GetWindowSize();
-    if (ImGui::BeginMenu(ICON_FA_FILE_IMPORT " File")) {
+    if (ImGui::BeginMenu(ICON_FA_FILE " File")) {
 
       if (ImGui::MenuItem("Create")) {}
       if (ImGui::MenuItem("Open", "Ctrl+O")) {}
-      if (ImGui::MenuItem("Save", "Ctrl+S")) {}
+      if (ImGui::MenuItem("Save", "Ctrl+S")) {
+        m_Application->GetScene()->Save();
+      }
       if (ImGui::MenuItem("Save as..")) {}
       ImGui::EndMenu();
     }
+
+    if (ImGui::BeginMenu(ICON_FA_GEAR " Build")) {
+      if (ImGui::MenuItem("Build project")) {}
+      if (ImGui::MenuItem("Link C++ code")) {}
+      if (ImGui::MenuItem("Open project in editor")) {}
+      ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu(ICON_FA_BOXES_PACKING " Plugins")) {
+      if (ImGui::MenuItem("Plugins loaded")) {}
+      if (ImGui::MenuItem("Load plugin")) {}
+      if (ImGui::MenuItem("Unload plugin")) {}
+      if (ImGui::MenuItem("Install plugin")) {}
+      if (ImGui::MenuItem("Create plugin")) {}
+      if (ImGui::MenuItem("Help")) {}
+      ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu(ICON_FA_EXCLAMATION " Settings")) {
+      ImGui::EndMenu();
+    }
+
     ImGui::EndMainMenuBar();
   }
 }
@@ -399,7 +462,9 @@ void Interface::RenderEditor()
 #endif
     DrawEditorMenu();
     DrawConsole();
-    ShadersControlWindow();
+
+    PhysXHandleControlWindow();
+
     LightHandleControlWindow();
   }
 }
@@ -451,6 +516,9 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
 #ifdef YEAGER_SYSTEM_LINUX
     m_OpenProjectToDisplay =
         Yeager::ReadProjectsToDisplay(GetLinuxHomeDirectory() + "/.YeagerEngine/External/LoadedProjectsPath.yml");
+#elif defined(YEAGER_SYSTEM_WINDOWS_x64)
+    m_OpenProjectToDisplay =
+        Yeager::ReadProjectsToDisplay(GetExternalFolderPath() + "\\YeagerEngine\\External\\LoadedProjectsPath.yml");
 #endif
   }
 
@@ -519,7 +587,7 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
       }
     }
     if (Button("Select folder")) {
-      auto selection = pfd::select_folder("Select project folder", GetLinuxHomeDirectory()).result();
+      auto selection = pfd::select_folder("Select project folder", GetExternalFolderPath()).result();
       if (!selection.empty()) {
         /* This should always return true, but we are making sure the user or the machine deletes the folder selected during the midtime */
         if (Yeager::ValidatesPath(selection)) {
@@ -676,10 +744,11 @@ void Interface::LoadColorscheme()
 
 void Interface::RenderDebugger()
 {
-  m_DebuggerWindow.Begin();
+  Begin(ICON_FA_LAPTOP " Debug Development");
   if (Button("Reset camera position")) {
     m_Application->GetCamera()->SetPosition(YgVector3(0));
   }
+
   if (m_Application->GetScene() != YEAGER_NULLPTR) {
     Text("Toolboxes Loaded %u", m_Application->GetScene()->GetToolboxs()->size());
     Text("Objects in Scene %u", m_Application->GetScene()->GetObjects()->size());
@@ -722,7 +791,7 @@ void Interface::RenderDebugger()
   if (Button(ICON_FA_ARROW_ROTATE_LEFT " Polygon mode: FILL")) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   }
-  m_DebuggerWindow.End();
+  End();
 }
 
 void Interface::ScreenShotWindow()
@@ -769,7 +838,6 @@ void Interface::ScreenShotWindow()
 
   m_ScreenShotWindow.End();
 }
-
 void Interface::PrepareAndMakeScreenShot()
 {
   YgString output = GetPath("/Configuration/") + m_NewScreenShootName + ".jpg";
@@ -792,18 +860,35 @@ void Interface::PrepareAndMakeScreenShot()
   m_MakeScreenShotWindowShouldAppear = false;
 }
 
-void Interface::ShadersControlWindow()
+void Interface::PhysXHandleControlWindow()
 {
-  /*
-  Begin("Shader Control");
+  PhysXHandle* handle = m_Application->GetPhysXHandle();
+  unsigned int actorNum =
+      handle->GetPxScene()->getNbActors(physx::PxActorTypeFlag::eRIGID_DYNAMIC | physx::PxActorTypeFlag::eRIGID_STATIC);
+  Text("Count of actors in PhysX Scene %d", actorNum);
+  Text("Count of actors loaded in Yeager Engine %d", handle->GetActorsHandle()->size());
+  std::vector<physx::PxRigidActor*> actors(actorNum);
+  handle->GetPxScene()->getActors(physx::PxActorTypeFlag::eRIGID_DYNAMIC | physx::PxActorTypeFlag::eRIGID_STATIC,
+                                  reinterpret_cast<physx::PxActor**>(&actors[0]), actorNum);
 
-  for (auto& shader_config : m_Application) {
-    Shader* shader = shader_config.m_shader.get();
-    Text("Name: %s", shader->GetName().c_str());
-    Text("ID: %u", shader->GetId());
-    Text("Built Status: %s", shader->IsInitialized() ? "True" : "False");
+  for (const auto& actor : actors) {
+
+    switch (actor->getType()) {
+      case physx::PxActorType::eRIGID_DYNAMIC: {
+        physx::PxRigidDynamic* dynamic = (physx::PxRigidDynamic*)actor;
+        Text("Dynamic Actor");
+        Text("Linear Velocity  %.2f, %.2f, %.2f", dynamic->getLinearVelocity().x, dynamic->getLinearVelocity().y,
+             dynamic->getLinearVelocity().z);
+
+        break;
+      }
+      case physx::PxActorType::eRIGID_STATIC:
+        Text("Static Actor");
+        break;
+    }
+
+    YgVector3 pos = PxVec3ToYgVector3(actor->getGlobalPose().p);
+    Text("Position %.2f, %.2f, %.2f", pos.x, pos.y, pos.z);
+    handle->GetGeometryHandle()->RenderShapeInformation(actor);
   }
-
-  End();
-  */
 }

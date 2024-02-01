@@ -59,8 +59,6 @@
 #define YEAGER_GNU_VERSION 0
 #endif
 
-#define PX_PHYSX_STATIC_LIB 1
-
 #ifdef _MSC_VER
 #define YEAGER_MSC_VERSION _MSC_VER
 #define YEAGER_MSC_WARNING(...) __pragma(warning(__VA_ARGS__))
@@ -144,8 +142,9 @@
 #define FMT_HEADER_ONLY
 #include "core.h"
 #include "format.h"
-
 #include <irrKlang/irrKlang.h>
+
+#define YEAGER_STRING_ERROR(error) {fmt::format("String error []", error)} 
 
 typedef const char* YgCchar;
 typedef std::string YgString;
@@ -153,6 +152,9 @@ typedef glm::mat4 YgMatrix4;
 typedef glm::mat3 YgMatrix3;
 typedef glm::vec2 YgVector2;
 typedef glm::vec3 YgVector3;
+
+#define YEAGER_IDENTITY_MATRIX4x4 YgMatrix4(1.0f)
+#define YEAGER_ZERO_VECTOR3 YgVector3(0.0f)
 
 // PS means Path separator, used in getting path from files and folders
 #if defined(YEAGER_SYSTEM_WINDOWS_x64)

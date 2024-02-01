@@ -70,4 +70,44 @@ void Log(int verbosity, fmt::format_string<T...> fmt, T&&... args)
                       std::to_string(time.Time.Seconds) + " ]";
   std::cout << time_str << terminal_prefix << log << std::endl;
 }
+
+template <typename... T>
+void LogDebug(int verbosity, fmt::format_string<T...> fmt, T&&... args)
+{
+#ifdef YEAGER_DEBUG
+  auto str = fmt::format(fmt, std::forward<T>(args)...);
+  YgString log(str);
+
+  ConsoleLogSender console_message;
+  console_message.text_color = VerbosityToColor(verbosity);
+  console_message.verbosity = verbosity;
+  console_message.message = log;
+  kConsole.SetLogString(console_message);
+
+  YgString terminal_prefix;
+  if (verbosity == INFO) {
+    terminal_prefix = "(-) ";
+  } else if (verbosity == WARNING) {
+    terminal_prefix = "(??) ";
+  } else {
+    terminal_prefix = "(!!) ";
+  }
+
+  YgTime_t time = CurrentTimeToTimeType();
+  YgString time_str = "[ " + std::to_string(time.Time.Hours) + ":" + std::to_string(time.Time.Minutes) + ":" +
+                      std::to_string(time.Time.Seconds) + " ]";
+  std::cout << time_str << terminal_prefix << log << std::endl;
+#endif
+}
+
+#define YEAGER_CONSTRUCTOR_LOG(source)            \
+  {                                               \
+    Yeager::LogDebug(INFO, "Created {}", source); \
+  }
+
+#define YEAGER_DESTRUCTOR_LOG(source)                \
+  {                                                  \
+    Yeager::LogDebug(INFO, "Destroying {}", source); \
+  }
+
 }  // namespace Yeager

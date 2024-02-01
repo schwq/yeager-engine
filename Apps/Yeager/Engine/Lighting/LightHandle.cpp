@@ -1,8 +1,8 @@
 #include "LightHandle.h"
 using namespace Yeager;
 
-LightHandle::LightHandle(YgString name, ApplicationCore* app, std::vector<Shader*> link_shaders)
-    : GameEntity(name, app), m_Application(app), m_LinkedShader(link_shaders)
+LightBaseHandle::LightBaseHandle(YgString name, ApplicationCore* app, std::vector<Shader*> link_shaders)
+    : EditorEntity(EntityObjectType::eLIGHT_HANDLE, app, name), m_LinkedShader(link_shaders)
 {
   m_PointLights.reserve(MAX_POINT_LIGHTS);
   for (int x = 0; x < MAX_POINT_LIGHTS; x++) {
@@ -13,7 +13,7 @@ LightHandle::LightHandle(YgString name, ApplicationCore* app, std::vector<Shader
   }
 }
 
-void LightHandle::BuildShaderProps(YgVector3 viewPos, YgVector3 front, float shininess)
+void LightBaseHandle::BuildShaderProps(YgVector3 viewPos, YgVector3 front, float shininess)
 {
   for (auto& shader : m_LinkedShader) {
     shader->UseShader();
@@ -54,20 +54,22 @@ void LightHandle::BuildShaderProps(YgVector3 viewPos, YgVector3 front, float shi
     shader->SetBool("spotLight.Active", spotLight.Active);
   }
 }
-LightSource::LightSource(YgString name, ApplicationCore* app, std::vector<Shader*> link_shader, Shader* draw_shader)
-    : LightHandle(name, app, link_shader), m_DrawableShader(draw_shader)
+PhysicalLightHandle::PhysicalLightHandle(YgString name, ApplicationCore* app, std::vector<Shader*> link_shader,
+                                         Shader* draw_shader)
+    : LightBaseHandle(name, app, link_shader), m_DrawableShader(draw_shader)
 {
   m_ObjectPointLights.reserve(MAX_POINT_LIGHTS);
 }
 
-LightSource::~LightSource()
+PhysicalLightHandle::~PhysicalLightHandle()
 {
   for (const auto& obj : m_ObjectPointLights) {
     obj.Destroy();
   }
+  m_ObjectPointLights.clear();
 }
 
-void LightSource::DrawLightSources()
+void PhysicalLightHandle::DrawLightSources()
 {
   m_DrawableShader->UseShader();
   for (auto& obj : m_ObjectPointLights) {
@@ -77,7 +79,7 @@ void LightSource::DrawLightSources()
   }
 }
 
-void LightSource::BuildShaderProps(YgVector3 viewPos, YgVector3 front, float shininess)
+void PhysicalLightHandle::BuildShaderProps(YgVector3 viewPos, YgVector3 front, float shininess)
 {
   for (auto& shader : m_LinkedShader) {
     shader->UseShader();
@@ -121,12 +123,13 @@ void LightSource::BuildShaderProps(YgVector3 viewPos, YgVector3 front, float shi
   }
 }
 
-void LightSource::AddObjectPointLight(const ObjectPointLight& obj, Transformation& trans)
+void PhysicalLightHandle::AddObjectPointLight(const ObjectPointLight& obj, Transformation& trans)
 {
 
   ObjectPointLight pObj = obj;
   pObj.ObjSource = new Object("SpotLight_" + std::to_string(m_ObjectPointLights.size()), m_Application);
   pObj.ObjSource->GenerateObjectGeometry(ObjectGeometryType::ESphere);
+  trans.scale = YgVector3(0.1f);
   pObj.ObjSource->SetTransformation(trans);
   pObj.Active = true;
 
@@ -138,7 +141,18 @@ void LightSource::AddObjectPointLight(const ObjectPointLight& obj, Transformatio
   }
 }
 
-void LightSource::AddObjectPointLight(const ObjectPointLight& obj, Yeager::Object& custom_obj)
+void PhysicalLightHandle::AddObjectPointLight(const ObjectPointLight& obj)
+{
+  if (m_ObjectPointLights.size() >= MAX_POINT_LIGHTS) {
+    Yeager::Log(WARNING, "Trying to add a object spot light! The maximum have already been reach!");
+    obj.Destroy();
+  } else {
+    obj.ObjSource->GetTransformationPtr()->scale = YgVector3(0.1f);
+    m_ObjectPointLights.push_back(obj);
+  }
+}
+
+void PhysicalLightHandle::AddObjectPointLight(const ObjectPointLight& obj, Yeager::Object& custom_obj)
 {
   ObjectPointLight pObj = obj;
   pObj.ObjSource = new Object(custom_obj);
@@ -150,5 +164,19 @@ void LightSource::AddObjectPointLight(const ObjectPointLight& obj, Yeager::Objec
     pObj.Destroy();
   } else {
     m_ObjectPointLights.push_back(pObj);
+  }
+}
+
+void PhysicalLightHandle::AddObjectPointLight(ObjectPointLight* light, ObjectGeometryType type)
+{
+  light->ObjSource = new Object("Light Point", m_Application);
+  light->ObjSource->GenerateObjectGeometry(type);
+  light->Active = true;
+
+  if (m_ObjectPointLights.size() >= MAX_POINT_LIGHTS) {
+    Yeager::Log(WARNING, "Trying to add a object spot light! The maximum have already been reach!");
+  } else {
+    light->ObjSource->GetTransformationPtr()->scale = YgVector3(0.1f);
+    m_ObjectPointLights.push_back(*light);
   }
 }

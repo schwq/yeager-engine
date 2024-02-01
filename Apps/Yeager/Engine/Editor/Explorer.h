@@ -35,6 +35,7 @@ class EditorExplorer {
   void DrawExplorer();
 
   constexpr inline ToolBoxObject* GetSelectedToolbox() const { return m_ToolboxSelected; }
+  void ResetSelectedToolbox() { m_ToolboxSelected = YEAGER_NULLPTR;  }
 
  private:
   void AddGeometryObjectWindow();
@@ -61,5 +62,7 @@ class EditorExplorer {
   YgString m_NewObjectName = YEAGER_NULL_LITERAL;
   YgString m_NewObjectPath = YEAGER_NULL_LITERAL;
   YgString m_NewObjectTexturePath = YEAGER_NULL_LITERAL;
+
+  std::vector<std::pair<YgString, YgString>> m_SelectableOptions;
 };
 }  // namespace Yeager

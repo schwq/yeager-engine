@@ -39,9 +39,8 @@ ObjectGeometryType Yeager::StringToObjectGeometryType(const YgString& str)
 }
 
 Object::Object(YgString name, ApplicationCore* application)
-    : GameEntity(name, application), m_Application(application), m_Physics(this)
+    : GameEntity(EntityObjectType::eOBJECT, application, name), m_Physics(this)
 {
-  SetEntityType(EObject);
   m_Toolbox = std::make_shared<ToolBoxObject>();
   m_ThreadImporter = new ImporterThreaded("Object", m_Application);
 }
@@ -65,6 +64,7 @@ Object::~Object()
         DeleteMeshGLBuffers(&mesh);
       }
     }
+    m_Toolbox = YEAGER_NULLPTR;
     Yeager::Log(INFO, "Destroying object {}", m_Name);
   }
 }
@@ -334,6 +334,18 @@ bool AnimatedObject::ThreadImportObjectFromFile(YgCchar path, bool flip_image)
   }
 }
 
+void AnimatedObject::ThreadLoadIncompleteTetxtures()
+{
+  for (auto& tex : m_ModelData.TexturesLoaded) {
+    if (tex->first.ImcompleteId) {
+      tex->first.ID = LoadTextureFromData(tex->second);
+      if (tex->second != YEAGER_NULLPTR) {
+        delete tex->second;
+      }
+    }
+  }
+}
+
 void AnimatedObject::ThreadSetup()
 {
   m_ModelData = m_ThreadImporter->GetValue();
@@ -411,8 +423,6 @@ void Object::Draw(Yeager::Shader* shader)
   if (m_ObjectDataLoaded && m_Render) {
 
     shader->UseShader();
-    ProcessTransformationCollision(shader, &m_Collision);
-    shader->UseShader();
 
     if (m_GeometryType == ObjectGeometryType::ECustom) {
       DrawModel(shader);
@@ -448,9 +458,7 @@ void Object::Setup()
 {
 
   if (m_GeometryType == ObjectGeometryType::ECustom) {
-    std::vector<YgVector3> Pos = ExtractVerticesPositionToVector(&m_ModelData);
-    m_Collision.BuildCollision(this, Pos);
-    m_Collision.SetEnabled(true);
+
     for (auto& mesh : m_ModelData.Meshes) {
       glGenVertexArrays(1, &mesh.m_Vao);
       glGenBuffers(1, &mesh.m_Vbo);
@@ -506,7 +514,7 @@ void Object::Setup()
 
 AnimatedObject::AnimatedObject(YgString name, ApplicationCore* application) : Object(name, application)
 {
-  SetEntityType(EObjectAnimated);
+  SetEntityType(EntityObjectType::eOBJECT_ANIMATED);
   m_ThreadImporter = new ImporterThreadedAnimated("ObjectAnimated", m_Application);
 }
 

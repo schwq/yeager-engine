@@ -5,7 +5,7 @@
 using namespace Yeager;
 
 Skybox::Skybox(YgString name, ObjectGeometryType type, ApplicationCore* application, bool flip_image)
-    : Entity(name), m_Geometry(type), m_Application(application)
+    : Entity(EntityObjectType::eSKYBOX, application, name), m_Geometry(type)
 {
   Yeager::Log(INFO, "Loading skybox {}", name);
   m_ImageFlip = flip_image;
@@ -17,7 +17,7 @@ bool Skybox::BuildSkyboxFromImport(YgString path)
   if (!m_SkyboxDataLoaded) {
     m_Path = path;
 
-    Importer imp;
+    Importer imp("Skybox", m_Application);
     m_Model = imp.Import(path.c_str(), m_ImageFlip);
 
     if (!m_Model.SuccessfulLoaded) {

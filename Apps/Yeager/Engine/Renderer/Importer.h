@@ -21,12 +21,13 @@
 #include "../../Common/Common.h"
 #include "../../Common/LogEngine.h"
 #include "../../Common/Utilities.h"
+#include "../Physics/PhysXHandle.h"
+#include "Object.h"
 #include "TextureHandle.h"
 
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
-#include "Object.h"
 
 #define YEAGER_IMPORTER_DEFAULT_SOURCE "DEFAULT_SOURCE"
 
@@ -52,7 +53,7 @@ class Importer {
                          unsigned int assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS);
   AnimatedObjectModelData ImportAnimated(YgCchar path, bool flip_image = false,
                                          unsigned int assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS_ANIMATED);
-
+  PhysXTriangleMeshInput ImportToPhysX(YgCchar path, unsigned int assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS);
   static unsigned int GetModelsCount() { return m_ImportedModelsCount; };
 
  protected:
@@ -68,6 +69,10 @@ class Importer {
   void SetVertexBoneData(AnimatedVertexData& vertex, int boneID, float weight);
   void ExtractBoneWeightForVertices(std::vector<AnimatedVertexData>& vertices, aiMesh* mesh, const aiScene* scene,
                                     AnimatedObjectModelData* data);
+
+  void ProcessPhysXNode(aiNode* node, const aiScene* scene, PhysXTriangleMeshInput* input);
+  void ProcessPhysXMesh(aiMesh* mesh, const aiScene* scene, PhysXTriangleMeshInput* input);
+
   static unsigned int m_ImportedModelsCount;
   ApplicationCore* m_Application = YEAGER_NULLPTR;
   YgString m_FullPath;

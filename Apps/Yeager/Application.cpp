@@ -44,9 +44,7 @@ void ApplicationCore::ValidatesExternalEngineFolder()
 
 YgString ApplicationCore::GetExternalFolderLocation()
 {
-#ifdef YEAGER_SYSTEM_LINUX
-  return GetLinuxHomeDirectory();
-#endif
+  return GetExternalFolderPath();
 }
 
 void ApplicationCore::CreateDirectoriesAndFiles()
@@ -103,6 +101,10 @@ void ApplicationCore::BuildApplicationCoreCompoments()
   m_Interface = new Interface(m_Window, this);
   m_EditorCamera = new EditorCamera(this);
   m_EditorExplorer = new EditorExplorer(this);
+  m_PhysXHandle = new PhysXHandle(this);
+  if (!m_PhysXHandle->InitPxEngine()) {
+    Yeager::Log(ERROR, "PhysX cannot initialize correctly, something must went wrong!");
+  }
 }
 
 void ApplicationCore::Setup()
@@ -114,7 +116,7 @@ void ApplicationCore::Setup()
   LauncherProjectPicker project = RequestLauncher();
   if (!project.UserWantToExit) {
 
-    m_mode = Yeager::AppEditor;
+    m_mode = YgApplicationMode::eAPPLICATION_EDITOR;
     m_Window->RegenerateMainWindow(1920, 1080, RequestWindowEngineName(project), m_Input->MouseCallback);
     m_Interface->RequestRestartInterface(m_Window);
     m_Scene = new Yeager::Scene(project.m_Name, project.m_AuthorName, project.m_SceneType, project.m_ProjectFolderPath,
@@ -181,19 +183,43 @@ void ApplicationCore::UpdateListenerPosition()
 
 void ApplicationCore::Render()
 {
-  OpenGLFunc();
 
-  m_PhysXHandle = new PhysXHandle();
-  if (!m_PhysXHandle->InitPxEngine()) {
-    Yeager::Log(ERROR, "PhysX cannot initialize correctly, something must went wrong!");
+  OpenGLFunc();
+  auto source = std::make_shared<PhysicalLightHandle>(
+      "Main", this, std::vector<Shader*>{ShaderFromVarName("Simple"), ShaderFromVarName("SimpleAnimated")},
+      ShaderFromVarName("Light"));
+  ObjectPointLight light;
+  Transformation trans;
+  source->AddObjectPointLight(light, trans);
+  GetScene()->GetLightSources()->push_back(source);
+
+  GetScene()->CheckDuplicatesLightSources();
+
+  physx::PxMaterial* material = m_PhysXHandle->GetPxPhysics()->createMaterial(1.0f, 1.0f, 1.0f);
+
+  for (auto& sources : *m_Scene->GetLightSources()) {
+    for (auto& obj : *sources->GetObjectPointLights()) {
+      YgVector3 pos = obj.ObjSource->GetTransformationPtr()->position;
+      m_PhysXHandle->GetGeometryHandle()->CreatePrimitiveSphere(YEAGER_PHYSX_RIGID_STATIC_BODY, *material,
+                                                                physx::PxTransform(YgVector3ToPxVec3(pos)), 1);
+    }
   }
 
-  auto source = std::make_shared<LightSource>("Default", this, std::vector<Shader*>{ShaderFromVarName("Simple")},
-                                              ShaderFromVarName("Light"));
+  physx::PxRigidDynamic* actor = (physx::PxRigidDynamic*)m_PhysXHandle->GetGeometryHandle()->CreatePrimitiveSphere(
+      YEAGER_PHYSX_RIGID_DYNAMIC_BODY, *material, physx::PxTransform(physx::PxVec3(3.0f, 1.0f, 4.0f)), 1);
+  ObjectPointLight ll;
+  m_Scene->GetLightSources()->at(0)->AddObjectPointLight(&ll, ObjectGeometryType::ESphere);
+
+  m_Controller = m_PhysXHandle->GetCharacterController()->CreateController(physx::PxControllerShapeType::eCAPSULE);
+  m_TimeBeforeRender = static_cast<float>(glfwGetTime());
+
+  bool collisionFloor = false;
 
   while (ShouldRender()) {
     glfwPollEvents();
     OpenGLClear();
+
+    ll.ObjSource->GetTransformationPtr()->position = Yeager::PxVec3ToYgVector3(actor->getGlobalPose().p);
 
     m_Interface->InitRenderFrame();
     m_Scene->CheckThreadsAndTriggerActions();
@@ -207,10 +233,24 @@ void ApplicationCore::Render()
 
     m_AudioEngine->Engine->update();
 
+    if (!collisionFloor) {
+      PhysXCollisionDetection det = m_PhysXHandle->GetCharacterController()->Move(
+          m_Controller, physx::PxVec3(0.0f, -0.1f, 0.0f), 0.01f, m_DeltaTime, NULL);
+      if (det.bHasCollideBelow)
+        collisionFloor = true;
+    } else {
+      PhysXCollisionDetection det = m_PhysXHandle->GetCharacterController()->Move(
+          m_Controller, physx::PxVec3(0.0f, 0.0f, 0.0f), 0.01f, m_DeltaTime, NULL);
+      if (!det.bHasCollideBelow) {
+        collisionFloor = false;
+      }
+    }
+
+    physx::PxExtendedVec3 pos = m_Controller->getPosition();
+    m_EditorCamera->SetPosition(YgVector3(pos.x, pos.y, pos.z));
+
     m_PhysXHandle->StartSimulation(m_DeltaTime);
     m_PhysXHandle->EndSimulation();
-
-    source->BuildShaderProps(GetCamera()->GetPosition(), GetCamera()->GetDirection(), 32);
     ManifestShaderProps(ShaderFromVarName("TerrainGeneration"));
     ManifestShaderProps(ShaderFromVarName("Simple"));
     ManifestShaderProps(ShaderFromVarName("Collision"));
@@ -219,7 +259,6 @@ void ApplicationCore::Render()
     ManifestShaderProps(ShaderFromVarName("SimpleInstancedAnimated"));
     ShaderFromVarName("SimpleInstancedAnimated")->UseShader();
 
-    VerifyCollisions();
     DrawObjects();
     ManifestShaderProps(ShaderFromVarName("SimpleInstanced"));
 
@@ -232,39 +271,12 @@ void ApplicationCore::Render()
     GetInput()->ProcessInputRender(GetWindow(), m_DeltaTime);
     glfwSwapBuffers(GetWindow()->getWindow());
   }
+  m_Controller->release();
   GetScene()->CheckAndAwaitThreadsToFinish();
   GetScene()->Save();
   m_AudioEngine->TerminateAudioEngine();
   m_PhysXHandle->TerminateEngine();
   delete m_PhysXHandle;
-}
-
-void ApplicationCore::VerifyCollisions()
-{
-  if (GetScene()->GetObjects()->empty() || GetScene()->GetObjects()->size() == 1) {
-    return;
-  }
-
-  int obj_al = 1;
-
-  for (const auto& obj : *GetScene()->GetObjects()) {
-    obj->ForceCollision(false);
-  }
-
-  for (unsigned int x = 0; x < GetScene()->GetObjects()->size(); x++) {
-    for (unsigned int y = obj_al; y < GetScene()->GetObjects()->size(); y++) {
-      Object* obj1 = GetScene()->GetObjects()->at(x).get();
-      Object* obj2 = GetScene()->GetObjects()->at(y).get();
-      /* Checks if objects have been loaded from importer thread and if they are valid entities*/
-      if ((!obj1->IsLoaded() || !obj1->IsValid()) || (!obj2->IsLoaded() || !obj2->IsValid())) {
-        continue;
-      }
-      bool collision = obj1->GetCollision()->CheckCollision(obj2);
-      obj1->MakeCollision(collision);
-      obj2->MakeCollision(collision);
-    }
-    obj_al++;
-  }
 }
 
 void ApplicationCore::BuildAndDrawLightSources()
@@ -324,20 +336,20 @@ Yeager::Scene* ApplicationCore::GetScene()
   return m_Scene;
 }
 
-ApplicationMode ApplicationCore::GetMode() noexcept
+YgApplicationMode::Enum ApplicationCore::GetMode() noexcept
 {
   return m_mode;
 }
-ApplicationState ApplicationCore::GetState() noexcept
+YgApplicationState::Enum ApplicationCore::GetState() noexcept
 {
   return m_state;
 }
 
-void ApplicationCore::SetMode(ApplicationMode mode) noexcept
+void ApplicationCore::SetMode(YgApplicationMode::Enum mode) noexcept
 {
   m_mode = mode;
 }
-void ApplicationCore::SetState(ApplicationState state) noexcept
+void ApplicationCore::SetState(YgApplicationState::Enum state) noexcept
 {
   m_state = state;
 }

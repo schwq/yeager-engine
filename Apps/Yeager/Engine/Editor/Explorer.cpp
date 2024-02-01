@@ -21,6 +21,7 @@ void EditorExplorer::AddAudioWindow()
   if (Button("Add Audio")) {
     if (!m_AddGeometryWindowOpen && !m_AddImportedObjectWindowOpen) {
       m_AddAudioWindowOpen = true;
+      m_SelectableOptions = m_Application->GetScene()->VerifySoundsOptionsInAssetFolder();
     }
   }
   if (m_AddAudioWindowOpen) {
@@ -40,6 +41,21 @@ void EditorExplorer::AddAudioWindow()
     Checkbox("3D Audio", &m_AddAudioIs3D);
 
     Text("Path: %s", m_NewObjectPath.c_str());
+
+    if (CollapsingHeader("Sounds Options in Assets folder")) {
+      int index = 0;
+      for (auto& obj : m_SelectableOptions) {
+        PushID(index++);
+        if (Button(obj.first.c_str())) {
+          m_NewObjectPath = obj.second;
+          if (m_NewObjectName.empty() || m_NewObjectName == YEAGER_NULL_LITERAL) {
+            m_NewObjectName = obj.first;
+          }
+        }
+        PopID();
+      }
+    }
+
     m_Application->GetCamera()->SetShouldMove(false);
     m_Application->GetInput()->SetCursorCanDisappear(false);
 
@@ -47,13 +63,14 @@ void EditorExplorer::AddAudioWindow()
       if (m_NewObjectName.empty() || m_NewObjectPath.empty()) {
         m_Application->GetInterface()->AddWarningWindow("Audio must have a name and path!");
         m_EverythingFineToCreate = false;
+        m_SelectableOptions.clear();
       }
 
       if (m_EverythingFineToCreate) {
         if (m_AddAudioIs3D) {
           auto audio =
               std::make_shared<Yeager::Audio3DHandle>(m_NewObjectPath, m_NewObjectName, m_Application->GetAudioEngine(),
-                                                      m_LoopedAudio, irrklang::vec3df(0.0f, 0.0f, 0.0f));
+                                                      m_LoopedAudio, irrklang::vec3df(0.0f, 0.0f, 0.0f), m_Application);
           auto toolbox = std::make_shared<Yeager::ToolBoxObject>();
           toolbox->SetType(EExplorerTypeAudio3D);
           toolbox->SetEntity(audio.get());
@@ -61,8 +78,8 @@ void EditorExplorer::AddAudioWindow()
           m_Application->GetScene()->GetToolboxs()->push_back(toolbox);
 
         } else {
-          auto audio = std::make_shared<Yeager::AudioHandle>(m_NewObjectPath, m_NewObjectName,
-                                                             m_Application->GetAudioEngine(), m_LoopedAudio);
+          auto audio = std::make_shared<Yeager::AudioHandle>(
+              m_NewObjectPath, m_NewObjectName, m_Application->GetAudioEngine(), m_LoopedAudio, m_Application);
           auto toolbox = std::make_shared<Yeager::ToolBoxObject>();
           toolbox->SetType(EExplorerTypeAudio);
           toolbox->SetEntity(audio.get());
@@ -85,6 +102,7 @@ void EditorExplorer::AddAudioWindow()
       m_EverythingFineToCreate = false;
       m_AddAudioWindowOpen = false;
       m_Application->GetInput()->SetCameraCursorToWindowState(false);
+      m_SelectableOptions.clear();
     }
     End();
   }
@@ -151,6 +169,7 @@ void EditorExplorer::AddImportedObjectWindow()
   if (Button("Add Imported Object")) {
     if (!m_AddGeometryWindowOpen && !m_AddAudioWindowOpen) {
       m_AddImportedObjectWindowOpen = true;
+      m_SelectableOptions = m_Application->GetScene()->VerifyImportedModelsOptionsInAssetsFolder();
     }
   }
   if (m_AddImportedObjectWindowOpen) {
@@ -170,6 +189,19 @@ void EditorExplorer::AddImportedObjectWindow()
     Text("Path: %s", m_NewObjectPath.c_str());
     m_Application->GetCamera()->SetShouldMove(false);
     m_Application->GetInput()->SetCursorCanDisappear(false);
+    if (CollapsingHeader("Models Options in Assets folder")) {
+      int index = 0;
+      for (auto& obj : m_SelectableOptions) {
+        PushID(index++);
+        if (Button(obj.first.c_str())) {
+          m_NewObjectPath = obj.second;
+          if (m_NewObjectName.empty() || m_NewObjectName == YEAGER_NULL_LITERAL) {
+            m_NewObjectName = obj.first;
+          }
+        }
+        PopID();
+      }
+    }
 
     Checkbox("Flip texture", &m_ImportedObjectFlipTexture);
     Checkbox("Animated", &m_AddObjectIsAnimated);
@@ -183,6 +215,7 @@ void EditorExplorer::AddImportedObjectWindow()
       if (m_NewObjectName.empty() || m_NewObjectPath.empty()) {
         m_Application->GetInterface()->AddWarningWindow("Imported Model must have a name and path!");
         m_EverythingFineToCreate = false;
+        m_SelectableOptions.clear();
       }
 
       if (m_EverythingFineToCreate) {
@@ -255,6 +288,7 @@ void EditorExplorer::AddImportedObjectWindow()
       m_Application->GetCamera()->SetShouldMove(true);
       m_Application->GetInput()->SetCursorCanDisappear(true);
       m_Application->GetInput()->SetCameraCursorToWindowState(false);
+      m_SelectableOptions.clear();
     }
     End();
   }
@@ -271,10 +305,10 @@ void EditorExplorer::DrawExplorer()
   Text("Main Scene");
   for (unsigned int x = 0; x < m_Application->GetScene()->GetToolboxs()->size(); x++) {
     Yeager::ToolBoxObject* obj = m_Application->GetScene()->GetToolboxs()->at(x).get();
-    if (obj->GetEntity()->IsValid()) {
-      YgString label = obj->GetEntity()->GetName() + "##";
-      // = "[" + ExplorerTypeToString(obj->GetType()) + "] " + obj->GetEntity()->GetName();
-      if (Selectable(label.c_str(), &obj->m_selected, ImGuiSelectableFlags_AllowDoubleClick)) {
+    if (obj->GetEntity()->IsValid() && !obj->GetScheduleDeletion()) {
+
+      YgString label = "[" + ExplorerTypeToString(obj->GetType()) + "] " + obj->GetEntity()->GetName() + "##";
+      if (Selectable(label.c_str(), obj->IsSelected(), ImGuiSelectableFlags_AllowDoubleClick)) {
         m_FirstTimeToolbox = false;
         m_ToolboxSelected = m_Application->GetScene()->GetToolboxs()->at(x).get();
       }

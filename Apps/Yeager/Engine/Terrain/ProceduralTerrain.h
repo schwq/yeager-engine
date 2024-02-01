@@ -156,7 +156,7 @@ class ProceduralTerrain {
    * 
    * @return  Textures Scale
    */
-  float GetTextureScale() { return m_TextureData.m_TextureScale; }
+  YEAGER_FORCE_INLINE float GetTextureScale() const { return m_TextureData.m_TextureScale; }
 
   /**
    * @brief     Get the value at the Heightmap
@@ -165,21 +165,21 @@ class ProceduralTerrain {
    * @param z   The z position to retrieve the value
    * @return    Value in the heightmap
    */
-  float GetHeightMapValue(int x, int z) { return m_MetricData.m_HeightMap->At(x, z); }
+  YEAGER_FORCE_INLINE float GetHeightMapValue(int x, int z) { return m_MetricData.m_HeightMap->At(x, z); }
 
   /**
    * @brief   Get the world scale
    * 
    * @return  World scale as a float
    */
-  float GetWorldScale() { return m_MetricData.WorldScale; }
+  YEAGER_FORCE_INLINE float GetWorldScale() const { return m_MetricData.WorldScale; }
 
   /**
    * @brief Returns the terrain size, as width and lenght are the same value
    * 
    * @return Terrain size as float
    */
-  float GetSize() { return m_MetricData.m_TerrainSize; }
+  YEAGER_FORCE_INLINE float GetSize() const { return m_MetricData.m_TerrainSize; }
 
   /**
    * @brief         Generates random points in the surface of the terrain, used to positioning trees for example

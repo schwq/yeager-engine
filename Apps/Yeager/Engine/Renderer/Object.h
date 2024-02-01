@@ -43,7 +43,6 @@ struct BoneInfo {
 struct ObjectTexture {
   bool FlipImage = true;
   bool ImcompleteId = false;
-  ;
   YgString Path = YEAGER_NULL_LITERAL;
   YgString Type = YEAGER_NULL_LITERAL;
   YgString Name = YEAGER_NULL_LITERAL;
@@ -160,8 +159,6 @@ class Object : public GameEntity {
   virtual void BuildToolbox(ExplorerObjectType type);
   EntityPhysics* GetPhysics() { return &m_Physics; }
 
-  Yeager::ToolBoxObject* GetToolbox() { return m_Toolbox.get(); }
-
  protected:
   virtual void Setup();
   virtual void DrawGeometry(Yeager::Shader* shader);
@@ -171,20 +168,18 @@ class Object : public GameEntity {
 
   YgString m_Path;
   bool m_ObjectDataLoaded = false;
-  ApplicationCore* m_Application;
   ObjectModelData m_ModelData;
   ObjectGeometryData m_GeometryData;
   ObjectGeometryType m_GeometryType;
   EntityPhysics m_Physics;
   ImporterThreaded* m_ThreadImporter = YEAGER_NULLPTR;
-  std::shared_ptr<ToolBoxObject> m_Toolbox;
 };
 
 class InstancedObject : public Object {
  public:
   InstancedObject(YgString name, ApplicationCore* application, GLuint number) : Object(name, application)
   {
-    SetEntityType(EObjectInstanced);
+    SetEntityType(EntityObjectType::eOBJECT_INSTANCED);
     m_InstancedObjs = number;
   }
   ~InstancedObject() {}
@@ -214,6 +209,7 @@ class AnimatedObject : public Object {
   void UpdateAnimation(float delta);
   void BuildAnimationMatrices(Shader* shader);
   void BuildAnimation(YgString path);
+  void ThreadLoadIncompleteTetxtures();
 
  protected:
   void Setup();
@@ -229,7 +225,7 @@ class InstancedAnimatedObject : public AnimatedObject {
   InstancedAnimatedObject(YgString name, ApplicationCore* application, GLuint number)
       : AnimatedObject(name, application)
   {
-    SetEntityType(EObjectInstancedAnimated);
+    SetEntityType(EntityObjectType::eOBJECT_INSTANCED_ANIMATED);
     m_InstancedObjs = number;
     m_AABBCollisions.reserve(number);
     m_Props.reserve(number);

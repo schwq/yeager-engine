@@ -31,6 +31,8 @@
 *.out
 *.app
 
+*.pdb
+
 out/
 x64/
 .vs/

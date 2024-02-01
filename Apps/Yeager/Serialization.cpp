@@ -169,7 +169,7 @@ void Serialization::SerializeScene(Yeager::Scene* scene, YgString path)
   SerializeObject(out, "Scene", scene->GetContext().m_name);
   SerializeObject(out, "Author", scene->GetContext().m_ProjectAuthor);
   SerializeObject(out, "Renderer", SceneRendererToString(scene->GetContext().m_renderer));
-  SerializeObject(out, "SceneType", SceneTypeToString(scene->GetContext().m_type));
+  SerializeObject(out, "SceneType", SceneTypeToString(scene->GetContext().m_ExplorerType));
   SerializeObject(out, "Camera Position", m_Application->GetCamera()->GetPosition());
   SerializeObject(out, "Camera Direction", m_Application->GetCamera()->GetDirection());
   SerializeBegin(out, "SceneEntities", YAML::BeginSeq);
@@ -241,15 +241,17 @@ void Serialization::SerializeScene(Yeager::Scene* scene, YgString path)
   }
 
   for (unsigned int x = 0; x < scene->GetLightSources()->size(); x++) {
-    LightSource* obj = scene->GetLightSources()->at(x).get();
+    PhysicalLightHandle* obj = scene->GetLightSources()->at(x).get();
     out << YAML::BeginMap;
 
     SerializeBasicEntity(out, obj->GetName(), obj->GetId(), "LightSource");
     SerializeObject(out, "DrawableShaderVar", obj->GetDrawableShader()->GetVarName());
 
     SerializeBegin(out, "LinkedShaderVar", YAML::BeginSeq);
-    for (auto& shader : *obj->GetLinkedShader()) {
+    for (auto& shader : *obj->GetLinkedShaders()) {
+        out << YAML::BeginMap;
       SerializeObject(out, "VarName", shader->GetVarName());
+        out << YAML::EndMap;
     }
     out << YAML::EndSeq;
 
@@ -514,6 +516,8 @@ void Serialization::DeserializeScene(Yeager::Scene* scene, YgString path)
     } catch (YAML::BadConversion exc) {
       Yeager::Log(ERROR,
                   "Something went wrong at reading the Scene Entities configuration! Have the user change itself?");
+    } catch(YAML::BadSubscript exc) {
+      Yeager::Log(ERROR, "Something went wront at reading the Scene Entities configuration! YAML::BadSubscript!");
     }
   }
 }
@@ -577,7 +581,8 @@ void inline Serialization::DeserializeEntity(Yeager::Scene* scene, YAML::Node& n
 
     case StringToInteger("AudioHandle"): {
       YgString path = entity["Path"].as<YgString>();
-      auto audio = std::make_shared<Yeager::AudioHandle>(path, name, m_Application->GetAudioEngine(), false);
+      auto audio =
+          std::make_shared<Yeager::AudioHandle>(path, name, m_Application->GetAudioEngine(), false, m_Application);
       scene->GetAudios()->push_back(audio);
       auto toolbox = std::make_shared<Yeager::ToolBoxObject>();
       toolbox->SetEntity(audio.get());
@@ -589,7 +594,7 @@ void inline Serialization::DeserializeEntity(Yeager::Scene* scene, YAML::Node& n
       YgString path = entity["Path"].as<YgString>();
       YgVector3 position = entity["Position"].as<YgVector3>();
       auto audio = std::make_shared<Yeager::Audio3DHandle>(path, name, m_Application->GetAudioEngine(), false,
-                                                           YgVec3_to_Vec3df(position));
+                                                           YgVec3_to_Vec3df(position), m_Application);
       scene->GetAudios3D()->push_back(audio);
       auto toolbox = std::make_shared<Yeager::ToolBoxObject>();
       toolbox->SetType(EExplorerTypeAudio3D);
@@ -698,15 +703,16 @@ void inline Serialization::DeserializeEntity(Yeager::Scene* scene, YAML::Node& n
     case StringToInteger("LightSource"): {
       YgString drawable_shader_var = entity["DrawableShaderVar"].as<YgString>();
       std::vector<Shader*> link_shader;
-      for (const auto& shader : entity["LinkedShaders"]) {
+      auto linked_shaders = entity["LinkedShaderVar"];
+      for (const auto& shader : linked_shaders) {
         if (m_Application->ShaderFromVarName(shader["VarName"].as<YgString>())->IsInitialized()) {
           link_shader.push_back(m_Application->ShaderFromVarName(shader["VarName"].as<YgString>()));
         } else {
           Yeager::Log(WARNING, "Configuration file trying to push a uninitialized shader to the light source!");
         }
       }
-      auto obj = std::make_shared<Yeager::LightSource>(name, m_Application, link_shader,
-                                                       m_Application->ShaderFromVarName(drawable_shader_var));
+      auto obj = std::make_shared<Yeager::PhysicalLightHandle>(name, m_Application, link_shader,
+                                                               m_Application->ShaderFromVarName(drawable_shader_var));
       YAML::Node DirectionalLight = entity["DirectionalLight"];
       obj->GetDirectionalLight()->Direction = DirectionalLight["Direction"].as<YgVector3>();
       obj->GetDirectionalLight()->Ambient = DirectionalLight["Ambient"].as<YgVector3>();

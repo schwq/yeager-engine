@@ -189,8 +189,9 @@ bool Yeager::AudioHandle::CheckIfSoundEffectIsSupported()
   return false;
 }
 
-AudioHandle::AudioHandle(YgString path, YgString name, AudioEngineHandle* handle, bool looped)
-    : GameEntity(name), m_EngineHandle(handle), m_path(path), m_looped(looped)
+AudioHandle::AudioHandle(YgString path, YgString name, AudioEngineHandle* handle, bool looped,
+                         Yeager::ApplicationCore* app)
+    : GameEntity(EntityObjectType::eAUDIO_HANDLE, app, name), m_EngineHandle(handle), m_path(path), m_looped(looped)
 {
   m_sound_source = m_EngineHandle->Engine->addSoundSourceFromFile(path.c_str(), ESM_AUTO_DETECT, false);
   if (!m_sound_source) {
@@ -332,8 +333,8 @@ void Audio3DHandle::SetAudioPos(irrklang::vec3df pos)
 }
 
 Audio3DHandle::Audio3DHandle(YgString path, YgString name, AudioEngineHandle* handle, bool looped,
-                             irrklang::vec3df position)
-    : AudioHandle(path, name, handle, looped), m_audio_pos(position)
+                             irrklang::vec3df position, Yeager::ApplicationCore* app)
+    : AudioHandle(path, name, handle, looped, app), m_audio_pos(position)
 {
   if (m_sound_source) {
     Yeager::Log(INFO, "Create Audio3DHandle name {} ID {} Position {} {} {}", m_Name, m_id, position.X, position.Y,

@@ -50,7 +50,7 @@ class EntityPhysics {
   float m_air_resistance = 0.01f;
   bool m_gravity_enabled = false;
   bool m_reverse_gravity = false;
-  Yeager::GameEntity* m_entity = YEAGER_NULLPTR;
+  Yeager::GameEntity* m_GameEntityPtr = YEAGER_NULLPTR;
 };
 
 }  // namespace Yeager

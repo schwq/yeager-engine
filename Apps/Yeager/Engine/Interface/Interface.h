@@ -20,6 +20,7 @@
 
 #include "../../Common/Common.h"
 #include "../Editor/Explorer.h"
+#include "../Lighting/LightHandle.h"
 #include "../Media/AudioHandle.h"
 #include "../Renderer/ImageUtilities.h"
 #include "../Renderer/TextureHandle.h"
@@ -140,6 +141,10 @@ enum class ScreenShotMode { EFullScreen, EMiddleFixedSized, ECustomSizedAndPosit
 
 extern void InputVector3(const char* label, YgVector3* v, const char* format = "%.3f", ImGuiInputTextFlags flags = 0);
 
+static void DisplayDirectionalLightControl(Yeager::PhysicalLightHandle* source);
+static void DisplaySpotLightControl(Yeager::PhysicalLightHandle* source);
+static void DisplayPointLightControl(Yeager::ObjectPointLight* source);
+
 /// @brief Class that holds the interface management, use ImGui as library, the current program must be running just one instance of this class
 /// @attention In the future, we need to write a self-custom GUI library in C for this Engine
 /// @attention so we can have more control over the drawing methods and increase performance
@@ -223,6 +228,8 @@ class Interface {
   void ShadersControlWindow();
 
   void LightHandleControlWindow();
+
+  void PhysXHandleControlWindow();
 
  private:
   InterfaceControl m_Control;

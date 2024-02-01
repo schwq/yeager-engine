@@ -49,6 +49,50 @@ void Importer::ProcessNode(aiNode* node, const aiScene* scene, ObjectModelData* 
   }
 }
 
+PhysXTriangleMeshInput Importer::ImportToPhysX(YgCchar path, unsigned int assimp_flags)
+{
+  PhysXTriangleMeshInput input;
+  Assimp::Importer imp;
+  const aiScene* scene = imp.ReadFile(path, assimp_flags);
+  if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+    Yeager::Log(ERROR, "Cannot load imported model to PhysX! Path {}, Error {}", path, imp.GetErrorString());
+    return input;
+  }
+  ProcessPhysXNode(scene->mRootNode, scene, &input);
+  m_FullPath = path;
+  return input;
+}
+
+void Importer::ProcessPhysXNode(aiNode* node, const aiScene* scene, PhysXTriangleMeshInput* input)
+{
+  for (unsigned int x = 0; x < node->mNumMeshes; x++) {
+    aiMesh* mesh = scene->mMeshes[node->mMeshes[x]];
+    ProcessPhysXMesh(mesh, scene, input);
+  }
+
+  for (unsigned int x = 0; x < node->mNumChildren; x++) {
+    ProcessPhysXNode(node->mChildren[x], scene, input);
+  }
+}
+void Importer::ProcessPhysXMesh(aiMesh* mesh, const aiScene* scene, PhysXTriangleMeshInput* input)
+{
+  for (unsigned int x = 0; x < mesh->mNumVertices; x++) {
+    physx::PxVec3 vector;
+    vector.x = mesh->mVertices[x].x;
+    vector.y = mesh->mVertices[x].y;
+    vector.z = mesh->mVertices[x].z;
+    input->Vertices.push_back(vector);
+  }
+
+  for (unsigned int x = 0; x < mesh->mNumFaces; x++) {
+
+    aiFace face = mesh->mFaces[x];
+    for (unsigned int y = 0; y < face.mNumIndices; y++) {
+      input->Indices.push_back(face.mIndices[y]);
+    }
+  }
+}
+
 ObjectMeshData Importer::ProcessMesh(aiMesh* mesh, const aiScene* scene, ObjectModelData* data)
 {
   std::vector<ObjectVertexData> vertices;
@@ -117,11 +161,11 @@ std::vector<ObjectTexture*> Importer::LoadMaterialTexture(aiMaterial* material, 
     bool skip = false;
     for (unsigned int y = 0; y < data->TexturesLoaded.size(); y++) {
       YgString cmp_path = RemoveSuffixUntilCharacter(m_FullPath, YG_PS);
-      if (Yeager::ValidatesPath(str.C_Str(), false)) {
+      if (Yeager::ValidatesPath(cmp_path + YgString(str.C_Str()))) {
         // Texture path in the mtl file is a complete path, we just assign the complete path to the compare_path without adding to it
-        cmp_path = str.C_Str();
+        cmp_path += YgString(str.C_Str());
       } else {
-        cmp_path += str.C_Str();
+        cmp_path = str.C_Str();
       }
       if (std::strcmp(data->TexturesLoaded[y]->first.Path.data(), cmp_path.data()) == 0) {
         ObjectTexture* rt = &data->TexturesLoaded[y]->first;
@@ -134,10 +178,10 @@ std::vector<ObjectTexture*> Importer::LoadMaterialTexture(aiMaterial* material, 
     if (!skip) {
       YgString path_suffix_removed = RemoveSuffixUntilCharacter(m_FullPath, YG_PS);
       YgString path;
-      if (Yeager::ValidatesPath(str.C_Str(), false)) {
-        path = str.C_Str();
+      if (Yeager::ValidatesPath(path_suffix_removed + YgString(str.C_Str()), false)) {
+        path = path_suffix_removed + YgString(str.C_Str());
       } else {
-        path = path_suffix_removed + str.C_Str();
+        path = YgString(str.C_Str());
       }
 /* Checks if the texture path written in the mtl file isnt using / on windows build*/
 #ifdef YEAGER_SYSTEM_WINDOWS_x64

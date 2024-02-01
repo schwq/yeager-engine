@@ -83,10 +83,10 @@ struct ObjectPointLight : public PointLight {
   }
 };
 
-class LightHandle : public GameEntity {
+class LightBaseHandle : public EditorEntity {
  public:
-  LightHandle(YgString name, ApplicationCore* app, std::vector<Shader*> link_shaders);
-  ~LightHandle() {}
+  LightBaseHandle(YgString name, ApplicationCore* app, std::vector<Shader*> link_shaders);
+  ~LightBaseHandle() {}
 
   std::vector<PointLight>* GetPointLights() { return &m_PointLights; }
   DirectionalLight* GetDirectionalLight() { return &m_DirectionalLight; }
@@ -95,30 +95,48 @@ class LightHandle : public GameEntity {
   SpotLight* GetSpotLight() { return &spotLight; }
   virtual void BuildShaderProps(YgVector3 viewPos, YgVector3 front, float shininess);
 
-  std::vector<Shader*>* GetLinkedShader() { return &m_LinkedShader; }
+  /* Returns linked shaders, that are the shaders affected by the class lighting management */
+  std::vector<Shader*>* GetLinkedShaders() { return &m_LinkedShader; }
 
  protected:
   std::vector<PointLight> m_PointLights;
+  std::vector<Shader*> m_LinkedShader;
   DirectionalLight m_DirectionalLight;
   Material m_Material;
   Viewer m_Viewer;
   SpotLight spotLight;
-  ApplicationCore* m_Application = YEAGER_NULLPTR;
-  std::vector<Shader*> m_LinkedShader;
 };
 
-class LightSource : public LightHandle {
+/**
+* @brief PhysicalLightHandle is inheritance from LightBaseHandle, that actually does mostly things the same, but the light sources in the scene
+* are drawn like models or geometries
+*/
+class PhysicalLightHandle : public LightBaseHandle {
  public:
-  LightSource(YgString name, ApplicationCore* app, std::vector<Shader*> link_shader, Shader* draw_shader);
-  ~LightSource();
+  PhysicalLightHandle(YgString name, ApplicationCore* app, std::vector<Shader*> link_shader, Shader* draw_shader);
+  ~PhysicalLightHandle();
+
+  bool operator==(const PhysicalLightHandle& rhs) { return (this->m_Name == rhs.m_Name); }
+
+  void ScheduleDeletionOfPointLights()
+  {
+    for (const auto& obj : m_ObjectPointLights) {
+      obj.ObjSource->GetToolbox()->SetScheduleDeletion(true);
+      obj.ObjSource->SetScheduleDeletion(true);
+    }
+  }
 
   void AddObjectPointLight(const ObjectPointLight& obj, Transformation& trans);
   void AddObjectPointLight(const ObjectPointLight& obj, Yeager::Object& custom_obj);
+  void AddObjectPointLight(const ObjectPointLight& obj);
+  void AddObjectPointLight(ObjectPointLight* light, ObjectGeometryType type);
   void BuildShaderProps(YgVector3 viewPos, YgVector3 front, float shininess);
   void DrawLightSources();
 
+  /* Returns the pointer to shader which is used to draw the light sources in the scene */
   Shader* GetDrawableShader() const { return m_DrawableShader; }
 
+  /* Returns the vector of objects that acts like light sources in the scene */
   std::vector<ObjectPointLight>* GetObjectPointLights() { return &m_ObjectPointLights; }
 
  protected:

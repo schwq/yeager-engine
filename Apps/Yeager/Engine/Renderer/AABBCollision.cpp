@@ -28,17 +28,7 @@ std::pair<YgVector3, YgVector3> AABBCollision::GetExtents(const std::vector<YgVe
 
 bool AABBCollision::CheckCollision(Object* obj1)
 {
-  YgVector3 aPos = m_ObjectCollidable->GetTransformation().position;
-  YgVector3 bPos = obj1->GetTransformation().position;
-  const YgVector3 aMax = m_AABB.Max + aPos;
-  const YgVector3 aMin = m_AABB.Min + aPos;
-  const YgVector3 bMax = obj1->GetCollision()->GetPositions().Max + bPos;
-  const YgVector3 bMin = obj1->GetCollision()->GetPositions().Min + bPos;
-
-  bool CollisionX = (aMin.x <= bMax.x && aMax.x >= bMin.x);
-  bool CollisionY = (aMin.y <= bMax.y && aMax.y >= bMin.y);
-  bool CollisionZ = (aMin.z <= bMax.z && aMax.z >= bMin.z);
-  return (CollisionX && CollisionY && CollisionZ);
+  return false;
 }
 
 void AABBCollision::Setup()

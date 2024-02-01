@@ -1,4 +1,6 @@
 #include "PhysXHandle.h"
+#include "../../Application.h"
+#include "PhysXGeometryHandle.h"
 using namespace Yeager;
 using namespace physx;
 
@@ -13,12 +15,14 @@ PxVec3 Yeager::YgVector3ToPxVec3(const YgVector3& vec)
 
 YgVector3 Yeager::PxVec3ToYgVector3(const PxVec3& vec)
 {
-  YgVector3 rt;
+  YgVector3 rt(0.0f);
   rt.x = vec.x;
   rt.y = vec.y;
   rt.z = vec.z;
   return rt;
 }
+
+PhysXHandle::PhysXHandle(Yeager::ApplicationCore* app) : m_Application(app) {}
 
 bool PhysXHandle::InitPxEngine()
 {
@@ -68,7 +72,7 @@ bool PhysXHandle::InitPxEngine()
   }
 
   m_PxSceneDesc = new PxSceneDesc(m_PxPhysics->getTolerancesScale());
-  m_PxSceneDesc->gravity = PxVec3(0.0f, -9.81f, 0.0f);
+  m_PxSceneDesc->gravity = PxVec3(0.0f, -90.81f, 0.0f);
   m_PxSceneDesc->cpuDispatcher = m_PxCpuDispatcher;
   m_PxSceneDesc->filterShader = PxDefaultSimulationFilterShader;
 
@@ -90,12 +94,22 @@ bool PhysXHandle::InitPxEngine()
   m_PxActors.push_back(groundPlane);
   m_PxScene->addActor(*groundPlane);
 
+  m_PhysXGeometryHandle = new PhysXGeometryHandle(this, m_Application);
+  m_CharacterController = new PhysXCharacterController(this);
+
   m_Initialized = true;
   return true;
 }
 
 void PhysXHandle::TerminateEngine()
 {
+  for (auto& capsule : m_Capsules) {
+    delete capsule;
+  }
+  m_Capsules.clear();
+
+  m_CharacterController->PhysXCharacterController::~PhysXCharacterController();
+
   PX_RELEASE(m_PxScene);
   PX_RELEASE(m_PxPhysics);
   if (m_PxExtensionsEnabled) {
@@ -111,6 +125,9 @@ void PhysXHandle::TerminateEngine()
   }
 
   PX_RELEASE(m_PxFoundation);
+
+  delete m_PhysXGeometryHandle;
+  delete m_CharacterController;
   Yeager::Log(INFO, "PhysX Engine terminated!");
 }
 

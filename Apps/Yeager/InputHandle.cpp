@@ -4,7 +4,8 @@
 #include "Engine/Editor/Camera.h"
 using namespace Yeager;
 
-std::vector<KeyMap> Yeager::KeyMapping = {KeyMap(GLFW_MOUSE_BUTTON_1), KeyMap(GLFW_MOUSE_BUTTON_2), KeyMap(GLFW_KEY_E)};
+std::vector<KeyMap> Yeager::KeyMapping = {KeyMap(GLFW_MOUSE_BUTTON_1), KeyMap(GLFW_MOUSE_BUTTON_2), KeyMap(GLFW_KEY_E),
+                                          KeyMap(GLFW_KEY_LEFT_CONTROL)};
 KeyMap* Yeager::FindKeyMap(uint8_t key)
 {
   for (auto& keymap : KeyMapping) {
@@ -23,7 +24,7 @@ bool Input::m_CursorShouldAppear = true;
 
 void Input::KeyboardKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-  if (m_Application->GetMode() == ApplicationMode::AppEditor) {
+  if (m_Application->GetMode() == YgApplicationMode::eAPPLICATION_EDITOR) {
     switch (key) {
       case GLFW_KEY_E:
         if (FindKeyMap(GLFW_KEY_E)->AddStateAwaitAction(action)) {
@@ -43,7 +44,7 @@ void Input::KeyboardKeyCallback(GLFWwindow* window, int key, int scancode, int a
 
 void Input::MouseKeyCallback(GLFWwindow* window, int button, int action, int mods)
 {
-  if (m_Application->GetMode() == ApplicationMode::AppEditor) {
+  if (m_Application->GetMode() == YgApplicationMode::eAPPLICATION_EDITOR) {
     switch (button) {
       case GLFW_MOUSE_BUTTON_1:
         if (FindKeyMap(GLFW_MOUSE_BUTTON_1)->AddStateAwaitAction(action)) {
@@ -132,21 +133,22 @@ void Input::ProcessInputRender(Window* window, float delta)
     glfwSetWindowShouldClose(window->getWindow(), true);
   }
 
-  if (m_Application->GetMode() == Yeager::AppEditor && m_Application->GetCamera()->GetShouldMove()) {
+  if (m_Application->GetMode() == YgApplicationMode::eAPPLICATION_EDITOR &&
+      m_Application->GetCamera()->GetShouldMove()) {
     if (GetKeyPressed(GLFW_KEY_W)) {
-      m_Application->GetCamera()->UpdatePosition(CameraPosition::kForward, delta);
+      m_Application->GetCamera()->UpdatePosition(YgCameraPosition::eCAMERA_FORWARD, delta);
     }
     if (GetKeyPressed(GLFW_KEY_D)) {
-      m_Application->GetCamera()->UpdatePosition(CameraPosition::kRight, delta);
+      m_Application->GetCamera()->UpdatePosition(YgCameraPosition::eCAMERA_RIGHT, delta);
     }
     if (GetKeyPressed(GLFW_KEY_A)) {
-      m_Application->GetCamera()->UpdatePosition(CameraPosition::kLeft, delta);
+      m_Application->GetCamera()->UpdatePosition(YgCameraPosition::eCAMERA_LEFT, delta);
     }
     if (GetKeyPressed(GLFW_KEY_S)) {
-      m_Application->GetCamera()->UpdatePosition(CameraPosition::kBackward, delta);
+      m_Application->GetCamera()->UpdatePosition(YgCameraPosition::eCAMERA_BACKWARD, delta);
     }
   }
-  if (m_Application->GetMode() == Yeager::AppEditor) {
+  if (m_Application->GetMode() == YgApplicationMode::eAPPLICATION_EDITOR) {
 
     if (glfwGetKey(window->getWindow(), GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
       if (glfwGetKey(window->getWindow(), GLFW_KEY_F) == GLFW_PRESS) {

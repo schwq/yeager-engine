@@ -2,15 +2,15 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/geometric.hpp>
 #include "../../Application.h"
-
+using namespace Yeager;
 void EditorCamera::RayCasting(int mouse_x, int mouse_y, YgMatrix4 projection, YgMatrix4 view)
 {
   YEAGER_NOT_IMPLEMENTED("RayCasting");
 }
 
-EditorCamera::EditorCamera(Yeager::ApplicationCore* app, YgVector3 cameraPosition, YgVector3 cameraFront,
-                           YgVector3 cameraUp)
-    : m_Application(app)
+BaseCamera::BaseCamera(Yeager::ApplicationCore* app, YgVector3 cameraPosition, YgVector3 cameraFront,
+                       YgVector3 cameraUp)
+    : EditorEntity(EntityObjectType::eCAMERA, app, "Camera")
 {
   m_Position = cameraPosition;
   m_CameraFront = cameraFront;
@@ -20,49 +20,53 @@ EditorCamera::EditorCamera(Yeager::ApplicationCore* app, YgVector3 cameraPositio
   m_CameraYaw = 0.0f;
 }
 
-void EditorCamera::UpdateSpeed(float speed)
+EditorCamera::EditorCamera(Yeager::ApplicationCore* app, YgVector3 cameraPosition, YgVector3 cameraFront,
+                           YgVector3 cameraUp)
+    : BaseCamera(app, cameraPosition, cameraFront, cameraUp)
+{
+  Yeager::Log(INFO, "Editor Camera was created!");
+}
+
+void BaseCamera::UpdateSpeed(float speed)
 {
   m_CameraSpeed = speed;
 }
 
-bool EditorCamera::GetShouldMove()
-{
-  return m_CameraShouldMove;
-}
-
-const YgMatrix4 EditorCamera::ReturnViewMatrix()
+const YgMatrix4 BaseCamera::ReturnViewMatrix()
 {
   return glm::lookAt(m_Position, m_Position + m_CameraFront, m_CameraUp);
 }
 
-void EditorCamera::Update(Yeager::Shader* shader)
+void BaseCamera::Update(Yeager::Shader* shader)
 {
   YgMatrix4 view = YgMatrix4(1.0f);
   view = glm::lookAt(m_Position, m_Position + m_CameraFront, m_CameraUp);
   shader->SetMat4("view", view);
 }
 
-void EditorCamera::UpdatePosition(CameraPosition position, float delta)
+void BaseCamera::UpdatePosition(YgCameraPosition::Enum position, float delta)
 {
   UpdateSpeed(30.0f * delta);
-
+  YgVector3 lastPos = m_Position;
   switch (position) {
-    case CameraPosition::kForward:
+    case YgCameraPosition::eCAMERA_FORWARD: {
       m_Position += m_CameraSpeed * m_CameraFront;
-      break;
-    case CameraPosition::kBackward:
+    } break;
+    case YgCameraPosition::eCAMERA_BACKWARD: {
       m_Position -= m_CameraSpeed * m_CameraFront;
-      break;
-    case CameraPosition::kRight:
+    } break;
+    case YgCameraPosition::eCAMERA_RIGHT: {
       m_Position += glm::normalize(glm::cross(m_CameraFront, m_CameraUp)) * m_CameraSpeed;
-      break;
-    case CameraPosition::kLeft:
+    } break;
+    case YgCameraPosition::eCAMERA_LEFT: {
       m_Position -= glm::normalize(glm::cross(m_CameraFront, m_CameraUp)) * m_CameraSpeed;
-      break;
+    } break;
   }
+  m_Application->GetPhysXHandle()->GetCharacterController()->Move(
+      m_Application->m_Controller, physx::PxVec3(Yeager::YgVector3ToPxVec3(m_Position - lastPos)), 0.1f, delta, NULL);
 }
 
-void EditorCamera::UpdateDirection(float xoffset, float yoffset)
+void BaseCamera::UpdateDirection(float xoffset, float yoffset)
 {
   xoffset *= m_Sensitivity;
   yoffset *= m_Sensitivity;
@@ -84,29 +88,9 @@ void EditorCamera::UpdateDirection(float xoffset, float yoffset)
   m_CameraFront = glm::normalize(m_CameraDirection);
 }
 
-const YgVector3 EditorCamera::GetPosition()
+void BaseCamera::MouseCallback(bool& firstMouse, float& lastX, float& lastY, double xpos, double ypos)
 {
-  return m_Position;
-}
-
-const YgVector3 EditorCamera::GetDirection()
-{
-  return m_CameraDirection;
-}
-
-const float& EditorCamera::GetSensitivity()
-{
-  return m_Sensitivity;
-}
-
-void EditorCamera::SetShouldMove(bool move)
-{
-  m_CameraShouldMove = move;
-}
-
-void EditorCamera::MouseCallback(bool& firstMouse, float& lastX, float& lastY, double xpos, double ypos)
-{
-  if (m_CameraShouldMove && m_Application->GetMode() == Yeager::AppEditor) {
+  if (m_CameraShouldMove && m_Application->GetMode() == YgApplicationMode::eAPPLICATION_EDITOR) {
     if (firstMouse) {
       lastX = static_cast<float>(xpos);
       lastY = static_cast<float>(ypos);

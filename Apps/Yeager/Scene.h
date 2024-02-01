@@ -46,7 +46,7 @@ struct SceneContext {
   YgString m_ProjectRelativeConfigurationPath = YEAGER_NULL_LITERAL;
   YgString m_ProjectSavePath = YEAGER_NULL_LITERAL;
   YgString m_ProjectAuthor = YEAGER_NULL_LITERAL;
-  SceneType m_type = SceneType::Scene2D;
+  SceneType m_ExplorerType = SceneType::Scene2D;
   SceneRenderer m_renderer = SceneRenderer::OpenGL3_3;
 };
 
@@ -66,6 +66,7 @@ class Scene {
   void SetContextRenderer(SceneRenderer renderer);
   void LoadSceneSave();
   YgString GetPathRelative(YgString path);
+  YgString GetAssetsPath() { return m_AssetsFolderPath;}
 
   /**
    *  Scene Objects and Entities (Everything that is stored where is going to be saved) 
@@ -77,7 +78,7 @@ class Scene {
   std::vector<std::shared_ptr<Yeager::InstancedObject>>* GetInstancedObjects();
   std::vector<std::shared_ptr<Yeager::AnimatedObject>>* GetAnimatedObject();
   std::vector<std::shared_ptr<Yeager::InstancedAnimatedObject>>* GetInstancedAnimatedObjects();
-  std::vector<std::shared_ptr<Yeager::LightSource>>* GetLightSources();
+  std::vector<std::shared_ptr<Yeager::PhysicalLightHandle>>* GetLightSources();
 
   std::vector<std::pair<ImporterThreaded*, Yeager::Object*>>* GetThreadImporters();
   std::vector<std::pair<ImporterThreadedAnimated*, Yeager::AnimatedObject*>>* GetThreadAnimatedImporters();
@@ -88,15 +89,65 @@ class Scene {
   void CheckScheduleDeletions();
   void CheckToolboxesScheduleDeletions();
 
- private:
-  void ValidatesCommonFolders();
-  YgString m_AssetsFolderPath = YEAGER_NULL_LITERAL;
+  /* Check for duplicate elements in the vector and returns the positions of the duplicates */
+  template <typename Type>
+  std::vector<size_t> CheckDuplicatesEntities(std::vector<std::shared_ptr<Type>>* vec)
+  {
+    if (vec->empty() || vec->size() == 1)
+      return std::vector<size_t>();
+    /* Check if the template type have a operator== declared */
+    if (!Yeager::CHECK::EqualExists<Type>::value) {
+      Yeager::Log(WARNING, "Check for Duplicates Entities, class type does not have equal operator!");
+      return std::vector<size_t>();
+    }
+    Yeager::Log(INFO, "Check for Duplicates Entities, class type have a equal operator!");
+    std::vector<size_t> QueueToDeletion;
 
-  void VerifyAssetsSubFolders();
+    /* Find duplicates, the right most element of the vector is the choosen one to delete */
+    int index_cmp = 1;
+    for (unsigned int x = 0; x < vec->size(); x++) {
+      for (unsigned int y = index_cmp; y < vec->size(); y++) {
+        Type* obj1 = vec->at(x).get();
+        Type* obj2 = vec->at(y).get();
+        if (obj1 == obj2)
+          QueueToDeletion.push_back(y);
+      }
+    }
+
+    return QueueToDeletion;
+  }
+
+  /* Attention using this function, it only removes the element for the vector, it does not handle the proper deletion of 
+  objects and entities in the engine! */
+  template <typename Type>
+  void DeleteDuplicatesEntities(std::vector<std::shared_ptr<Type>>* vec)
+  {
+    std::vector<size_t> pos = CheckDuplicatesEntities(vec);
+    for (const auto& index : pos) {
+      vec->erase(vec->begin() + index);
+      for (auto& index : pos) {
+        index--;
+      }
+    }
+  }
+
+  void CheckDuplicatesLightSources();
   /* Will try to find sound files in the /Assets/Sound folder of the project and return a pair of the file name and the complete path */
   std::vector<std::pair<YgString, YgString>> VerifySoundsOptionsInAssetFolder();
   /* Will try to search for folders and model files inside of it on the /Assets/ImportedModels folder of the project, and return a pair of the file name and complete path */
   std::vector<std::pair<YgString, YgString>> VerifyImportedModelsOptionsInAssetsFolder();
+
+ private:
+  // The toolbox destroryed can be the selected one, if its stays selected after deletion, it will cause a read to nullptr!
+  // This function disable the selected toolbox in the Explorer
+  void CheckToolboxIsSelectedAndDisable(Yeager::ToolBoxObject* toolbox);
+
+  void RemoveDuplicatesEntities();
+
+  void ValidatesCommonFolders();
+  YgString m_AssetsFolderPath = YEAGER_NULL_LITERAL;
+
+  void VerifyAssetsSubFolders();
 
   std::vector<std::pair<ImporterThreaded*, Yeager::Object*>> m_ThreadImporters;
   std::vector<std::pair<ImporterThreadedAnimated*, Yeager::AnimatedObject*>> m_ThreadAnimatedImporters;
@@ -110,7 +161,7 @@ class Scene {
   std::vector<std::shared_ptr<Yeager::AnimatedObject>> m_AnimatedObject;
   std::vector<std::shared_ptr<Yeager::InstancedAnimatedObject>> m_InstancedAnimatedObjects;
   std::vector<std::shared_ptr<Yeager::ToolBoxObject>> m_Toolboxes;
-  std::vector<std::shared_ptr<Yeager::LightSource>> m_LightSources;
+  std::vector<std::shared_ptr<Yeager::PhysicalLightHandle>> m_LightSources;
 
   YgString GetConfigurationFilePath(YgString path);
 };

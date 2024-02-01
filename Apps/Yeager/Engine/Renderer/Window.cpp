@@ -53,8 +53,8 @@ bool Window::RegenerateMainWindow(unsigned int window_x, unsigned int window_y, 
 
 void Window::ResizeCallback(GLFWwindow* window, int width, int height)
 {
-  ygWindowHeight = height;
-  ygWindowWidth = width;
+  Yeager::ygWindowHeight = height;
+  Yeager::ygWindowWidth = width;
   Yeager::Log(INFO, "Window resized to {} {}", width, height);
 }
 
@@ -78,8 +78,8 @@ void Window::HandleError(int code, YgCchar description)
 
 void Window::FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
-  ygWindowWidth = width;
-  ygWindowHeight = height;
+  Yeager::ygWindowWidth = width;
+  Yeager::ygWindowHeight = height;
 
   glViewport(0, 0, width, height);
 }
