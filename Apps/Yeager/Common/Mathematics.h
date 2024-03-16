@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -26,6 +26,21 @@ namespace Yeager {
 extern int CalculateNextPowerOfTwo(int x);
 extern float RandomFloat();
 extern float RandomFloatRange(float Start, float End);
+
+/* This template only accepts arithmetics values as type (float, int, double.. ) */
+template <typename Type, typename = typename std::enable_if<std::is_arithmetic<Type>::value, Type>::type>
+Type ArithmeticMean(const std::vector<Type>& sequence)
+{
+  if (sequence.empty())
+    return 0;
+
+  Type sum = 0;
+
+  for (const auto& v : sequence)
+    sum += v;
+
+  return sum / sequence.size();
+}
 
 template <typename Type>
 class Array2D {

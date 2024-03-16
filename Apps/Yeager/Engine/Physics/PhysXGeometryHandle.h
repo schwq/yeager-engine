@@ -1,6 +1,6 @@
 //   Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -65,20 +65,14 @@ class PhysXGeometryHandle {
   PhysXGeometryHandle(Yeager::PhysXHandle* handle, Yeager::ApplicationCore* app);
   ~PhysXGeometryHandle() {}
 
-  bool CreateConvexMesh(physx::PxU32 count, const std::vector<physx::PxVec3>& data,
-                        physx::PxU32 stride = sizeof(physx::PxVec3),
-                        physx::PxConvexFlags flags = physx::PxConvexFlag::eCOMPUTE_CONVEX);
   YEAGER_NODISCARD physx::PxTriangleMesh* CreateTriangleMesh(
       physx::PxU32 pointCount, physx::PxU32 trianglesCount, physx::PxU32 pointStride, physx::PxU32 triangleStride,
-      const std::vector<physx::PxVec3>& vertices, const std::vector<physx::PxU32>& indices,
-      physx::PxTriangleMeshFlags flags,
+      physx::PxVec3* vertices, physx::PxU32* indices,
       physx::PxU32 yeagerPhysxFlags = YEAGER_PHYSX_COOKING_STREAM_SERIALIZATION_ENABLED);
 
   YEAGER_NODISCARD physx::PxTriangleMesh* CreateTriangleMesh(
       const Yeager::PhysXTriangleMeshInput& mesh,
       physx::PxU32 yeagerPhysxFlags = YEAGER_PHYSX_COOKING_STREAM_SERIALIZATION_ENABLED);
-
-  void CreateTriangleMeshModel(YgCchar path);
 
   /**
    * Primitives PhysX geometries types
@@ -91,17 +85,20 @@ class PhysXGeometryHandle {
                                              const physx::PxVec3& velocity = physx::PxVec3(0.0f),
                                              physx::PxReal density = 1.0f);
 
-  void CreatePrimitiveBox(physx::PxU32 rigidType, physx::PxMaterial& material, const physx::PxTransform& initialPos,
-                          const physx::PxVec3 extents, const physx::PxVec3& velocity = physx::PxVec3(0.0f),
-                          physx::PxReal density = 1.0f);
+  physx::PxRigidActor* CreatePrimitiveBox(physx::PxU32 rigidType, physx::PxMaterial& material,
+                                          const physx::PxTransform& initialPos, const physx::PxVec3 extents,
+                                          const physx::PxVec3& velocity = physx::PxVec3(0.0f),
+                                          physx::PxReal density = 1.0f);
 
-  void CreatePrimitiveCapsule(physx::PxU32 rigidType, physx::PxMaterial& material, const physx::PxTransform& initialPos,
-                              const physx::PxU32 radius, const physx::PxU32 half_height,
-                              const physx::PxVec3& velocity = physx::PxVec3(0.0f), physx::PxReal density = 1.0f);
+  physx::PxRigidActor* CreatePrimitiveCapsule(physx::PxU32 rigidType, physx::PxMaterial& material,
+                                              const physx::PxTransform& initialPos, const physx::PxU32 radius,
+                                              const physx::PxU32 half_height,
+                                              const physx::PxVec3& velocity = physx::PxVec3(0.0f),
+                                              physx::PxReal density = 1.0f);
 
   /* A plane divices space into above and below, it may only be created for static actors */
-  void CreatePrimitivePlane(physx::PxMaterial& material, const physx::PxF32 nx, const physx::PxF32 ny,
-                            const physx::PxF32 nz, const physx::PxF32 distance);
+  physx::PxRigidActor* CreatePrimitivePlane(physx::PxMaterial& material, const physx::PxF32 nx, const physx::PxF32 ny,
+                                            const physx::PxF32 nz, const physx::PxF32 distance);
 
   /**
    * Getters for render actors information, mostly used in the interface when displaying props from every actor in the scene.

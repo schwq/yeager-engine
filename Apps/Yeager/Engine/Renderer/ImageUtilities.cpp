@@ -4,7 +4,7 @@
 #include "stb_image_write.h"
 using namespace Yeager;
 
-bool MakeScreenShot(YgCchar output) noexcept
+bool MakeScreenShot(Cchar output) noexcept
 {
   size_t lenght = ygWindowWidth * ygWindowHeight;
   ImagePixel* pixels = new ImagePixel[lenght];
@@ -24,7 +24,7 @@ bool MakeScreenShot(YgCchar output) noexcept
   return true;
 }
 
-YgString Yeager::ImageExtensionToString(ImageExtension ext)
+String Yeager::ImageExtensionToString(ImageExtension ext)
 {
   switch (ext) {
     case ImageExtension::EJpeg:
@@ -36,7 +36,7 @@ YgString Yeager::ImageExtensionToString(ImageExtension ext)
   }
 }
 
-extern bool MakeScreenShotMiddle(YgCchar output) noexcept
+extern bool MakeScreenShotMiddle(Cchar output) noexcept
 {
   size_t lenght = 800 * 800;
   ImagePixel* pixels = new ImagePixel[lenght];
@@ -56,7 +56,7 @@ extern bool MakeScreenShotMiddle(YgCchar output) noexcept
   delete pixels;
   return true;
 }
-extern bool MakeScreenShotInPosition(YgCchar output, unsigned int pos_x, unsigned int pos_y, unsigned int size_x,
+extern bool MakeScreenShotInPosition(Cchar output, unsigned int pos_x, unsigned int pos_y, unsigned int size_x,
                                      unsigned int size_y)
 {
   if (size_x == 0 || size_x > ygWindowWidth || size_y == 0 || size_y > ygWindowHeight) {

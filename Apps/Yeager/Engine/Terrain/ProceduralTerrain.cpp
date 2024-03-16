@@ -1,7 +1,7 @@
 #include "ProceduralTerrain.h"
 using namespace Yeager;
 
-ProceduralTerrain::ProceduralTerrain(std::vector<YgString> TexturesPaths, int TerrainChunkPositionX,
+ProceduralTerrain::ProceduralTerrain(std::vector<String> TexturesPaths, int TerrainChunkPositionX,
                                      int TerrainChunkPositionY)
 {
   m_MetricData.m_TerrainChunkPositionX = TerrainChunkPositionX;
@@ -16,7 +16,7 @@ ProceduralTerrain::ProceduralTerrain(std::vector<YgString> TexturesPaths, int Te
   }
 
   for (int x = 0; x < MAX_TEXTURE_TILES; x++) {
-    m_TextureData.m_TexturesLoaded[x] = LoadTextureFromFile(TexturesPaths[x], false);
+    m_TextureData.m_TexturesLoaded[x].GenerateFromFile(TexturesPaths[x], false);
   }
 
   m_MetricData.m_HeightMap = new Array2D<float>(m_MetricData.m_Width, m_MetricData.m_Height);
@@ -48,10 +48,10 @@ void TerrainVertex::InitVertex(ProceduralTerrain* Terrain, int x, int z)
 {
   float y = Terrain->GetHeightMapValue(x, z);
   float WorldScale = Terrain->GetWorldScale();
-  Position = YgVector3(x * WorldScale, y, z * WorldScale);
+  Position = Vector3(x * WorldScale, y, z * WorldScale);
   float Size = (float)Terrain->GetSize();
   float TextureScale = Terrain->GetTextureScale();
-  TexCoords = YgVector2(TextureScale * (float)x / Size, TextureScale * (float)z / Size);
+  TexCoords = Vector2(TextureScale * (float)x / Size, TextureScale * (float)z / Size);
 }
 
 void ProceduralTerrain::Setup()
@@ -103,9 +103,9 @@ void ProceduralTerrain::Setup()
     unsigned int Index0 = m_DrawData.Indices[x];
     unsigned int Index1 = m_DrawData.Indices[x + 1];
     unsigned int Index2 = m_DrawData.Indices[x + 2];
-    YgVector3 v1 = m_DrawData.Vertices[Index1].Position - m_DrawData.Vertices[Index0].Position;
-    YgVector3 v2 = m_DrawData.Vertices[Index2].Position - m_DrawData.Vertices[Index0].Position;
-    YgVector3 Normal = glm::cross(v1, v2);
+    Vector3 v1 = m_DrawData.Vertices[Index1].Position - m_DrawData.Vertices[Index0].Position;
+    Vector3 v2 = m_DrawData.Vertices[Index2].Position - m_DrawData.Vertices[Index0].Position;
+    Vector3 Normal = glm::cross(v1, v2);
     Normal = glm::normalize(Normal);
     m_DrawData.Vertices[Index0].Normals += Normal;
     m_DrawData.Vertices[Index1].Normals += Normal;
@@ -127,11 +127,11 @@ void ProceduralTerrain::Setup()
 void ProceduralTerrain::Draw(Shader* shader)
 {
   shader->UseShader();
-  YgMatrix4 model = YgMatrix4(1.0f);
+  Matrix4 model = Matrix4(1.0f);
 
   model = glm::translate(
-      model, YgVector3(m_MetricData.m_TerrainChunkPositionX * m_MetricData.m_TerrainSize, -m_MetricData.m_MaxHeight,
-                       m_MetricData.m_TerrainChunkPositionY * m_MetricData.m_TerrainSize));
+      model, Vector3(m_MetricData.m_TerrainChunkPositionX * m_MetricData.m_TerrainSize, -m_MetricData.m_MaxHeight,
+                     m_MetricData.m_TerrainChunkPositionY * m_MetricData.m_TerrainSize));
   shader->SetMat4("model", model);
 
   shader->SetFloat("TextureHeight0", m_TextureData.m_MultiTextureHeights.Height0);
@@ -145,7 +145,7 @@ void ProceduralTerrain::Draw(Shader* shader)
     glActiveTexture(GL_TEXTURE0 + x);
     const char* name = ("TerrainTexture" + std::to_string(x)).c_str();
     shader->SetInt(name, x);
-    glBindTexture(GL_TEXTURE_2D, m_TextureData.m_TexturesLoaded[x]);
+    glBindTexture(GL_TEXTURE_2D, m_TextureData.m_TexturesLoaded[x].GetTextureID());
   }
 
   glDrawElements(GL_TRIANGLES, (m_MetricData.m_Height - 1) * (m_MetricData.m_Width - 1) * 6, GL_UNSIGNED_INT, NULL);
@@ -153,9 +153,9 @@ void ProceduralTerrain::Draw(Shader* shader)
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, 0);
 }
-std::vector<YgVector3> ProceduralTerrain::GetRandomPointsInTerrain(int amount) noexcept
+std::vector<Vector3> ProceduralTerrain::GetRandomPointsInTerrain(int amount) noexcept
 {
-  std::vector<YgVector3> vector;
+  std::vector<Vector3> vector;
   vector.reserve(amount);
 
   for (int x = 0; x < amount; x++) {
@@ -165,7 +165,7 @@ std::vector<YgVector3> ProceduralTerrain::GetRandomPointsInTerrain(int amount) n
     if (m_MetricData.m_HeightMap) {
       vy = GetHeightMapValue(vx, vz) - m_MetricData.m_MaxHeight;
     }
-    vector.push_back(YgVector3(vx, vy, vz));
+    vector.push_back(Vector3(vx, vy, vz));
   }
   return vector;
 }
@@ -195,7 +195,7 @@ void FaultFormationTerrain::CreateFaultFormationInternal(int It, int MinHeight, 
   for (int CurIt = 0; CurIt < It; CurIt++) {
     float IterationRatio = ((float)CurIt / (float)It);
     float Height = MaxHeight - IterationRatio * DeltaHeight;
-    YgVector2 p1, p2;
+    Vector2 p1, p2;
     GenerateRandomPoints(p1, p2);
 
     int DirX = p2.x - p1.x;
@@ -218,7 +218,7 @@ void FaultFormationTerrain::CreateFaultFormationInternal(int It, int MinHeight, 
   ApplyFilterFIR(FIR);
 }
 
-void FaultFormationTerrain::GenerateRandomPoints(YgVector2& p1, YgVector2& p2)
+void FaultFormationTerrain::GenerateRandomPoints(Vector2& p1, Vector2& p2)
 {
   p1.x = rand() % m_MetricData.m_TerrainSize;
   p2.y = rand() % m_MetricData.m_TerrainSize;

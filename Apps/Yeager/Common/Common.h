@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -25,9 +25,6 @@
 #endif
 
 #include "PlataformDetect.h"
-
-// Enable debug functions and messages
-#define YEAGER_DEBUG true
 
 // Enable all kind of important messages, useful for debugging
 #define YEAGER_DEBUG_VERBOSE true
@@ -66,6 +63,14 @@
 #else
 #define YEAGER_MSC_VERSION 0
 #define YEAGER_MSC_WARNING(...)
+#endif
+
+#ifdef YEAGER_SYSTEM_WINDOWS_x64&& defined(_MSC_VER)
+#ifdef _DEBUG
+#define YEAGER_DEBUG true
+#endif
+#elif defined(YEAGER_SYSTEM_LINUX)
+#define YEAGER_DEBUG true
 #endif
 
 #ifdef _MSVC_LANG
@@ -146,15 +151,16 @@
 
 #define YEAGER_STRING_ERROR(error) {fmt::format("String error []", error)} 
 
-typedef const char* YgCchar;
-typedef std::string YgString;
-typedef glm::mat4 YgMatrix4;
-typedef glm::mat3 YgMatrix3;
-typedef glm::vec2 YgVector2;
-typedef glm::vec3 YgVector3;
+typedef const char* Cchar;
+typedef std::string String;
+typedef glm::mat4 Matrix4;
+typedef glm::mat3 Matrix3;
+typedef glm::vec2 Vector2;
+typedef glm::vec3 Vector3;
+typedef glm::vec4 Vector4;
 
-#define YEAGER_IDENTITY_MATRIX4x4 YgMatrix4(1.0f)
-#define YEAGER_ZERO_VECTOR3 YgVector3(0.0f)
+#define YEAGER_IDENTITY_MATRIX4x4 Matrix4(1.0f)
+#define YEAGER_ZERO_VECTOR3 Vector3(0.0f)
 
 // PS means Path separator, used in getting path from files and folders
 #if defined(YEAGER_SYSTEM_WINDOWS_x64)

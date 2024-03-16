@@ -14,6 +14,7 @@ KeyMap* Yeager::FindKeyMap(uint8_t key)
     }
   }
   assert("Cannot find key associated to keymapping!");
+  return &KeyMapping[0];  // MSVC dont throw warning!
 }
 
 float Input::m_LastMouseWidth = ygWindowWidth / 2.0f;
@@ -48,9 +49,20 @@ void Input::MouseKeyCallback(GLFWwindow* window, int button, int action, int mod
     switch (button) {
       case GLFW_MOUSE_BUTTON_1:
         if (FindKeyMap(GLFW_MOUSE_BUTTON_1)->AddStateAwaitAction(action)) {
-          double xpos, ypos;
-          glfwGetCursorPos(window, &xpos, &ypos);
-          m_Application->GetCamera()->RayCasting(xpos, ypos, m_Application->GetProjection(), m_Application->GetView());
+
+          auto object = std::make_shared<Yeager::Object>("test", m_Application);
+          Transformation trans;
+          trans.position =
+              m_Application->GetCamera()->GetPosition() + glm::normalize(m_Application->GetCamera()->GetDirection());
+          trans.scale = Vector3(0.1f);
+          object->SetTransformation(trans);
+          object->GenerateGeometryTexture(m_Application->material.get());
+          object->GenerateObjectGeometry(ObjectGeometryType::eSPHERE,
+                                         ObjectPhysXCreationDynamic(m_Application->GetCamera()->GetPosition() +
+                                                                        m_Application->GetCamera()->GetDirection(),
+                                                                    Vector3(0.0f), Vector3(0.1f)));
+          object->SetCanBeSerialize(false);
+          m_Application->GetScene()->GetObjects()->push_back(object);
         }
         break;
       case GLFW_MOUSE_BUTTON_2:

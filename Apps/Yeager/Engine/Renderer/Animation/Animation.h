@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -37,8 +37,8 @@
 namespace Yeager {
 
 struct AssimpNodeData {
-  YgMatrix4 Transformation;
-  YgString Name;
+  Matrix4 Transformation;
+  String Name;
   int ChildrenCount;
   std::vector<AssimpNodeData> Children;
 };
@@ -46,15 +46,15 @@ struct AssimpNodeData {
 class Animation {
  public:
   Animation() = default;
-  Animation(const YgString& path, AnimatedObject* model);
+  Animation(const String& path, AnimatedObject* model);
   ~Animation() {}
 
-  Bone* FindBone(const YgString& name);
+  Bone* FindBone(const String& name);
 
   inline float GetTicksPerSecond() { return m_TicksPerSecond; }
   inline float GetDuration() { return m_Duration; }
   inline const AssimpNodeData& GetRootNode() { return m_RootNode; }
-  inline const std::map<YgString, BoneInfo>& GetBoneIDMap() { return m_BoneInfoMap; }
+  inline const std::map<String, BoneInfo>& GetBoneIDMap() { return m_BoneInfoMap; }
 
  private:
   void ReadMissingBones(const aiAnimation* animation, AnimatedObject& model);
@@ -63,7 +63,7 @@ class Animation {
   int m_TicksPerSecond;
   std::vector<Bone> m_Bones;
   AssimpNodeData m_RootNode;
-  std::map<YgString, BoneInfo> m_BoneInfoMap;
+  std::map<String, BoneInfo> m_BoneInfoMap;
 };
 
 }  // namespace Yeager

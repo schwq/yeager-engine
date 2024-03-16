@@ -1,7 +1,7 @@
 #include "Animation.h"
 using namespace Yeager;
 
-Animation::Animation(const YgString& path, AnimatedObject* model)
+Animation::Animation(const String& path, AnimatedObject* model)
 {
   Assimp::Importer imp;
   const aiScene* scene = imp.ReadFile(path, aiProcess_Triangulate);
@@ -19,7 +19,7 @@ Animation::Animation(const YgString& path, AnimatedObject* model)
   ReadMissingBones(animation, *model);
 }
 
-Bone* Animation::FindBone(const YgString& name)
+Bone* Animation::FindBone(const String& name)
 {
   auto iter = std::find_if(m_Bones.begin(), m_Bones.end(), [&](Bone& Bone) { return Bone.GetBoneName() == name; });
   if (iter == m_Bones.end()) {
@@ -37,7 +37,7 @@ void Animation::ReadMissingBones(const aiAnimation* animation, AnimatedObject& m
 
   for (int x = 0; x < size; x++) {
     auto channel = animation->mChannels[x];
-    YgString boneName = channel->mNodeName.data;
+    String boneName = channel->mNodeName.data;
 
     if (BoneInfoMap.find(boneName) == BoneInfoMap.end()) {
       BoneInfoMap[boneName].ID = BoneCount;

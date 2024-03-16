@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -50,7 +50,7 @@ class EntityPhysics {
   float m_air_resistance = 0.01f;
   bool m_gravity_enabled = false;
   bool m_reverse_gravity = false;
-  Yeager::GameEntity* m_GameEntityPtr = YEAGER_NULLPTR;
+  Yeager::GameEntity* m_EntityPtr = YEAGER_NULLPTR;
 };
 
 }  // namespace Yeager

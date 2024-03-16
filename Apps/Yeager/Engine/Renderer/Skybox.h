@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -30,18 +30,25 @@ namespace Yeager {
 
 enum class SkyboxTextureType { ESamplerCube, ESampler2D };
 
-class Skybox : public Entity {
+class Skybox : public EditorEntity {
 
  public:
-  Skybox(YgString name, ObjectGeometryType type, ApplicationCore* application, bool flip_image = false);
+  Skybox(String name, ObjectGeometryType::Enum type, ApplicationCore* application);
   ~Skybox();
 
-  bool BuildSkyboxFromCubemap(YgString directory, Yeager::ImageExtension ext);
-  bool BuildSkyboxFrom2DTexture(YgString path);
-  bool BuildSkyboxFromImport(YgString path);
-  void Draw(Yeager::Shader* shader, YgMatrix4 view, YgMatrix4 projection);
+  bool BuildSkyboxFromCubemap(String directory, Yeager::ImageExtension ext, bool flip = false);
+  bool BuildSkyboxFrom2DTexture(String path, bool flip = false);
+  bool BuildSkyboxFromImport(String path, bool flip = false);
+  void Draw(Yeager::Shader* shader, Matrix4 view, Matrix4 projection);
 
-  YgString GetPath() const { return m_Path; }
+  String GetPath() const { return Path; }
+
+  SkyboxTextureType GetTextureType() const { return m_Type; }
+
+  ObjectGeometryData* GetGeometryData() { return &m_Data; }
+  ObjectModelData* GetModelData() { return &m_Model; }
+
+  ObjectGeometryType::Enum GetGeometry() const { return m_Geometry; }
 
  private:
   void Setup();
@@ -50,16 +57,18 @@ class Skybox : public Entity {
   void GenerateCubemapGeometry();
 
   bool m_SkyboxDataLoaded = false;
-  bool m_ImageFlip = false;
+
+  std::shared_ptr<MaterialTexture2D> m_Texture = YEAGER_NULLPTR;
+
   unsigned int m_VerticesIndex = 0;
-  GLuint m_Vao = -1, m_Vbo = -1, m_Ebo = -1, m_ID = -1;
-  YgString m_Path = YEAGER_NULL_LITERAL;
+  GLuint m_Vao = -1, m_Vbo = -1, m_Ebo = -1;
+  String Path = YEAGER_NULL_LITERAL;
 
   SkyboxTextureType m_Type;
   ObjectGeometryData m_Data;
   ObjectModelData m_Model;
-  ObjectGeometryType m_Geometry;
-  std::shared_ptr<ToolBoxObject> m_Toolbox = YEAGER_NULLPTR;
+  ObjectGeometryType::Enum m_Geometry;
+  std::shared_ptr<ToolboxHandle> m_Toolbox = YEAGER_NULLPTR;
 };
 
 static std::vector<GLfloat> GenerateSkyboxVertices()

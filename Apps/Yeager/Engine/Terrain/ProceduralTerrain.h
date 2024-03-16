@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023-present
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -42,7 +42,7 @@ struct TextureHeightDesc {
 
 /// @brief Self explain struct, contains the openGL texture to be load an the height description for single texturing
 struct TextureTile {
-  Texture2D Image;
+  MaterialTexture2D Image;
   TextureHeightDesc HeightDesc;
 };
 
@@ -50,7 +50,7 @@ struct TextureTile {
 class TerrainTextureGen {
  public:
   TerrainTextureGen();
-  void LoadTile(const YgString& path);
+  void LoadTile(const String& path);
   Texture2D* GenerateTexture(int TextureSize, ProceduralTerrain* Terrain, float MinHeight, float MaxHeight);
 
  protected:
@@ -66,9 +66,9 @@ class TerrainTextureGen {
 /// @brief  multiple instances of the same model
 /// @todo   Review this kind of method
 struct TerrainVertex {
-  YgVector3 Position;
-  YgVector2 TexCoords;
-  YgVector3 Normals = YgVector3(0.0f, 0.0f, 0.0f);
+  Vector3 Position;
+  Vector2 TexCoords;
+  Vector3 Normals = Vector3(0.0f, 0.0f, 0.0f);
   void InitVertex(ProceduralTerrain* Terrain, int x, int z);
 };
 
@@ -103,13 +103,13 @@ struct TerrainMetricData {
 /// @brief  Terrain texturing holds variables for the necessarie texturing of the terrain,
 ///         heights descriptions, texture scales, and the array of textures loaded
 struct TerrainTexturingData {
-  GLuint m_TexturesLoaded[MAX_TEXTURE_TILES] = {};
+  MaterialTexture2D m_TexturesLoaded[MAX_TEXTURE_TILES] = {};
   MultiTextureHeight m_MultiTextureHeights;
   float m_TextureScale = 256.0f;
 };
 
 struct TerrainChunkInformation {
-  YgVector3 WorldPosition;
+  Vector3 WorldPosition;
 };
 
 /// @brief Main class for Terrain rendering, it contains all the basic and common variables and functions of terrains in the engine
@@ -120,7 +120,7 @@ class ProceduralTerrain {
   * 
   * @param TexturesPaths Vector with strings of the paths of the textures to be used, is must contain the same number as MAX_TEXTURE_TILES
   */
-  ProceduralTerrain(std::vector<YgString> TexturesPaths, int TerrainChunkPositionX = 0, int TerrainChunkPositionY = 0);
+  ProceduralTerrain(std::vector<String> TexturesPaths, int TerrainChunkPositionX = 0, int TerrainChunkPositionY = 0);
 
   /**
    * @brief                 Sets attrib to the terrain, calls setup() and regenerate perlin 
@@ -187,7 +187,7 @@ class ProceduralTerrain {
    * @param amount  The amount of values to the return
    * @return        A std::vector of 3D vectors representing the random positions generated
    */
-  YEAGER_NODISCARD std::vector<YgVector3> GetRandomPointsInTerrain(int amount) noexcept;
+  YEAGER_NODISCARD std::vector<Vector3> GetRandomPointsInTerrain(int amount) noexcept;
 
   YEAGER_NODISCARD TerrainChunkInformation* GetChunkInformation() { return &m_ChunkInfo; }
 
@@ -208,8 +208,7 @@ class FaultFormationTerrain : public ProceduralTerrain {
    * 
    * @param TexturesPaths Vector with strings of the paths of the textures to be used, is must contain the same number as MAX_TEXTURE_TILES
    */
-  FaultFormationTerrain(std::vector<YgString> TexturesPaths, int TerrainChunkPositionX = 0,
-                        int TerrainChunkPositionY = 0)
+  FaultFormationTerrain(std::vector<String> TexturesPaths, int TerrainChunkPositionX = 0, int TerrainChunkPositionY = 0)
       : ProceduralTerrain(TexturesPaths, TerrainChunkPositionX, TerrainChunkPositionY)
   {}
 
@@ -246,7 +245,7 @@ class FaultFormationTerrain : public ProceduralTerrain {
    * @param p1  The first point
    * @param p2  The second point
    */
-  void GenerateRandomPoints(YgVector2& p1, YgVector2& p2);
+  void GenerateRandomPoints(Vector2& p1, Vector2& p2);
 
   /**
    * @brief     Applys the erosive filter to the high points of the fault, creating a more natural feel 
@@ -275,7 +274,7 @@ class MidPointDisplacementTerrain : public ProceduralTerrain {
   * 
   * @param TexturesPaths  Vector with strings of the paths of the textures to be used, is must contain the same number as MAX_TEXTURE_TILES
   */
-  MidPointDisplacementTerrain(std::vector<YgString> TexturesPaths, int TerrainChunkPositionX = 0,
+  MidPointDisplacementTerrain(std::vector<String> TexturesPaths, int TerrainChunkPositionX = 0,
                               int TerrainChunkPositionY = 0)
       : ProceduralTerrain(TexturesPaths, TerrainChunkPositionX, TerrainChunkPositionY)
   {}

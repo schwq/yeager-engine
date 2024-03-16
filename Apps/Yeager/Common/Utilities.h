@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -31,6 +31,31 @@ extern void operator delete(void* ptr, size_t s);
 
 namespace Yeager {
 
+#define YEAGER_DELETE(ptr) \
+  if (ptr) {               \
+    delete ptr;            \
+    ptr = NULL;            \
+  }
+
+#define YEAGER_DELETE_ARRAY(arr) \
+  if (arr) {                     \
+    delete[] ptr;                \
+    ptr = NULL;                  \
+  }
+
+#define YEAGER_FREE(ptr) \
+  if (ptr) {             \
+    free(ptr);           \
+    ptr = NULL;          \
+  }
+
+#define YEAGER_DELETE_SMARTPTR(ptr) \
+  if (ptr) {                        \
+    ptr.reset();                    \
+    delete ptr;                     \
+    ptr = NULL;                     \
+  }
+
 namespace CHECK {
 struct No {};
 template <typename T, typename Arg>
@@ -53,7 +78,7 @@ struct YgPadding {
   }
 };
 
-enum YgFileExtensionType {
+enum FileExtensionType {
   EExtensitonType3DModel,
   EExtensionTypeAudio,
   EExtensionTypeImage,
@@ -64,17 +89,21 @@ enum YgFileExtensionType {
 
 struct FileType {
   FileType() {}
-  FileType(YgString type, YgFileExtensionType ext)
+  FileType(String type, FileExtensionType ext, bool supported = false)
   {
     Typename = type;
     ExtType = ext;
+    Supported = supported;
   }
-  YgString Typename;
-  YgFileExtensionType ExtType;
+  String Typename = YEAGER_NULL_LITERAL;
+  FileExtensionType ExtType = FileExtensionType::EExtensionTypeSource;
+  bool Supported = false;
 };
 
-extern std::map<YgString, FileType> ExtensionTypesToRawExtensions;
-extern YgString ExtractExtensionTypenameFromPath(YgString filename);
+std::pair<bool, FileType> CheckFileExtensionType(String path, FileExtensionType type);
+
+extern std::map<String, FileType> ExtensionTypesToRawExtensions;
+extern String ExtractExtensionTypenameFromPath(String filename);
 
 struct MemoryManagement {
   uint32_t m_MemoryAllocatedSize = 0;
@@ -85,18 +114,21 @@ struct MemoryManagement {
 };
 
 struct YgDate_t {
-  YgString Month;
-  YgString WeekDay;
-  unsigned int Day;
-  unsigned int Year;
+  unsigned int Month = 0;
+  unsigned int WeekDay = 0;
+  unsigned int Day = 0;
+  unsigned int Year = 0;
 };
 
 struct YgClock_t {
-  long long Millis;
-  unsigned int Seconds;
-  unsigned int Minutes;
-  unsigned int Hours;
+  long long Millis = 0;
+  unsigned int Seconds = 0;
+  unsigned int Minutes = 0;
+  unsigned int Hours = 0;
 };
+
+extern String MonthNumberToString(int month);
+extern String WeekDayNumberToString(int weekday);
 
 struct YgTime_t {
   YgDate_t Date;
@@ -105,12 +137,12 @@ struct YgTime_t {
 
 extern unsigned int ygWindowWidth;
 extern unsigned int ygWindowHeight;
-extern YgCchar kOperatingSystem;
-extern YgString kDefaultTexturePath;
-extern YgString GetPath(YgString path);
-extern YgCchar GetShaderPath(YgString shader);
+extern Cchar kOperatingSystem;
+extern String kDefaultTexturePath;
+extern String GetPath(String path);
+extern Cchar GetShaderPath(String shader);
 
-extern YgString GetExternalFolderPath();
+extern String GetExternalFolderPath();
 
 extern MemoryManagement s_MemoryManagement;
 
@@ -137,17 +169,19 @@ constexpr inline glm::quat GetGLMQuat(const aiQuaternion& qa)
   return glm::quat(qa.w, qa.x, qa.y, qa.z);
 }
 
+extern bool CreateDirectoryAndValidate(const std::filesystem::path& p);
+
 extern bool ValidatesPath(const std::filesystem::path& p, bool declare = true,
                           std::filesystem::file_status s = std::filesystem::file_status());
 
-extern YgString RemoveSuffixUntilCharacter(YgString expression, char characterToStop);
-extern YgString RemovePreffixUntilCharacter(YgString expression, char characterToStop);
-extern YgString ReadSuffixUntilCharacter(YgString expression, char characterToStop);
-extern size_t NumberOfFilesInDir(YgString path);
+extern String RemoveSuffixUntilCharacter(String expression, char characterToStop);
+extern String RemovePreffixUntilCharacter(String expression, char characterToStop);
+extern String ReadSuffixUntilCharacter(String expression, char characterToStop);
+extern size_t NumberOfFilesInDir(String path);
 
-extern YgString RemoveExtensionFromFilename(YgString filename);
-extern YgString ExtractExtensionFromFilename(YgString filename);
+extern String RemoveExtensionFromFilename(String filename);
+extern String ExtractExtensionFromFilename(String filename);
 
-extern YgString CurrentTimeFormatToString();
+extern String CurrentTimeFormatToString();
 extern YgTime_t CurrentTimeToTimeType();
 }  // namespace Yeager

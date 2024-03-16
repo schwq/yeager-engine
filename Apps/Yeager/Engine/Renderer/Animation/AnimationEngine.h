@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -32,11 +32,11 @@ class AnimationEngine {
 
   void UpdateAnimation(float dt);
   void PlayAnimation(Animation* animation);
-  void CalculateBoneTransform(const AssimpNodeData* node, YgMatrix4 parentTrans);
-  std::vector<YgMatrix4> GetFinalBoneMatrices() const { return m_FinalBoneMatrices; }
+  void CalculateBoneTransform(const AssimpNodeData* node, Matrix4 parentTrans);
+  std::vector<Matrix4> GetFinalBoneMatrices() const { return m_FinalBoneMatrices; }
 
  protected:
-  std::vector<YgMatrix4> m_FinalBoneMatrices;
+  std::vector<Matrix4> m_FinalBoneMatrices;
   Animation* m_CurrentAnimation;
   float m_CurrentTime;
   float m_DeltaTime;

@@ -1,6 +1,6 @@
 //   Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -18,11 +18,10 @@
 
 #pragma once
 
-#include "../Editor/Camera.h"
 #include "PhysxAllocator.h"
 
 /* We cant spawn inside the floor! This variable should only be used went the engine doesnt know where to spawn the character! */
-#define YEAGER_DEFAULT_CAMERA_POSITION YgVector3(0.0f, 2.0f, 0.0f);
+#define YEAGER_DEFAULT_CAMERA_POSITION Vector3(0.0f, 2.0f, 0.0f);
 #define YEAGER_PHYSX_CCT_VS_CCT_COLLIDE_AND_SLIDE true
 
 struct PhysXCollisionDetection {
@@ -136,14 +135,12 @@ class PhysXCharacterController : physx::PxUserControllerHitReport,
 
   /* The engine camera used in the editor mode (EditorCamera class) can be used as a player camera with some
   limitations and tweaks TODO write a PlayerCamera class inheranted from the editor camera */
-  YEAGER_FORCE_INLINE EditorCamera* GetEditorCamera() { return m_EditorCamera; }
 
   YEAGER_FORCE_INLINE physx::PxControllerManager* GetControllerManager() { return m_ControllerManager; }
 
   YEAGER_FORCE_INLINE physx::PxObstacleContext* GetObstacleContext() { return m_ObstacleContext; }
 
  protected:
-  EditorCamera* m_EditorCamera = YEAGER_NULLPTR;
   Yeager::PhysXHandle* m_PhysXHandle = YEAGER_NULLPTR;
   physx::PxControllerManager* m_ControllerManager = YEAGER_NULLPTR;
   physx::PxObstacleContext* m_ObstacleContext = YEAGER_NULLPTR;

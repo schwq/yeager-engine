@@ -4,7 +4,39 @@
 using namespace Yeager;
 using namespace physx;
 
-PxVec3 Yeager::YgVector3ToPxVec3(const YgVector3& vec)
+extern physx::PxMat44 Yeager::Matrix4ToPxMat44(const Matrix4& mat)
+{
+  physx::PxMat44 m = physx::PxMat44(1.0f);
+  m.column0 = physx::PxVec4(mat[0][0], mat[1][0], mat[2][0], mat[3][0]);
+  m.column1 = physx::PxVec4(mat[0][1], mat[1][1], mat[2][1], mat[3][1]);
+  m.column2 = physx::PxVec4(mat[0][2], mat[1][2], mat[2][2], mat[3][2]);
+  m.column3 = physx::PxVec4(mat[0][3], mat[1][3], mat[2][3], mat[3][3]);
+  return m;
+}
+
+extern Matrix4 Yeager::PxMat4ToMatrix4(const physx::PxMat44& mat)
+{
+  Matrix4 m = Matrix4(1.0f);
+  m[0][0] = mat.column0.x;
+  m[1][0] = mat.column0.y;
+  m[2][0] = mat.column0.z;
+  m[3][0] = mat.column0.w;
+  m[0][1] = mat.column1.x;
+  m[1][1] = mat.column1.y;
+  m[2][1] = mat.column1.z;
+  m[3][1] = mat.column1.w;
+  m[0][2] = mat.column2.x;
+  m[1][2] = mat.column2.y;
+  m[2][2] = mat.column2.z;
+  m[3][2] = mat.column2.w;
+  m[0][3] = mat.column3.x;
+  m[1][3] = mat.column3.y;
+  m[2][3] = mat.column3.z;
+  m[3][3] = mat.column3.w;
+  return m;
+}
+
+PxVec3 Yeager::Vector3ToPxVec3(const Vector3& vec)
 {
   PxVec3 rt;
   rt.x = vec.x;
@@ -13,13 +45,19 @@ PxVec3 Yeager::YgVector3ToPxVec3(const YgVector3& vec)
   return rt;
 }
 
-YgVector3 Yeager::PxVec3ToYgVector3(const PxVec3& vec)
+Vector3 Yeager::PxVec3ToVector3(const PxVec3& vec)
 {
-  YgVector3 rt(0.0f);
+  Vector3 rt(0.0f);
   rt.x = vec.x;
   rt.y = vec.y;
   rt.z = vec.z;
   return rt;
+}
+
+void PhysXHandle::PushToScene(physx::PxRigidActor* actor)
+{
+  m_PxScene->addActor(*actor);
+  m_PxActors.push_back(actor);
 }
 
 PhysXHandle::PhysXHandle(Yeager::ApplicationCore* app) : m_Application(app) {}

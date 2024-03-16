@@ -1,7 +1,7 @@
 #include "ShaderHandle.h"
 using namespace Yeager;
 
-Shader::Shader(YgCchar fragmentPath, YgCchar vertexPath, YgString name)
+Shader::Shader(Cchar fragmentPath, Cchar vertexPath, String name)
 {
   m_Name = name;
   unsigned int vt = CreateVertexGL(vertexPath);
@@ -20,7 +20,7 @@ Shader::~Shader()
   //glDeleteProgram(m_id);
 }
 
-unsigned int Shader::CreateVertexGL(YgCchar vertexPath)
+unsigned int Shader::CreateVertexGL(Cchar vertexPath)
 {
   unsigned int vertexShaderSource = 0;
   int vertexShaderSuccess = 0;
@@ -30,10 +30,10 @@ unsigned int Shader::CreateVertexGL(YgCchar vertexPath)
   if (vertexFile.is_open()) {
     auto vertexFileSize = vertexFile.tellg();
     vertexFile.seekg(std::ios::beg);
-    YgString vertexContent(vertexFileSize, 0);
+    String vertexContent(vertexFileSize, 0);
     vertexFile.read(&vertexContent[0], vertexFileSize);
 
-    YgCchar vertexReference = vertexContent.c_str();
+    Cchar vertexReference = vertexContent.c_str();
 
     vertexShaderSource = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShaderSource, 1, &vertexReference, NULL);
@@ -58,7 +58,7 @@ unsigned int Shader::CreateVertexGL(YgCchar vertexPath)
   return vertexShaderSource;
 }
 
-unsigned int Shader::CreateFragmentGL(YgCchar fragmentPath)
+unsigned int Shader::CreateFragmentGL(Cchar fragmentPath)
 {
   unsigned int fragmentShaderSource = 0;
   int fragmentShaderSuccess = 0;
@@ -68,10 +68,10 @@ unsigned int Shader::CreateFragmentGL(YgCchar fragmentPath)
   if (fragmentFile.is_open()) {
     auto fragmentFileSize = fragmentFile.tellg();
     fragmentFile.seekg(std::ios::beg);
-    YgString fragmentContent(fragmentFileSize, 0);
+    String fragmentContent(fragmentFileSize, 0);
     fragmentFile.read(&fragmentContent[0], fragmentFileSize);
 
-    YgCchar fragmentReference = fragmentContent.c_str();
+    Cchar fragmentReference = fragmentContent.c_str();
 
     fragmentShaderSource = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShaderSource, 1, &fragmentReference, NULL);
@@ -98,17 +98,17 @@ unsigned int Shader::CreateFragmentGL(YgCchar fragmentPath)
 
 void Shader::LinkShaders(unsigned int vertexShader, unsigned int fragmentShader)
 {
-  m_id = glCreateProgram();
-  glAttachShader(m_id, vertexShader);
-  glAttachShader(m_id, fragmentShader);
-  glLinkProgram(m_id);
+  m_EntityID = glCreateProgram();
+  glAttachShader(m_EntityID, vertexShader);
+  glAttachShader(m_EntityID, fragmentShader);
+  glLinkProgram(m_EntityID);
 
   int linkSuccess;
   char linkInfo[512];
 
-  glGetProgramiv(m_id, GL_LINK_STATUS, &linkSuccess);
+  glGetProgramiv(m_EntityID, GL_LINK_STATUS, &linkSuccess);
   if (!linkSuccess) {
-    glGetProgramInfoLog(m_id, 512, NULL, linkInfo);
+    glGetProgramInfoLog(m_EntityID, 512, NULL, linkInfo);
     Yeager::Log(ERROR, "Cannot link shaders: {}, ID: {}, Error: {}", m_Name.c_str(), m_shader_num, linkInfo);
   } else {
     Yeager::Log(INFO, "Success in linking shaders: {}, ID: {}", m_Name.c_str(), m_shader_num);
@@ -118,40 +118,40 @@ void Shader::LinkShaders(unsigned int vertexShader, unsigned int fragmentShader)
   glDeleteShader(fragmentShader);
 }
 
-void Shader::SetInt(const YgString& name, int value)
+void Shader::SetInt(const String& name, int value)
 {
-  glUniform1i(glGetUniformLocation(m_id, name.c_str()), value);
+  glUniform1i(glGetUniformLocation(m_EntityID, name.c_str()), value);
 }
-void Shader::SetBool(const YgString& name, bool value)
+void Shader::SetBool(const String& name, bool value)
 {
-  glUniform1i(glGetUniformLocation(m_id, name.c_str()), (int)value);
+  glUniform1i(glGetUniformLocation(m_EntityID, name.c_str()), (int)value);
 }
-void Shader::SetFloat(const YgString& name, float value)
+void Shader::SetFloat(const String& name, float value)
 {
-  glUniform1f(glGetUniformLocation(m_id, name.c_str()), value);
+  glUniform1f(glGetUniformLocation(m_EntityID, name.c_str()), value);
 }
-void Shader::SetMat4(const YgString& name, YgMatrix4 value)
+void Shader::SetMat4(const String& name, Matrix4 value)
 {
-  glUniformMatrix4fv(glGetUniformLocation(m_id, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
+  glUniformMatrix4fv(glGetUniformLocation(m_EntityID, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
 }
-void Shader::SetVec3(const YgString& name, YgVector3 value)
+void Shader::SetVec3(const String& name, Vector3 value)
 {
-  glUniform3fv(glGetUniformLocation(m_id, name.c_str()), 1, &value[0]);
+  glUniform3fv(glGetUniformLocation(m_EntityID, name.c_str()), 1, &value[0]);
 }
-void Shader::SetVec2(const YgString& name, glm::vec2 value)
+void Shader::SetVec2(const String& name, glm::vec2 value)
 {
-  glUniform2fv(glGetUniformLocation(m_id, name.c_str()), 1, &value[0]);
+  glUniform2fv(glGetUniformLocation(m_EntityID, name.c_str()), 1, &value[0]);
 }
-void Shader::SetUniform1i(const YgString& name, int value)
+void Shader::SetUniform1i(const String& name, int value)
 {
-  glUniform1i(glGetUniformLocation(m_id, name.c_str()), value);
+  glUniform1i(glGetUniformLocation(m_EntityID, name.c_str()), value);
 }
-void Shader::SetVec4(const YgString& name, glm::vec4 value)
+void Shader::SetVec4(const String& name, glm::vec4 value)
 {
-  glUniform4fv(glGetUniformLocation(m_id, name.c_str()), 1, &value[0]);
+  glUniform4fv(glGetUniformLocation(m_EntityID, name.c_str()), 1, &value[0]);
 }
 
 void Shader::UseShader()
 {
-  glUseProgram(m_id);
+  glUseProgram(m_EntityID);
 }

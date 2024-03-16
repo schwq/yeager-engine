@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -52,7 +52,8 @@ enum AudioHandleSoundEffects {
 
 class AudioHandle : public GameEntity {
  public:
-  AudioHandle(YgString path, YgString name, AudioEngineHandle* handle, bool looped, Yeager::ApplicationCore* app = YEAGER_NULLPTR);
+  AudioHandle(String path, String name, AudioEngineHandle* handle, bool looped,
+              Yeager::ApplicationCore* app = YEAGER_NULLPTR);
   ~AudioHandle();
 
   void SetVolume(irrklang::ik_f32 volume);
@@ -74,7 +75,7 @@ class AudioHandle : public GameEntity {
   bool IsSoundEffectEnable(AudioHandleSoundEffects effect);
   bool CheckIfSoundEffectIsSupported();
 
-  YgString GetPath() { return m_path; }
+  String GetPath() { return m_path; }
 
  protected:
   irrklang::ik_u32 m_paused_play_pos;
@@ -82,24 +83,25 @@ class AudioHandle : public GameEntity {
   irrklang::ISoundSource* m_sound_source = YEAGER_NULLPTR;
   irrklang::ISoundEffectControl* m_sound_effects = YEAGER_NULLPTR;
   AudioEngineHandle* m_EngineHandle = YEAGER_NULLPTR;
-  YgString m_path;
+  String m_path;
   bool m_looped = false;
   bool m_paused = false;
   bool m_stopped = true;
 };
 
-extern YgVector3 Vec3df_to_YgVec3(irrklang::vec3df vec);
-extern irrklang::vec3df YgVec3_to_Vec3df(YgVector3 vec);
+extern Vector3 Vec3df_to_YgVec3(irrklang::vec3df vec);
+extern irrklang::vec3df YgVec3_to_Vec3df(Vector3 vec);
 
 class Audio3DHandle : public AudioHandle {
  public:
-  Audio3DHandle(YgString path, YgString name, AudioEngineHandle* handle, bool looped, irrklang::vec3df position, Yeager::ApplicationCore* app = YEAGER_NULLPTR);
+  Audio3DHandle(String path, String name, AudioEngineHandle* handle, bool looped, irrklang::vec3df position,
+                Yeager::ApplicationCore* app = YEAGER_NULLPTR);
   ~Audio3DHandle();
 
   void Play();
   void Resume();
   irrklang::vec3df GetIrrklangPosition();
-  YgVector3 GetVector3Position();
+  Vector3 GetVector3Position();
   void SetAudioPos(irrklang::vec3df pos);
 
  private:

@@ -10,19 +10,20 @@ using namespace Yeager;
 ApplicationCore::ApplicationCore()
 {
   m_Serial = new Serialization(this);
+  m_Scene = new Scene(this);
   ValidatesExternalEngineFolder();
   m_Serial->ReadLoadedProjectsHandles(m_EngineExternalFolder);
   Setup();
 }
 
-YgString ApplicationCore::GetPathRelativeToExternalFolder(YgString path) const
+String ApplicationCore::GetPathRelativeToExternalFolder(String path) const
 {
   return m_EngineExternalFolder + path;
 }
 
 void ApplicationCore::ValidatesExternalEngineFolder()
 {
-  YgString osFolder;
+  String osFolder;
 #ifdef YEAGER_SYSTEM_LINUX
   osFolder = "/.YeagerEngine";
 #elif defined(YEAGER_SYSTEM_WINDOWS_x64)
@@ -42,14 +43,14 @@ void ApplicationCore::ValidatesExternalEngineFolder()
   m_EngineExternalFolder = GetExternalFolderLocation() + osFolder + YG_PS + "External";
 }
 
-YgString ApplicationCore::GetExternalFolderLocation()
+String ApplicationCore::GetExternalFolderLocation()
 {
   return GetExternalFolderPath();
 }
 
 void ApplicationCore::CreateDirectoriesAndFiles()
 {
-  YgString osFolder;
+  String osFolder;
 #ifdef YEAGER_SYSTEM_LINUX
   osFolder = "/.YeagerEngine/External";
 #elif defined(YEAGER_SYSTEM_WINDOWS_x64)
@@ -82,34 +83,52 @@ LauncherProjectPicker ApplicationCore::RequestLauncher()
   }
 }
 
-YgString ApplicationCore::RequestWindowEngineName(const LauncherProjectPicker& project)
+String ApplicationCore::RequestWindowEngineName(const LauncherProjectPicker& project)
 {
-  YgString scene_renderer_str = Yeager::SceneRendererToString(project.m_SceneRenderer);
+  String scene_renderer_str = Yeager::SceneRendererToString(project.m_SceneRenderer);
   std::replace(scene_renderer_str.begin(), scene_renderer_str.end(), '_', ' ');
-  YgString engine_new_name = "Yeager Engine : " + project.m_Name + " / " + scene_renderer_str;
+  String engine_new_name = "Yeager Engine : " + project.m_Name + " / " + scene_renderer_str;
   return engine_new_name;
 }
 
 void ApplicationCore::BuildApplicationCoreCompoments()
 {
+  m_Settings = new Settings(this);
+  m_Request = new RequestHandle(this);
   m_Input = new Input(this);
   m_Window = new Window(ygWindowWidth, ygWindowHeight, "Yeager Engine", m_Input->MouseCallback);
   m_Input->InitializeCallbacks();
   m_AudioEngine = new AudioEngineHandle();
   m_AudioEngine->InitAudioEngine();
   CheckGLAD();
+
   m_Interface = new Interface(m_Window, this);
-  m_EditorCamera = new EditorCamera(this);
+  SetupCamera();
   m_EditorExplorer = new EditorExplorer(this);
   m_PhysXHandle = new PhysXHandle(this);
+  m_RendererLines = new RendererLines(this);
   if (!m_PhysXHandle->InitPxEngine()) {
     Yeager::Log(ERROR, "PhysX cannot initialize correctly, something must went wrong!");
   }
 }
 
+void ApplicationCore::SetupCamera()
+{
+  m_EditorCamera = new EditorCamera(this);
+  m_BaseCamera = static_cast<BaseCamera*>(m_EditorCamera);
+}
+
+void ApplicationCore::UpdateCamera()
+{
+  if (m_BaseCamera->GetCameraType() == YgCameraType::eCAMERA_PLAYER) {
+    PlayerCamera* camera = static_cast<PlayerCamera*>(m_BaseCamera);
+    camera->Update(m_DeltaTime);
+  }
+}
+
 void ApplicationCore::Setup()
 {
-  YgString EditorVariablesPath = GetPath("/Configuration/Editor/editor_variables.yml");
+  String EditorVariablesPath = GetPath("/Configuration/Editor/editor_variables.yml");
 
   BuildApplicationCoreCompoments();
 
@@ -119,25 +138,30 @@ void ApplicationCore::Setup()
     m_mode = YgApplicationMode::eAPPLICATION_EDITOR;
     m_Window->RegenerateMainWindow(1920, 1080, RequestWindowEngineName(project), m_Input->MouseCallback);
     m_Interface->RequestRestartInterface(m_Window);
-    m_Scene = new Yeager::Scene(project.m_Name, project.m_AuthorName, project.m_SceneType, project.m_ProjectFolderPath,
-                                project.m_SceneRenderer, this);
-    m_Serial->ReadSceneShadersConfig(GetPath("/Configuration/Editor/Shaders/default_shaders.yaml"));
 
-    if (m_Launcher->GetNewProjectLaoded()) {
-      /* New project have been loaded*/
-      m_Scene->Save();
-      LoadSceneDefaultEntities();
-    } else {
-      /* The project already exists! */
-      m_Scene->Load(project.m_ProjectConfigurationPath);
-    }
+    PrepareSceneToLoad(project);
 
   } else {
     m_AudioEngine->TerminateAudioEngine();
   }
 }
 
-void ApplicationCore::LoadSceneDefaultEntities() {}
+void ApplicationCore::PrepareSceneToLoad(const LauncherProjectPicker& project)
+{
+  m_Scene->BuildScene(project.m_Name, project.m_AuthorName, project.m_SceneType, project.m_ProjectFolderPath,
+                      project.m_SceneRenderer, project.m_ProjectDateOfCreation);
+
+  m_Serial->ReadSceneShadersConfig(GetPath("/Configuration/Editor/Shaders/default_shaders.yaml"));
+
+  if (m_Launcher->GetNewProjectLaoded()) {
+    /* New project have been loaded*/
+    m_Scene->Save();
+
+  } else {
+    /* The project already exists! */
+    m_Scene->Load(project.m_ProjectConfigurationPath);
+  }
+}
 
 bool ApplicationCore::ShouldRender()
 {
@@ -147,20 +171,21 @@ bool ApplicationCore::ShouldRender()
 ApplicationCore::~ApplicationCore()
 {
   m_Serial->WriteLoadedProjectsHandles(m_EngineExternalFolder);
-  delete m_Serial;
-  delete m_EditorExplorer;
-  delete m_EditorCamera;
-  delete m_AudioEngine;
-  delete m_Scene;
-  delete m_Interface;
-  delete m_Input;
-  delete m_Window;
+  YEAGER_DELETE(m_Serial);
+  YEAGER_DELETE(m_EditorExplorer);
+  YEAGER_DELETE(m_EditorCamera);
+  YEAGER_DELETE(m_AudioEngine);
+  YEAGER_DELETE(m_Scene);
+  YEAGER_DELETE(m_Interface);
+  YEAGER_DELETE(m_Input);
+  YEAGER_DELETE(m_Window);
+  YEAGER_DELETE(m_Settings);
 }
 
 void ApplicationCore::UpdateDeltaTime()
 {
   m_FrameCurrentCount++;
-  auto currentFrame = static_cast<float>(glfwGetTime());
+  const auto currentFrame = static_cast<float>(glfwGetTime());
   m_DeltaTime = currentFrame - m_LastFrame;
   m_LastFrame = currentFrame;
 }
@@ -175,139 +200,113 @@ void ApplicationCore::UpdateWorldMatrices()
 
 void ApplicationCore::UpdateListenerPosition()
 {
-  irrklang::vec3df cameraPos = Yeager::YgVec3_to_Vec3df(m_WorldMatrices.ViewerPos);
-  irrklang::vec3df cameraDir = Yeager::YgVec3_to_Vec3df(GetCamera()->GetDirection());
+  const irrklang::vec3df cameraPos = Yeager::YgVec3_to_Vec3df(m_WorldMatrices.ViewerPos);
+  const irrklang::vec3df cameraDir = Yeager::YgVec3_to_Vec3df(GetCamera()->GetDirection());
   m_AudioEngine->SetListernerPos(cameraPos, cameraDir, irrklang::vec3df(0.0f, 0.0f, 0.0f),
                                  irrklang::vec3df(0.0f, 1.0f, 0.0f));
 }
 
 void ApplicationCore::Render()
 {
-
   OpenGLFunc();
-  auto source = std::make_shared<PhysicalLightHandle>(
-      "Main", this, std::vector<Shader*>{ShaderFromVarName("Simple"), ShaderFromVarName("SimpleAnimated")},
-      ShaderFromVarName("Light"));
-  ObjectPointLight light;
-  Transformation trans;
-  source->AddObjectPointLight(light, trans);
-  GetScene()->GetLightSources()->push_back(source);
 
-  GetScene()->CheckDuplicatesLightSources();
-
-  physx::PxMaterial* material = m_PhysXHandle->GetPxPhysics()->createMaterial(1.0f, 1.0f, 1.0f);
-
-  for (auto& sources : *m_Scene->GetLightSources()) {
-    for (auto& obj : *sources->GetObjectPointLights()) {
-      YgVector3 pos = obj.ObjSource->GetTransformationPtr()->position;
-      m_PhysXHandle->GetGeometryHandle()->CreatePrimitiveSphere(YEAGER_PHYSX_RIGID_STATIC_BODY, *material,
-                                                                physx::PxTransform(YgVector3ToPxVec3(pos)), 1);
-    }
-  }
-
-  physx::PxRigidDynamic* actor = (physx::PxRigidDynamic*)m_PhysXHandle->GetGeometryHandle()->CreatePrimitiveSphere(
-      YEAGER_PHYSX_RIGID_DYNAMIC_BODY, *material, physx::PxTransform(physx::PxVec3(3.0f, 1.0f, 4.0f)), 1);
-  ObjectPointLight ll;
-  m_Scene->GetLightSources()->at(0)->AddObjectPointLight(&ll, ObjectGeometryType::ESphere);
-
-  m_Controller = m_PhysXHandle->GetCharacterController()->CreateController(physx::PxControllerShapeType::eCAPSULE);
+  material = std::make_shared<MaterialTexture2D>(this, "test", MaterialTextureType::eDIFFUSE);
+  material->GenerateFromFile("C:\\Users\\schwq\\Downloads\\demo.png");
+  monarch = std::make_shared<MaterialTexture2D>(this, "test", MaterialTextureType::eDIFFUSE);
+  monarch->GenerateFromFile("C:\\Users\\schwq\\Downloads\\mo.jpg", true);
   m_TimeBeforeRender = static_cast<float>(glfwGetTime());
 
-  bool collisionFloor = false;
+  Skybox skybox("Main", ObjectGeometryType::eCUSTOM, this);
+  skybox.BuildSkyboxFromImport("C:\\Users\\schwq\\Downloads\\sky-pano-monument-valley-lookout\\textures\\skybox.obj",
+                               true);
 
+  SpawnCubeObject(this, "Wall", Vector3(10.0f, 0.0f, 0.0f), Vector3(0.0f), Vector3(10.0f, 10.0f, 1.0f),
+                  Yeager::ObjectPhysicsType::eSTATIC_BODY);
+
+  auto light = std::make_shared<PhysicalLightHandle>("main", this, std::vector<Shader*>{ShaderFromVarName("Simple")},
+                                                     ShaderFromVarName("Light"));
+  light->SetCanBeSerialize(false);
+  m_Scene->GetLightSources()->push_back(light);
+
+  BeginEngineTimer();
   while (ShouldRender()) {
     glfwPollEvents();
     OpenGLClear();
-
-    ll.ObjSource->GetTransformationPtr()->position = Yeager::PxVec3ToYgVector3(actor->getGlobalPose().p);
 
     m_Interface->InitRenderFrame();
     m_Scene->CheckThreadsAndTriggerActions();
 
     UpdateDeltaTime();
     UpdateWorldMatrices();
-
     UpdateListenerPosition();
+    ManifestAllShaders();
 
-    ManifestShaderProps(ShaderFromVarName("Skybox"));
+    UpdateCamera();
 
+    skybox.Draw(ShaderFromVarName("Skybox"), Matrix3(m_WorldMatrices.View), m_WorldMatrices.Projection);
     m_AudioEngine->Engine->update();
-
-    if (!collisionFloor) {
-      PhysXCollisionDetection det = m_PhysXHandle->GetCharacterController()->Move(
-          m_Controller, physx::PxVec3(0.0f, -0.1f, 0.0f), 0.01f, m_DeltaTime, NULL);
-      if (det.bHasCollideBelow)
-        collisionFloor = true;
-    } else {
-      PhysXCollisionDetection det = m_PhysXHandle->GetCharacterController()->Move(
-          m_Controller, physx::PxVec3(0.0f, 0.0f, 0.0f), 0.01f, m_DeltaTime, NULL);
-      if (!det.bHasCollideBelow) {
-        collisionFloor = false;
-      }
-    }
-
-    physx::PxExtendedVec3 pos = m_Controller->getPosition();
-    m_EditorCamera->SetPosition(YgVector3(pos.x, pos.y, pos.z));
 
     m_PhysXHandle->StartSimulation(m_DeltaTime);
     m_PhysXHandle->EndSimulation();
-    ManifestShaderProps(ShaderFromVarName("TerrainGeneration"));
-    ManifestShaderProps(ShaderFromVarName("Simple"));
-    ManifestShaderProps(ShaderFromVarName("Collision"));
-
-    ManifestShaderProps(ShaderFromVarName("SimpleAnimated"));
-    ManifestShaderProps(ShaderFromVarName("SimpleInstancedAnimated"));
-    ShaderFromVarName("SimpleInstancedAnimated")->UseShader();
 
     DrawObjects();
-    ManifestShaderProps(ShaderFromVarName("SimpleInstanced"));
-
-    ManifestShaderProps(ShaderFromVarName("Light"));
     BuildAndDrawLightSources();
+
+    m_RendererLines->Draw(ShaderFromVarName("Line"));
 
     GetInterface()->RenderUI();
     GetScene()->CheckScheduleDeletions();
     m_Interface->TerminateRenderFrame();
     GetInput()->ProcessInputRender(GetWindow(), m_DeltaTime);
     glfwSwapBuffers(GetWindow()->getWindow());
+    m_Request->HandleRequests();
   }
-  m_Controller->release();
+
+  TerminatePosRender();
+}
+
+void ApplicationCore::TerminatePosRender()
+{
   GetScene()->CheckAndAwaitThreadsToFinish();
   GetScene()->Save();
+
   m_AudioEngine->TerminateAudioEngine();
   m_PhysXHandle->TerminateEngine();
-  delete m_PhysXHandle;
+
+  YEAGER_DELETE(m_PhysXHandle);
 }
 
 void ApplicationCore::BuildAndDrawLightSources()
 {
   for (const auto& light : *GetScene()->GetLightSources()) {
     light->BuildShaderProps(GetCamera()->GetPosition(), GetCamera()->GetDirection(), 32.0f);
-    light->DrawLightSources();
+    light->DrawLightSources(m_DeltaTime);
   }
 }
 
 void ApplicationCore::DrawObjects()
 {
   for (const auto& obj : *GetScene()->GetObjects()) {
-    obj->Draw(ShaderFromVarName("Simple"));
-  }
-  for (const auto& obj : *GetScene()->GetInstancedObjects()) {
-    obj->Draw(ShaderFromVarName("SimpleInstanced"), obj->GetInstancedNumber());
+    if (obj->IsInstanced()) {
+      obj->Draw(ShaderFromVarName("SimpleInstanced"), m_DeltaTime);
+    } else {
+      obj->Draw(ShaderFromVarName("Simple"), m_DeltaTime);
+    }
   }
 
   for (const auto& obj : *GetScene()->GetAnimatedObject()) {
-    ShaderFromVarName("SimpleAnimated")->UseShader();
-    obj->UpdateAnimation(m_DeltaTime);
-    obj->BuildAnimationMatrices(ShaderFromVarName("SimpleAnimated"));
-    obj->Draw(ShaderFromVarName("SimpleAnimated"));
-  }
+    Shader* shader = YEAGER_NULLPTR;
 
-  for (const auto& obj : *GetScene()->GetInstancedAnimatedObjects()) {
-    ShaderFromVarName("SimpleInstancedAnimated")->UseShader();
+    if (obj->IsInstanced()) {
+      shader = ShaderFromVarName("SimpleInstancedAnimated");
+    } else {
+      shader = ShaderFromVarName("SimpleAnimated");
+    }
+
+    shader->UseShader();
     obj->UpdateAnimation(m_DeltaTime);
-    obj->BuildAnimationMatrices(ShaderFromVarName("SimpleInstancedAnimated"));
-    obj->Draw(ShaderFromVarName("SimpleInstancedAnimated"));
+    obj->BuildAnimationMatrices(shader);
+    obj->Draw(shader);
   }
 }
 
@@ -327,20 +326,20 @@ EditorExplorer* ApplicationCore::GetExplorer()
 {
   return m_EditorExplorer;
 }
-EditorCamera* ApplicationCore::GetCamera()
+BaseCamera* ApplicationCore::GetCamera()
 {
-  return m_EditorCamera;
+  return m_BaseCamera;
 }
 Yeager::Scene* ApplicationCore::GetScene()
 {
   return m_Scene;
 }
 
-YgApplicationMode::Enum ApplicationCore::GetMode() noexcept
+YgApplicationMode::Enum ApplicationCore::GetMode() const noexcept
 {
   return m_mode;
 }
-YgApplicationState::Enum ApplicationCore::GetState() noexcept
+YgApplicationState::Enum ApplicationCore::GetState() const noexcept
 {
   return m_state;
 }
@@ -382,7 +381,8 @@ void ApplicationCore::OpenGLFunc()
   glEnable(GL_BLEND);
   glEnable(GL_MULTISAMPLE);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  //glEnable(GL_CULL_FACE);
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
 }
 
 void ApplicationCore::OpenGLClear()
@@ -391,7 +391,7 @@ void ApplicationCore::OpenGLClear()
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-Shader* ApplicationCore::ShaderFromVarName(YgString var)
+Shader* ApplicationCore::ShaderFromVarName(String var)
 {
   for (const auto& shader : m_ConfigShaders) {
     /* If the var requested is the same as the shader var name, then it returns a pointer to that shader
@@ -403,12 +403,12 @@ Shader* ApplicationCore::ShaderFromVarName(YgString var)
   /* Developer errors must be (in certain times) handle by asserts, this kind of errors cnanot be release in the engine build !*/
   assert("Shader var name cannot been found in the configuration of the application!");
   /* Doesnt trigger warning in gcc anymore, this part of the code wont be reach anyway */
-  return nullptr;
+  return YEAGER_NULLPTR;
 }
 
-void ApplicationCore::AddConfigShader(std::shared_ptr<Yeager::Shader> shader, YgString var) noexcept
+void ApplicationCore::AddConfigShader(std::shared_ptr<Yeager::Shader> shader, const String& var) noexcept
 {
-  std::pair<std::shared_ptr<Yeager::Shader>, YgString> config;
+  std::pair<std::shared_ptr<Yeager::Shader>, String> config;
   config.first = shader;
   config.second = var;
   m_ConfigShaders.push_back(config);

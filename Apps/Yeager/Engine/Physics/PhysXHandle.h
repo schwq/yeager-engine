@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -32,8 +32,11 @@
 namespace Yeager {
 class ApplicationCore;
 
-extern physx::PxVec3 YgVector3ToPxVec3(const YgVector3& vec);
-extern YgVector3 PxVec3ToYgVector3(const physx::PxVec3& vec);
+extern physx::PxVec3 Vector3ToPxVec3(const Vector3& vec);
+extern Vector3 PxVec3ToVector3(const physx::PxVec3& vec);
+
+extern physx::PxMat44 Matrix4ToPxMat44(const Matrix4& mat);
+extern Matrix4 PxMat4ToMatrix4(const physx::PxMat44& mat);
 
 class YgPxErrorCallback : public physx::PxErrorCallback {
  public:
@@ -53,6 +56,11 @@ class PhysXHandle {
   bool IsInitialized() const { return m_Initialized; }
   bool IsPxExtensionsEnabled() const { return m_PxExtensionsEnabled; }
   bool IsPxPvdEnabled() const { return m_PxPvdEnabled; }
+
+  /**
+   @brief Push the actor the PxScene and to the application
+   */
+  void PushToScene(physx::PxRigidActor* actor);
 
   YEAGER_NODISCARD physx::PxScene* GetPxScene()
   {

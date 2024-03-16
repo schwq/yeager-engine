@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -31,12 +31,12 @@ namespace Yeager {
 class ApplicationCore;
 
 struct LauncherProjectPicker {
-  YgString m_Name = "Default";
-  YgString m_AuthorName = "Default";
-  YgString m_ProjectFolderPath = "Default";
-  YgString m_ProjectConfigurationPath = "Default";
-  YgString m_PlataformTarget = "Universal";
-  YgDate_t m_ProjectDateOfCreation;
+  String m_Name = "Default";
+  String m_AuthorName = "Default";
+  String m_ProjectFolderPath = "Default";
+  String m_ProjectConfigurationPath = "Default";
+  String m_PlataformTarget = "Universal";
+  YgTime_t m_ProjectDateOfCreation;
   Yeager::SceneType m_SceneType;
   Yeager::SceneRenderer m_SceneRenderer;
   bool UserWantToExit = false;
@@ -44,7 +44,7 @@ struct LauncherProjectPicker {
 
 class Launcher {
  public:
-  Launcher(unsigned int width, unsigned int height, YgString title, ApplicationCore* app);
+  Launcher(unsigned int width, unsigned int height, String title, ApplicationCore* app);
 
   void Render();
   LauncherProjectPicker GetSelectedProject() noexcept { return m_ProjectCurrentSelected; }
@@ -60,7 +60,7 @@ class Launcher {
   void BuildNewProject(const Yeager::LauncherProjectPicker& project);
 
  private:
-  YgString m_WindowTitle;
+  String m_WindowTitle;
   std::vector<LauncherProjectPicker> m_ProjectsInLauncher;
   LauncherProjectPicker m_ProjectCurrentSelected;
   bool m_IsNewProjectLoaded = false;

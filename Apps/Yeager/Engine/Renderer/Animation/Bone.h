@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -34,7 +34,7 @@
 
 namespace Yeager {
 struct KeyPosition {
-  YgVector3 Position;
+  Vector3 Position;
   float TimeStamp;
 };
 
@@ -44,18 +44,18 @@ struct KeyRotation {
 };
 
 struct KeyScale {
-  YgVector3 Scale;
+  Vector3 Scale;
   float TimeStamp;
 };
 
 class Bone {
  public:
-  Bone(const YgString& Name, int ID, const aiNodeAnim* Channel);
+  Bone(const String& Name, int ID, const aiNodeAnim* Channel);
 
   void Update(float AnimationTime);
 
-  constexpr YgMatrix4 GetLocalTransform() { return m_LocalTransform; }
-  YgString GetBoneName() { return m_Name; }
+  constexpr Matrix4 GetLocalTransform() { return m_LocalTransform; }
+  String GetBoneName() { return m_Name; }
   constexpr int GetBoneID() { return m_ID; }
 
   int GetPositionIndex(float AnimationTime);
@@ -64,9 +64,9 @@ class Bone {
 
  private:
   float GetScaleFactor(float LastTimeStamp, float NextTimeStamp, float AnimationTime);
-  YgMatrix4 InterpolatePosition(float AnimationTime);
-  YgMatrix4 InterpolateRotation(float AnimationTime);
-  YgMatrix4 InterpolateScaling(float AnimationTime);
+  Matrix4 InterpolatePosition(float AnimationTime);
+  Matrix4 InterpolateRotation(float AnimationTime);
+  Matrix4 InterpolateScaling(float AnimationTime);
 
   std::vector<KeyPosition> m_Positions;
   std::vector<KeyRotation> m_Rotations;
@@ -75,8 +75,8 @@ class Bone {
   int m_NumRotations;
   int m_NumScalings;
 
-  YgMatrix4 m_LocalTransform;
-  YgString m_Name;
+  Matrix4 m_LocalTransform;
+  String m_Name;
   int m_ID;
 };
 }  // namespace Yeager

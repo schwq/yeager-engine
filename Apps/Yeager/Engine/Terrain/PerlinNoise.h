@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023-present
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -38,14 +38,14 @@ class PerlinNoise {
     m_Width = width;
   }
   constexpr void RegenerateSeed() noexcept;
-  bool SavePerlinNoiseMapToFile(YgCchar path);
+  bool SavePerlinNoiseMapToFile(Cchar path);
   YEAGER_NODISCARD inline float* GetSeed() noexcept { return m_Seed; }
   constexpr inline int GetOctaveCount() noexcept { return m_OctaveCount; }
-  constexpr inline YgVector2 GetSize() noexcept { return YgVector2(m_Width, m_Lenght); }
-  constexpr inline bool GetIsGenerated() noexcept { return m_Generated; }
+  constexpr inline Vector2 GetSize() noexcept { return Vector2(m_Width, m_Lenght); }
+  constexpr inline bool GetIsGenerated() noexcept { return Generated; }
 
  protected:
-  bool m_Generated = false;
+  bool Generated = false;
   int m_Width = 256;
   int m_Lenght = 256;
   float* m_Seed = YEAGER_NULLPTR;

@@ -43,6 +43,7 @@ physx::PxController* PhysXCharacterController::CreateController(const physx::PxC
       } else {
         Yeager::Log(ERROR, "PhysX Create Controller, desc is invalid!");
       }
+
     } break;
     case PxControllerShapeType::eCAPSULE: {
       PxCapsuleControllerDesc desc;

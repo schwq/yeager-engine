@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -49,14 +49,14 @@ const T* cend(const T* arr, size_t N)
 
 namespace Yeager {
 enum class ImageExtension { EPng, EJpeg };
-extern YgString ImageExtensionToString(ImageExtension ext);
+extern String ImageExtensionToString(ImageExtension ext);
 }  // namespace Yeager
 
 struct ImagePixel {
   std::byte Colors[3];
 };
 
-extern bool MakeScreenShot(YgCchar output) noexcept;
-extern bool MakeScreenShotMiddle(YgCchar output) noexcept;
-extern bool MakeScreenShotInPosition(YgCchar output, unsigned int pos_x, unsigned int pos_y, unsigned int size_x,
+extern bool MakeScreenShot(Cchar output) noexcept;
+extern bool MakeScreenShotMiddle(Cchar output) noexcept;
+extern bool MakeScreenShotInPosition(Cchar output, unsigned int pos_x, unsigned int pos_y, unsigned int size_x,
                                      unsigned int size_y);

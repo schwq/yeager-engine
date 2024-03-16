@@ -5,22 +5,51 @@
 #include "stb_image.h"
 
 using namespace Yeager;
+using namespace physx;
 
 unsigned int Importer::m_ImportedModelsCount = 0;
 
-Importer::Importer(YgString source, ApplicationCore* app) : m_Source(source), m_Application(app)
+Importer::Importer(String source, ApplicationCore* app) : m_Source(source), m_Application(app)
 {
   Yeager::Log(INFO, "Intialize Importer from {}", m_Source.c_str());
   if (app == YEAGER_NULLPTR) {
     Yeager::Log(WARNING, "The importer application pointer have not been set!");
   }
 }
+/* TODO review the order of vectors here, it can change the direction of the output normal */
+Vector3 Yeager::CalculateTriangleNormalFromPoints(Vector3 p1, Vector3 p2, Vector3 p3)
+{
+  Vector3 U = p2 - p1;
+  Vector3 V = p3 - p1;
+  return glm::cross(U, V);
+}
+
+std::vector<physx::PxVec3> Yeager::ConvertYgVectors3ToPhysXVec3(const std::vector<Vector3>& vectors)
+{
+  std::vector<physx::PxVec3> v;
+  for (const auto& vec : vectors) {
+    v.push_back(physx::PxVec3(vec.x, vec.y, vec.z));
+  }
+  return v;
+}
+
+/* TODO review this implementation */
+Vector3 CalculatePolygonNormalFromPoints(std::vector<Vector3>& points)
+{
+  Vector3 Normal = YEAGER_ZERO_VECTOR3;
+  for (YEAGER_UINT index = 0; index < points.size(); index++) {
+    Vector3 Current = points.at(index);
+    Vector3 Next = points.at((index + 1) % points.size());
+    Normal += glm::cross(Current, Next);
+  }
+  return Normal;
+}
 
 Importer::~Importer()
 {
   Yeager::Log(INFO, "Destrorying Importer from {}", m_Source.c_str());
 }
-ObjectModelData Importer::Import(YgCchar path, bool flip_image, unsigned int assimp_flags)
+ObjectModelData Importer::Import(Cchar path, bool flip_image, unsigned int assimp_flags)
 {
 
   m_ImageFlip = flip_image;
@@ -37,6 +66,106 @@ ObjectModelData Importer::Import(YgCchar path, bool flip_image, unsigned int ass
   return data;
 }
 
+ObjectModelData Importer::ImportToPhysX(Cchar path, physx::PxRigidActor* actor, bool flip_image,
+                                        unsigned int assimp_flags)
+{
+  m_ImageFlip = flip_image;
+  ObjectModelData data;
+  Assimp::Importer imp;
+  const aiScene* scene = imp.ReadFile(path, assimp_flags);
+  if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+    Yeager::Log(ERROR, "Cannot load imported model! Path {}, Error {}", path, imp.GetErrorString());
+    return data;
+  }
+  m_FullPath = path;
+  ProcessPhysXNode(actor, scene->mRootNode, scene, &data);
+  data.SuccessfulLoaded = true;
+  return data;
+}
+
+void Importer::ProcessPhysXNode(physx::PxRigidActor* actor, aiNode* node, const aiScene* scene, ObjectModelData* data)
+{
+  for (unsigned int x = 0; x < node->mNumMeshes; x++) {
+    aiMesh* mesh = scene->mMeshes[node->mMeshes[x]];
+    data->Meshes.push_back(ProcessPhysXMesh(actor, mesh, scene, data));
+  }
+
+  for (unsigned int x = 0; x < node->mNumChildren; x++) {
+    ProcessPhysXNode(actor, node->mChildren[x], scene, data);
+  }
+}
+ObjectMeshData Importer::ProcessPhysXMesh(physx::PxRigidActor* actor, aiMesh* mesh, const aiScene* scene,
+                                          ObjectModelData* data)
+{
+  std::vector<ObjectVertexData> vertices;
+  std::vector<physx::PxVec3> PhysxVertices;
+  std::vector<GLuint> indices;
+  std::vector<MaterialTexture2D*> textures;
+
+  for (unsigned int x = 0; x < mesh->mNumVertices; x++) {
+    ObjectVertexData vertex;
+    Vector3 vector;
+
+    vector.x = mesh->mVertices[x].x;
+    vector.y = mesh->mVertices[x].y;
+    vector.z = mesh->mVertices[x].z;
+    vertex.Position = vector;
+    if (mesh->HasNormals()) {
+      vector.x = mesh->mNormals[x].x;
+      vector.y = mesh->mNormals[x].y;
+      vector.z = mesh->mNormals[x].z;
+      vertex.Normals = vector;
+    } else {
+      vertex.Normals = Vector3(0.0f, 1.0f, 0.0f);
+    }
+
+    if (mesh->mTextureCoords[0]) {  // has texture coords
+      Vector2 vec;
+      vec.x = mesh->mTextureCoords[0][x].x;
+      vec.y = mesh->mTextureCoords[0][x].y;
+      vertex.TextureCoords = vec;
+    } else {  // No texture coords
+      vertex.TextureCoords = Vector2(0.0f, 0.0f);
+    }
+    vertices.push_back(vertex);
+    PhysxVertices.push_back(Vector3ToPxVec3(vertex.Position));
+  }
+
+  for (unsigned int x = 0; x < mesh->mNumFaces; x++) {
+
+    aiFace face = mesh->mFaces[x];
+    for (unsigned int y = 0; y < face.mNumIndices; y++) {
+      indices.push_back(face.mIndices[y]);
+    }
+  }
+
+  if (mesh->mMaterialIndex >= 0) {
+    aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+    std::vector<MaterialTexture2D*> diffuseMaps =
+        LoadMaterialTexture(material, aiTextureType_DIFFUSE, "texture_diffuse", data);
+    textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
+    std::vector<MaterialTexture2D*> specularMaps =
+        LoadMaterialTexture(material, aiTextureType_SPECULAR, "texture_specular", data);
+    textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+    std::vector<MaterialTexture2D*> metallicMaps =
+        LoadMaterialTexture(material, aiTextureType_METALNESS, "texture_metallic", data);
+    textures.insert(textures.end(), metallicMaps.begin(), metallicMaps.end());
+    std::vector<MaterialTexture2D*> roughnessMaps =
+        LoadMaterialTexture(material, aiTextureType_DIFFUSE_ROUGHNESS, "texture_roughness", data);
+    textures.insert(textures.end(), roughnessMaps.begin(), roughnessMaps.end());
+  }
+  PxMaterial* material = m_Application->GetPhysXHandle()->GetPxPhysics()->createMaterial(1.0f, 1.0f, 1.0f);
+  PxShape* shape = m_Application->GetPhysXHandle()->GetPxPhysics()->createShape(
+      PxTriangleMeshGeometry(m_Application->GetPhysXHandle()->GetGeometryHandle()->CreateTriangleMesh(
+          mesh->mNumVertices, mesh->mNumFaces, sizeof(PxVec3), sizeof(GLuint) * 3, &PhysxVertices[0],
+          (PxU32*)&indices[0])),
+      *material);
+  actor->attachShape(*shape);
+  shape->release();
+
+  return ObjectMeshData(indices, vertices, textures);
+}
+
 void Importer::ProcessNode(aiNode* node, const aiScene* scene, ObjectModelData* data)
 {
   for (unsigned int x = 0; x < node->mNumMeshes; x++) {
@@ -49,77 +178,36 @@ void Importer::ProcessNode(aiNode* node, const aiScene* scene, ObjectModelData* 
   }
 }
 
-PhysXTriangleMeshInput Importer::ImportToPhysX(YgCchar path, unsigned int assimp_flags)
-{
-  PhysXTriangleMeshInput input;
-  Assimp::Importer imp;
-  const aiScene* scene = imp.ReadFile(path, assimp_flags);
-  if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-    Yeager::Log(ERROR, "Cannot load imported model to PhysX! Path {}, Error {}", path, imp.GetErrorString());
-    return input;
-  }
-  ProcessPhysXNode(scene->mRootNode, scene, &input);
-  m_FullPath = path;
-  return input;
-}
-
-void Importer::ProcessPhysXNode(aiNode* node, const aiScene* scene, PhysXTriangleMeshInput* input)
-{
-  for (unsigned int x = 0; x < node->mNumMeshes; x++) {
-    aiMesh* mesh = scene->mMeshes[node->mMeshes[x]];
-    ProcessPhysXMesh(mesh, scene, input);
-  }
-
-  for (unsigned int x = 0; x < node->mNumChildren; x++) {
-    ProcessPhysXNode(node->mChildren[x], scene, input);
-  }
-}
-void Importer::ProcessPhysXMesh(aiMesh* mesh, const aiScene* scene, PhysXTriangleMeshInput* input)
-{
-  for (unsigned int x = 0; x < mesh->mNumVertices; x++) {
-    physx::PxVec3 vector;
-    vector.x = mesh->mVertices[x].x;
-    vector.y = mesh->mVertices[x].y;
-    vector.z = mesh->mVertices[x].z;
-    input->Vertices.push_back(vector);
-  }
-
-  for (unsigned int x = 0; x < mesh->mNumFaces; x++) {
-
-    aiFace face = mesh->mFaces[x];
-    for (unsigned int y = 0; y < face.mNumIndices; y++) {
-      input->Indices.push_back(face.mIndices[y]);
-    }
-  }
-}
-
 ObjectMeshData Importer::ProcessMesh(aiMesh* mesh, const aiScene* scene, ObjectModelData* data)
 {
   std::vector<ObjectVertexData> vertices;
   std::vector<GLuint> indices;
-  std::vector<ObjectTexture*> textures;
+  std::vector<MaterialTexture2D*> textures;
 
   for (unsigned int x = 0; x < mesh->mNumVertices; x++) {
     ObjectVertexData vertex;
-    YgVector3 vector;
+    Vector3 vector;
 
     vector.x = mesh->mVertices[x].x;
     vector.y = mesh->mVertices[x].y;
     vector.z = mesh->mVertices[x].z;
     vertex.Position = vector;
-
-    vector.x = mesh->mNormals[x].x;
-    vector.y = mesh->mNormals[x].y;
-    vector.z = mesh->mNormals[x].z;
-    vertex.Normals = vector;
+    if (mesh->HasNormals()) {
+      vector.x = mesh->mNormals[x].x;
+      vector.y = mesh->mNormals[x].y;
+      vector.z = mesh->mNormals[x].z;
+      vertex.Normals = vector;
+    } else {
+      vertex.Normals = Vector3(0.0f, 1.0f, 0.0f);
+    }
 
     if (mesh->mTextureCoords[0]) {  // has texture coords
-      YgVector2 vec;
+      Vector2 vec;
       vec.x = mesh->mTextureCoords[0][x].x;
       vec.y = mesh->mTextureCoords[0][x].y;
       vertex.TextureCoords = vec;
     } else {  // No texture coords
-      vertex.TextureCoords = YgVector2(0.0f, 0.0f);
+      vertex.TextureCoords = Vector2(0.0f, 0.0f);
     }
     vertices.push_back(vertex);
   }
@@ -134,16 +222,16 @@ ObjectMeshData Importer::ProcessMesh(aiMesh* mesh, const aiScene* scene, ObjectM
 
   if (mesh->mMaterialIndex >= 0) {
     aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-    std::vector<ObjectTexture*> diffuseMaps =
+    std::vector<MaterialTexture2D*> diffuseMaps =
         LoadMaterialTexture(material, aiTextureType_DIFFUSE, "texture_diffuse", data);
     textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-    std::vector<ObjectTexture*> specularMaps =
+    std::vector<MaterialTexture2D*> specularMaps =
         LoadMaterialTexture(material, aiTextureType_SPECULAR, "texture_specular", data);
     textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
-    std::vector<ObjectTexture*> metallicMaps =
+    std::vector<MaterialTexture2D*> metallicMaps =
         LoadMaterialTexture(material, aiTextureType_METALNESS, "texture_metallic", data);
     textures.insert(textures.end(), metallicMaps.begin(), metallicMaps.end());
-    std::vector<ObjectTexture*> roughnessMaps =
+    std::vector<MaterialTexture2D*> roughnessMaps =
         LoadMaterialTexture(material, aiTextureType_DIFFUSE_ROUGHNESS, "texture_roughness", data);
     textures.insert(textures.end(), roughnessMaps.begin(), roughnessMaps.end());
   }
@@ -151,24 +239,30 @@ ObjectMeshData Importer::ProcessMesh(aiMesh* mesh, const aiScene* scene, ObjectM
   return ObjectMeshData(indices, vertices, textures);
 }
 
-std::vector<ObjectTexture*> Importer::LoadMaterialTexture(aiMaterial* material, aiTextureType type, YgString typeName,
-                                                          CommonModelData* data)
+std::vector<MaterialTexture2D*> Importer::LoadMaterialTexture(aiMaterial* material, aiTextureType type, String typeName,
+                                                              CommonModelData* data)
 {
-  std::vector<ObjectTexture*> textures;
+  std::vector<MaterialTexture2D*> textures;
   for (unsigned int x = 0; x < material->GetTextureCount(type); x++) {
     aiString str;
     material->GetTexture(type, x, &str);
     bool skip = false;
+    String textureStr = String(str.C_Str());
     for (unsigned int y = 0; y < data->TexturesLoaded.size(); y++) {
-      YgString cmp_path = RemoveSuffixUntilCharacter(m_FullPath, YG_PS);
-      if (Yeager::ValidatesPath(cmp_path + YgString(str.C_Str()))) {
+      String cmp_path = RemoveSuffixUntilCharacter(m_FullPath, YG_PS);
+
+#ifdef YEAGER_SYSTEM_WINDOWS_x64
+      std::replace(textureStr.begin(), textureStr.end(), '/', '\\');
+#endif
+
+      if (Yeager::ValidatesPath(cmp_path + textureStr)) {
         // Texture path in the mtl file is a complete path, we just assign the complete path to the compare_path without adding to it
-        cmp_path += YgString(str.C_Str());
+        cmp_path += textureStr;
       } else {
-        cmp_path = str.C_Str();
+        cmp_path = textureStr;
       }
-      if (std::strcmp(data->TexturesLoaded[y]->first.Path.data(), cmp_path.data()) == 0) {
-        ObjectTexture* rt = &data->TexturesLoaded[y]->first;
+      if (std::strcmp(data->TexturesLoaded[y]->first.GetTextureDataHandle()->Path.data(), cmp_path.data()) == 0) {
+        MaterialTexture2D* rt = &data->TexturesLoaded[y]->first;
         textures.push_back(rt);
         skip = true;
         break;
@@ -176,32 +270,32 @@ std::vector<ObjectTexture*> Importer::LoadMaterialTexture(aiMaterial* material, 
     }
 
     if (!skip) {
-      YgString path_suffix_removed = RemoveSuffixUntilCharacter(m_FullPath, YG_PS);
-      YgString path;
-      if (Yeager::ValidatesPath(path_suffix_removed + YgString(str.C_Str()), false)) {
-        path = path_suffix_removed + YgString(str.C_Str());
+      String path_suffix_removed = RemoveSuffixUntilCharacter(m_FullPath, YG_PS);
+      String path;
+      if (Yeager::ValidatesPath(path_suffix_removed + textureStr, false)) {
+        path = path_suffix_removed + textureStr;
       } else {
-        path = YgString(str.C_Str());
+        path = textureStr;
       }
 /* Checks if the texture path written in the mtl file isnt using / on windows build*/
 #ifdef YEAGER_SYSTEM_WINDOWS_x64
       std::replace(path.begin(), path.end(), '/', '\\');
 #endif
-      auto tex = std::make_shared<std::pair<ObjectTexture, STBIDataOutput*>>();
+      auto tex = std::make_shared<std::pair<MaterialTexture2D, STBIDataOutput*>>();
       /* If the texture loading have been called in a thread without the openGL context loaded intro to it, the texture id will ALWAYS be 0, meaning it wont load, 
         we check if the current thread is with the openGL context, if not, the boolean incompleteID is set to true, and the texture loading is done after the thread is finished! */
       if (!m_Application->GetWindow()->CheckIfOpenGLContext()) {
-        tex->first.ImcompleteId = true;
+        tex->first.GetTextureDataHandle()->ImcompletedID = true;
         tex->second = LoadStbiDataOutput(path, m_ImageFlip);
 #ifdef YEAGER_DEBUG
         Yeager::Log(INFO, "Thread trying to use openGL context");
 #endif
       } else {
-        tex->first.ID = LoadTextureFromFile(path, m_ImageFlip);
+        tex->first.GenerateFromFile(path, m_ImageFlip);
       }
-      tex->first.Name = typeName.c_str();
-      tex->first.Path = path;
-      ObjectTexture* rt = &tex->first;
+      tex->first.SetName(typeName.c_str());
+      tex->first.GetTextureDataHandle()->Path = path;
+      MaterialTexture2D* rt = &tex->first;
       textures.push_back(rt);
       data->TexturesLoaded.push_back(tex);
     }
@@ -209,7 +303,7 @@ std::vector<ObjectTexture*> Importer::LoadMaterialTexture(aiMaterial* material, 
   return textures;
 }
 
-STBIDataOutput* Importer::LoadStbiDataOutput(YgString path, bool flip)
+STBIDataOutput* Importer::LoadStbiDataOutput(String path, bool flip)
 {
   STBIDataOutput* output = new STBIDataOutput;
 
@@ -225,7 +319,7 @@ STBIDataOutput* Importer::LoadStbiDataOutput(YgString path, bool flip)
   return output;
 }
 
-AnimatedObjectModelData Importer::ImportAnimated(YgCchar path, bool flip_image, unsigned int assimp_flags)
+AnimatedObjectModelData Importer::ImportAnimated(Cchar path, bool flip_image, unsigned int assimp_flags)
 {
   m_ImageFlip = flip_image;
   AnimatedObjectModelData data;
@@ -257,12 +351,12 @@ AnimatedObjectMeshData Importer::ProcessAnimatedMesh(aiMesh* mesh, const aiScene
 {
   std::vector<AnimatedVertexData> vertices;
   std::vector<GLuint> indices;
-  std::vector<ObjectTexture*> textures;
+  std::vector<MaterialTexture2D*> textures;
 
   for (unsigned int x = 0; x < mesh->mNumVertices; x++) {
     AnimatedVertexData vertex;
     SetVertexBoneDataToDefault(vertex);
-    YgVector3 vector;
+    Vector3 vector;
 
     vector.x = mesh->mVertices[x].x;
     vector.y = mesh->mVertices[x].y;
@@ -275,12 +369,12 @@ AnimatedObjectMeshData Importer::ProcessAnimatedMesh(aiMesh* mesh, const aiScene
     vertex.Normals = vector;
 
     if (mesh->mTextureCoords[0]) {  // has texture coords
-      YgVector2 vec;
+      Vector2 vec;
       vec.x = mesh->mTextureCoords[0][x].x;
       vec.y = mesh->mTextureCoords[0][x].y;
       vertex.TextureCoords = vec;
     } else {  // No texture coords
-      vertex.TextureCoords = YgVector2(0.0f, 0.0f);
+      vertex.TextureCoords = Vector2(0.0f, 0.0f);
     }
     vertices.push_back(vertex);
   }
@@ -294,16 +388,16 @@ AnimatedObjectMeshData Importer::ProcessAnimatedMesh(aiMesh* mesh, const aiScene
 
   if (mesh->mMaterialIndex >= 0) {
     aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-    std::vector<ObjectTexture*> diffuseMaps =
+    std::vector<MaterialTexture2D*> diffuseMaps =
         LoadMaterialTexture(material, aiTextureType_DIFFUSE, "texture_diffuse", data);
     textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-    std::vector<ObjectTexture*> specularMaps =
+    std::vector<MaterialTexture2D*> specularMaps =
         LoadMaterialTexture(material, aiTextureType_SPECULAR, "texture_specular", data);
     textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
-    std::vector<ObjectTexture*> normalMaps =
+    std::vector<MaterialTexture2D*> normalMaps =
         LoadMaterialTexture(material, aiTextureType_HEIGHT, "texture_normal", data);
     textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
-    std::vector<ObjectTexture*> heightMaps =
+    std::vector<MaterialTexture2D*> heightMaps =
         LoadMaterialTexture(material, aiTextureType_AMBIENT, "texture_height", data);
     textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
   }
@@ -340,7 +434,7 @@ void Importer::ExtractBoneWeightForVertices(std::vector<AnimatedVertexData>& ver
   for (int boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex) {
     int boneID = -1;
     const char* cc = mesh->mBones[boneIndex]->mName.C_Str();
-    YgString boneName = YgString(cc);
+    String boneName = String(cc);
     if (BoneInfoMap.find(boneName) == BoneInfoMap.end()) {
       BoneInfo newBoneInfo;
       newBoneInfo.ID = BoneCount;
@@ -364,7 +458,7 @@ void Importer::ExtractBoneWeightForVertices(std::vector<AnimatedVertexData>& ver
   }
 }
 
-ImporterThreaded::ImporterThreaded(YgString source, ApplicationCore* app) : Importer(source, app)
+ImporterThreaded::ImporterThreaded(String source, ApplicationCore* app) : Importer(source, app)
 {
   m_FutureObject = m_PromiseObject.get_future();
   Yeager::Log(INFO, "Intialize Thread Importer from {}", source.c_str());
@@ -372,7 +466,7 @@ ImporterThreaded::ImporterThreaded(YgString source, ApplicationCore* app) : Impo
 
 ImporterThreaded::~ImporterThreaded() {}
 
-void ImporterThreaded::ThreadImport(YgCchar path, bool flip_image, unsigned int assimp_flags)
+void ImporterThreaded::ThreadImport(Cchar path, bool flip_image, unsigned int assimp_flags)
 {
   m_ImageFlip = flip_image;
 
@@ -393,15 +487,14 @@ void ImporterThreaded::ThreadImport(YgCchar path, bool flip_image, unsigned int 
   });
 }
 
-ImporterThreadedAnimated::ImporterThreadedAnimated(YgString source, ApplicationCore* app)
-    : ImporterThreaded(source, app)
+ImporterThreadedAnimated::ImporterThreadedAnimated(String source, ApplicationCore* app) : ImporterThreaded(source, app)
 {
   m_FutureObject = m_PromiseObject.get_future();
   Yeager::Log(INFO, "Intialize Thread Importer from {}", source.c_str());
 }
 ImporterThreadedAnimated::~ImporterThreadedAnimated() {}
 
-void ImporterThreadedAnimated::ThreadImport(YgCchar path, bool flip_image, unsigned int assimp_flags)
+void ImporterThreadedAnimated::ThreadImport(Cchar path, bool flip_image, unsigned int assimp_flags)
 {
   m_ImageFlip = flip_image;
 

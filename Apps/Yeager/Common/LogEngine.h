@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -20,11 +20,27 @@
 #include "Common.h"
 #include "Utilities.h"
 
-typedef struct {
-  YgString message = YEAGER_NULL_LITERAL;
+struct MessageTypeVerbosity {
+  enum Enum { Error_Message, Warning_Message, Info_Message };
+  static Enum VerbosityToEnum(int verb)
+  {
+    switch (verb) {
+      case 0:
+        return Info_Message;
+      case -1:
+        return Warning_Message;
+      default:
+        return Error_Message;
+    }
+  }
+};
+
+struct ConsoleLogSender {
+  String message = YEAGER_NULL_LITERAL;
+  MessageTypeVerbosity::Enum type = MessageTypeVerbosity::Info_Message;
   int verbosity = -1;
   ImVec4 text_color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-} ConsoleLogSender;
+};
 
 extern ImVec4 VerbosityToColor(int verbosity);
 
@@ -36,11 +52,12 @@ class EditorConsole {
   void SetLogString(ConsoleLogSender message) { m_logs.push_back(message); }
 
   void ReadLog();
+  std::vector<ConsoleLogSender>* GetLogs() { return &m_logs; }
 
  private:
   std::vector<ConsoleLogSender> m_logs;
 };
-extern EditorConsole kConsole;
+extern EditorConsole gGlobalConsole;
 
 namespace Yeager {
 
@@ -48,15 +65,16 @@ template <typename... T>
 void Log(int verbosity, fmt::format_string<T...> fmt, T&&... args)
 {
   auto str = fmt::format(fmt, std::forward<T>(args)...);
-  YgString log(str);
+  String log(str);
 
   ConsoleLogSender console_message;
   console_message.text_color = VerbosityToColor(verbosity);
   console_message.verbosity = verbosity;
   console_message.message = log;
-  kConsole.SetLogString(console_message);
+  console_message.type = MessageTypeVerbosity::VerbosityToEnum(verbosity);
+  gGlobalConsole.SetLogString(console_message);
 
-  YgString terminal_prefix;
+  String terminal_prefix;
   if (verbosity == INFO) {
     terminal_prefix = "(-) ";
   } else if (verbosity == WARNING) {
@@ -66,8 +84,8 @@ void Log(int verbosity, fmt::format_string<T...> fmt, T&&... args)
   }
 
   YgTime_t time = CurrentTimeToTimeType();
-  YgString time_str = "[ " + std::to_string(time.Time.Hours) + ":" + std::to_string(time.Time.Minutes) + ":" +
-                      std::to_string(time.Time.Seconds) + " ]";
+  String time_str = "[ " + std::to_string(time.Time.Hours) + ":" + std::to_string(time.Time.Minutes) + ":" +
+                    std::to_string(time.Time.Seconds) + " ]";
   std::cout << time_str << terminal_prefix << log << std::endl;
 }
 
@@ -76,15 +94,16 @@ void LogDebug(int verbosity, fmt::format_string<T...> fmt, T&&... args)
 {
 #ifdef YEAGER_DEBUG
   auto str = fmt::format(fmt, std::forward<T>(args)...);
-  YgString log(str);
+  String log(str);
 
   ConsoleLogSender console_message;
   console_message.text_color = VerbosityToColor(verbosity);
   console_message.verbosity = verbosity;
   console_message.message = log;
-  kConsole.SetLogString(console_message);
+  console_message.type = MessageTypeVerbosity::VerbosityToEnum(verbosity);
+  gGlobalConsole.SetLogString(console_message);
 
-  YgString terminal_prefix;
+  String terminal_prefix;
   if (verbosity == INFO) {
     terminal_prefix = "(-) ";
   } else if (verbosity == WARNING) {
@@ -94,8 +113,8 @@ void LogDebug(int verbosity, fmt::format_string<T...> fmt, T&&... args)
   }
 
   YgTime_t time = CurrentTimeToTimeType();
-  YgString time_str = "[ " + std::to_string(time.Time.Hours) + ":" + std::to_string(time.Time.Minutes) + ":" +
-                      std::to_string(time.Time.Seconds) + " ]";
+  String time_str = "[ " + std::to_string(time.Time.Hours) + ":" + std::to_string(time.Time.Minutes) + ":" +
+                    std::to_string(time.Time.Seconds) + " ]";
   std::cout << time_str << terminal_prefix << log << std::endl;
 #endif
 }

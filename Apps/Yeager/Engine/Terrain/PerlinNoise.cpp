@@ -17,7 +17,7 @@ void PerlinNoise::GeneratePerlin(Array2D<float>* arr, int octaves, int bias, int
   if (regenerate_seed) {
     RegenerateSeed();
   }
-  m_Generated = true;
+  Generated = true;
   m_Width = width;
   m_Lenght = height;
 
@@ -29,9 +29,9 @@ void PerlinNoise::GeneratePerlin(Array2D<float>* arr, int octaves, int bias, int
   }
 }
 
-bool PerlinNoise::SavePerlinNoiseMapToFile(YgCchar path)
+bool PerlinNoise::SavePerlinNoiseMapToFile(Cchar path)
 {
-  if (m_Generated) {
+  if (Generated) {
     std::ofstream fl;
     fl.open(path, std::ofstream::out | std::ofstream::binary);
     if (fl.is_open()) {

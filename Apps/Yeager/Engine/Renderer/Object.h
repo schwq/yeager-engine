@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -22,8 +22,9 @@
 #include "../../Common/LogEngine.h"
 #include "../../Common/Utilities.h"
 #include "../Editor/ToolboxObj.h"
+#include "../Physics/PhysXActor.h"
+#include "../Physics/PhysXHandle.h"
 #include "../Physics/PhysicsHandle.h"
-#include "AABBCollision.h"
 #include "Animation/Bone.h"
 #include "Entity.h"
 
@@ -37,37 +38,28 @@ class ImporterThreadedAnimated;
 
 struct BoneInfo {
   int ID = -1;
-  YgMatrix4 OffSet = YgMatrix4(1.0f);
-};
-
-struct ObjectTexture {
-  bool FlipImage = true;
-  bool ImcompleteId = false;
-  YgString Path = YEAGER_NULL_LITERAL;
-  YgString Type = YEAGER_NULL_LITERAL;
-  YgString Name = YEAGER_NULL_LITERAL;
-  GLuint ID = -1;
+  Matrix4 OffSet = Matrix4(1.0f);
 };
 
 struct ObjectVertexData {
-  YgVector3 Position = YgVector3(0.0f);
-  YgVector3 Normals = YgVector3(0.0f);
-  YgVector2 TextureCoords = YgVector2(0.0f);
+  Vector3 Position = Vector3(0.0f);
+  Vector3 Normals = Vector3(0.0f);
+  Vector2 TextureCoords = Vector2(0.0f);
 };
 
 #define MAX_BONE_INFLUENCE 4
 
 struct AnimatedVertexData : public ObjectVertexData {
-  YgVector3 Tangent = YgVector3(0.0f);
-  YgVector3 BiTangent = YgVector3(0.0f);
+  Vector3 Tangent = Vector3(0.0f);
+  Vector3 BiTangent = Vector3(0.0f);
   int BonesIDs[MAX_BONE_INFLUENCE];
   float Weights[MAX_BONE_INFLUENCE];
 };
 
 struct CommonMeshData {
-  std::vector<ObjectTexture*> Textures;
+  std::vector<MaterialTexture2D*> Textures;
   std::vector<GLuint> Indices;
-  CommonMeshData(const std::vector<ObjectTexture*>& textures, const std::vector<GLuint>& indices)
+  CommonMeshData(const std::vector<MaterialTexture2D*>& textures, const std::vector<GLuint>& indices)
   {
     Textures = textures;
     Indices = indices;
@@ -78,7 +70,7 @@ struct CommonMeshData {
 struct ObjectMeshData : public CommonMeshData {
   std::vector<ObjectVertexData> Vertices;
   ObjectMeshData(std::vector<GLuint> indices, std::vector<ObjectVertexData> vertices,
-                 std::vector<ObjectTexture*> textures)
+                 std::vector<MaterialTexture2D*> textures)
       : CommonMeshData(textures, indices)
   {
     Vertices = vertices;
@@ -88,7 +80,7 @@ struct ObjectMeshData : public CommonMeshData {
 struct AnimatedObjectMeshData : public CommonMeshData {
   std::vector<AnimatedVertexData> Vertices;
   AnimatedObjectMeshData(std::vector<GLuint> indices, std::vector<AnimatedVertexData> vertices,
-                         std::vector<ObjectTexture*> textures)
+                         std::vector<MaterialTexture2D*> textures)
       : CommonMeshData(textures, indices)
   {
     Vertices = vertices;
@@ -98,9 +90,9 @@ struct AnimatedObjectMeshData : public CommonMeshData {
 struct CommonModelData {
   /* TODO remake this */
   /* A vector of shared pointers of pairs
-  First: ObjectTexture the texture loaded to the entity 
+  First: MaterialTexture2D the texture loaded to the entity 
   Second: STBIDataOutput pointer linking data read during thread importer to be process in the main thread */
-  std::vector<std::shared_ptr<std::pair<ObjectTexture, STBIDataOutput*>>> TexturesLoaded;
+  std::vector<std::shared_ptr<std::pair<MaterialTexture2D, STBIDataOutput*>>> TexturesLoaded;
   bool SuccessfulLoaded = false;
 };
 
@@ -111,7 +103,7 @@ struct ObjectModelData : public CommonModelData {
 
 struct AnimatedObjectModelData : public CommonModelData {
   std::vector<AnimatedObjectMeshData> Meshes;
-  std::map<YgString, BoneInfo> m_BoneInfoMap;
+  std::map<String, BoneInfo> m_BoneInfoMap;
   int m_BoneCounter = 0;
   auto& GetBoneInfoMap() { return m_BoneInfoMap; }
   int& GetBoneCount() { return m_BoneCounter; }
@@ -120,13 +112,21 @@ struct AnimatedObjectModelData : public CommonModelData {
 struct ObjectGeometryData {
   std::vector<GLuint> Indices;
   std::vector<GLfloat> Vertices;
-  std::vector<ObjectTexture> Textures;
+  MaterialTexture2D* Texture = YEAGER_NULLPTR;
   GLuint m_Vao, m_Vbo, m_Ebo;
 };
 
-enum class ObjectGeometryType { ECube, ETriangule, ESphere, ECustom };
-extern YgString ObjectGeometryTypeToString(ObjectGeometryType type);
-extern ObjectGeometryType StringToObjectGeometryType(const YgString& str);
+struct ObjectGeometryType {
+  enum Enum { eCUBE, eTRIANGLE, eSPHERE, eCUSTOM };
+};
+
+struct ObjectInstancedType {
+  enum Enum { eINSTANCED, eNON_INSTACED };
+  static String EnumToString(ObjectInstancedType::Enum e);
+};
+
+extern String ObjectGeometryTypeToString(ObjectGeometryType::Enum type);
+extern ObjectGeometryType::Enum StringToObjectGeometryType(const String& str);
 enum class YeagerTextureType { EDiffuse, ESpecular };
 extern std::vector<GLfloat> GenerateCubeVertices();
 extern std::vector<GLuint> GenerateCubeIndices();
@@ -136,80 +136,96 @@ extern void DeleteMeshGLBuffers(ObjectMeshData* mesh);
 extern void DrawSeparateMesh(ObjectMeshData* mesh, Yeager::Shader* shader);
 extern void DrawSeparateInstancedMesh(ObjectMeshData* mesh, Yeager::Shader* shader, int amount);
 extern std::vector<GLfloat> ExtractVerticesFromEveryMesh(ObjectModelData* model);
-extern std::vector<YgVector3> ExtractVerticesPositionToVector(ObjectModelData* model);
+extern std::vector<Vector3> ExtractVerticesPositionToVector(ObjectModelData* model);
+
+extern void SpawnCubeObject(Yeager::ApplicationCore* application, const String& name, const Vector3& position,
+                            const Vector3& rotation, const Vector3& scale,
+                            const ObjectPhysicsType::Enum physics = ObjectPhysicsType::eUNDEFINED);
 
 class Object : public GameEntity {
  public:
-  Object(YgString name, ApplicationCore* application);
+  Object(String name, ApplicationCore* application);
+  Object(String name, ApplicationCore* application, GLuint amount);
   ~Object();
 
-  virtual bool ImportObjectFromFile(YgCchar path, bool flip_image = false);
-  virtual bool ThreadImportObjectFromFile(YgCchar path, bool flip_image = false);
+  virtual bool ImportObjectFromFile(Cchar path, bool flip_image = false);
+  virtual bool ThreadImportObjectFromFile(Cchar path, bool flip_image = false);
   virtual void ThreadSetup();
-  bool GenerateObjectGeometry(ObjectGeometryType geometry);
-  virtual void Draw(Yeager::Shader* shader);
+  bool GenerateObjectGeometry(ObjectGeometryType::Enum geometry, const ObjectPhysXCreationBase& physics);
+  virtual void Draw(Yeager::Shader* shader, float delta);
 
-  constexpr inline ObjectGeometryType GetGeometry() { return m_GeometryType; }
-  constexpr inline void SetGeometry(ObjectGeometryType type) { m_GeometryType = type; }
-  constexpr inline ObjectModelData* GetModelData() { return &m_ModelData; }
-  constexpr inline ObjectGeometryData* GetGeometryData() { return &m_GeometryData; }
-  inline YgString GetPath() { return m_Path; }
+  constexpr YEAGER_FORCE_INLINE ObjectGeometryType::Enum GetGeometry() { return m_GeometryType; }
+  constexpr YEAGER_FORCE_INLINE void SetGeometry(ObjectGeometryType::Enum type) { m_GeometryType = type; }
+  constexpr YEAGER_FORCE_INLINE ObjectModelData* GetModelData() { return &m_ModelData; }
+  constexpr YEAGER_FORCE_INLINE ObjectGeometryData* GetGeometryData() { return &m_GeometryData; }
+  YEAGER_FORCE_INLINE String GetPath() { return Path; }
   constexpr inline bool IsLoaded() const { return m_ObjectDataLoaded; }
 
-  virtual void BuildToolbox(ExplorerObjectType type);
-  EntityPhysics* GetPhysics() { return &m_Physics; }
+  virtual void BuildProps(const std::vector<Transformation*>& transformations, Shader* shader);
+
+  void GenerateGeometryTexture(MaterialTexture2D* texture);
+
+  YEAGER_FORCE_INLINE PhysXActor* GetPhysXActor() { return m_Actor; }
+
+  YEAGER_FORCE_INLINE ObjectPhysicsType::Enum GetObjectPhysicsType() { return m_PhysicsType; }
+
+  YEAGER_FORCE_INLINE GLuint GetInstancedNum()
+  {
+    if (m_InstancedType == ObjectInstancedType::eINSTANCED) {
+      return m_InstancedObjs;
+    }
+    Yeager::Log(WARNING, "Getting instanced object number from a non instanced object! {}", m_Name);
+    return 1;
+  }
+
+  YEAGER_NODISCARD YEAGER_FORCE_INLINE std::vector<Transformation*>* GetInstancedProps()
+  {
+    if (m_InstancedType == ObjectInstancedType::eINSTANCED) {
+      return &m_Props;
+    }
+    Yeager::Log(WARNING, "Getting instanced props from a non instanced object! {}", m_Name);
+    return YEAGER_NULLPTR;
+  }
+
+  YEAGER_FORCE_INLINE bool IsInstanced() const { return (m_InstancedType == ObjectInstancedType::eINSTANCED); }
+  YEAGER_FORCE_INLINE ObjectInstancedType::Enum GetInstancedType() { return m_InstancedType; }
 
  protected:
   virtual void Setup();
   virtual void DrawGeometry(Yeager::Shader* shader);
+  virtual void DrawInstancedGeometry(Yeager::Shader* shader);
   virtual void DrawModel(Yeager::Shader* shader);
 
-  virtual void ThreadLoadIncompleteTetxtures();
+  virtual void ThreadLoadIncompleteTextures();
 
-  YgString m_Path;
+  String Path;
   bool m_ObjectDataLoaded = false;
   ObjectModelData m_ModelData;
   ObjectGeometryData m_GeometryData;
-  ObjectGeometryType m_GeometryType;
-  EntityPhysics m_Physics;
+  ObjectGeometryType::Enum m_GeometryType;
+  ObjectPhysicsType::Enum m_PhysicsType = ObjectPhysicsType::eUNDEFINED;
+  ObjectInstancedType::Enum m_InstancedType = ObjectInstancedType::eNON_INSTACED;
   ImporterThreaded* m_ThreadImporter = YEAGER_NULLPTR;
-};
-
-class InstancedObject : public Object {
- public:
-  InstancedObject(YgString name, ApplicationCore* application, GLuint number) : Object(name, application)
-  {
-    SetEntityType(EntityObjectType::eOBJECT_INSTANCED);
-    m_InstancedObjs = number;
-  }
-  ~InstancedObject() {}
-  void Draw(Yeager::Shader* shader, int amount);
-  void BuildProp(std::vector<Transformation>& positions, Shader* shader);
-  std::vector<Transformation>* GetProps() { return &m_Props; }
-
-  GLuint GetInstancedNumber() const { return m_InstancedObjs; }
-
- protected:
-  void DrawGeometry(Yeager::Shader* shader);
-  std::vector<Transformation> m_Props;
-  void DrawModel(Yeager::Shader* shader, int amount);
-  GLuint m_InstancedObjs = 0;
+  Yeager::PhysXActor* m_Actor = YEAGER_NULLPTR;
+  GLuint m_InstancedObjs = 1;
+  std::vector<Transformation*> m_Props;
 };
 
 class AnimatedObject : public Object {
  public:
-  AnimatedObject(YgString name, ApplicationCore* application);
+  AnimatedObject(String name, ApplicationCore* application);
+  AnimatedObject(String name, ApplicationCore* application, GLuint amount);
   ~AnimatedObject();
-  bool ImportObjectFromFile(YgCchar path, bool flip_image = false);
+  bool ImportObjectFromFile(Cchar path, bool flip_image = false);
   virtual void Draw(Shader* shader);
-  bool ThreadImportObjectFromFile(YgCchar path, bool flip_image = false);
+  bool ThreadImportObjectFromFile(Cchar path, bool flip_image = false);
   virtual void ThreadSetup();
   AnimatedObjectModelData* GetModelData() { return &m_ModelData; }
 
   void UpdateAnimation(float delta);
   void BuildAnimationMatrices(Shader* shader);
-  void BuildAnimation(YgString path);
-  void ThreadLoadIncompleteTetxtures();
+  void BuildAnimation(String path);
+  void ThreadLoadIncompleteTextures();
 
  protected:
   void Setup();
@@ -218,30 +234,6 @@ class AnimatedObject : public Object {
   Animation* m_Animation = YEAGER_NULLPTR;
   AnimationEngine* m_AnimationEngine = YEAGER_NULLPTR;
   ImporterThreadedAnimated* m_ThreadImporter = YEAGER_NULLPTR;
-};
-
-class InstancedAnimatedObject : public AnimatedObject {
- public:
-  InstancedAnimatedObject(YgString name, ApplicationCore* application, GLuint number)
-      : AnimatedObject(name, application)
-  {
-    SetEntityType(EntityObjectType::eOBJECT_INSTANCED_ANIMATED);
-    m_InstancedObjs = number;
-    m_AABBCollisions.reserve(number);
-    m_Props.reserve(number);
-  }
-  ~InstancedAnimatedObject() {}
-  void Draw(Yeager::Shader* shader);
-  void BuildProp(std::vector<Transformation>& positions, Shader* shader);
-  std::vector<Transformation>* GetProps() { return &m_Props; }
-
-  GLuint GetInstancedNumber() const { return m_InstancedObjs; }
-
- protected:
-  std::vector<AABBCollision> m_AABBCollisions;
-  std::vector<Transformation> m_Props;
-  void DrawAnimatedMeshes(Shader* shader);
-  GLuint m_InstancedObjs = 0;
 };
 
 }  // namespace Yeager

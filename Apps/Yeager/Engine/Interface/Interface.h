@@ -1,6 +1,7 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
+//
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -19,6 +20,7 @@
 #pragma once
 
 #include "../../Common/Common.h"
+#include "../../Settings.h"
 #include "../Editor/Explorer.h"
 #include "../Lighting/LightHandle.h"
 #include "../Media/AudioHandle.h"
@@ -32,6 +34,10 @@ namespace Yeager {
 class ApplicationCore;
 class Launcher;
 struct LauncherProjectPicker;
+
+#define YEAGER_LAUNCHER_WINDOW_FLAGS                                                                 \
+  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus | \
+      ImGuiWindowFlags_NoTitleBar
 
 /// @brief Struct of the Imgui Colorscheme, the defaults values are for the dark mode,
 /// @brief colorschemes can been readed from the colorscheme configuration folder
@@ -80,7 +86,7 @@ struct ColorschemeConfig {
 /// @brief  its also have two booleans, active for holding just one warning at the time, and first log
 /// @brief  so it doesnt keep logging the same thing
 struct InterfaceWarningWindow {
-  YgString Warning;
+  String Warning;
   unsigned int SizeWidth = 0, SizeHeight = 0;
   bool Active = false;
   bool FirstLogWarning = true;
@@ -88,7 +94,7 @@ struct InterfaceWarningWindow {
 
 /// @brief Struct representing a Imgui Button, used for logging and debugging the pressed buttons
 struct InterfaceButton {
-  InterfaceButton(YgString name, YgString text) : Text(text), Name(name){};
+  InterfaceButton(String name, String text) : Text(text), Name(name){};
   /// @brief Centered a button in the ImGui Window
   /// @return True if the button have been clicked
   bool CenteredButton();
@@ -98,13 +104,13 @@ struct InterfaceButton {
   /// @brief Calculate the button label text width
   /// @return The text width in float notation
   float TextWidth();
-  YgString Text;
-  YgString Name;
+  String Text;
+  String Name;
 };
 
 /// @brief  Holds the Imgui Image, and makes quick loading, without having to make the same boring process, over and over
 struct InterfaceImage {
-  InterfaceImage(YgCchar path);
+  InterfaceImage(Cchar path);
   InterfaceImage() {}
   void LoadInterfaceImage();
   void LoadInterfaceCenteredImage();
@@ -128,22 +134,39 @@ struct InterfaceFonts {
 };
 
 struct OpenProjectsDisplay {
-  YgString Name;
-  YgString Author;
-  YgString SceneType;
-  YgString RendererType;
-  YgString Path;
-  YgString FolderPath;
+  String Name;
+  String Author;
+  String SceneType;
+  String RendererType;
+  String Path;
+  String FolderPath;
+  YgTime_t TimeOfCreation;
   InterfaceImage ScreenShot;
+  bool SelectedToDelete = false;
 };
 
 enum class ScreenShotMode { EFullScreen, EMiddleFixedSized, ECustomSizedAndPosition };
 
-extern void InputVector3(const char* label, YgVector3* v, const char* format = "%.3f", ImGuiInputTextFlags flags = 0);
+extern void InputVector3(const char* label, Vector3* v, const char* format = "%.3f", ImGuiInputTextFlags flags = 0);
 
 static void DisplayDirectionalLightControl(Yeager::PhysicalLightHandle* source);
 static void DisplaySpotLightControl(Yeager::PhysicalLightHandle* source);
 static void DisplayPointLightControl(Yeager::ObjectPointLight* source);
+
+/**
+ * @brief SpaceFitText is constructed with some big text and a maximum size by line interger, 
+ * when the Display text is called, the function breaks the bigger text in smaller pieces that fit the maximum size and jumps a line
+ */
+struct SpaceFitText {
+  SpaceFitText(const String& text, size_t size);
+  SpaceFitText() = default;
+
+  String Text = YEAGER_NULL_LITERAL;
+  size_t Size = 0;
+  std::vector<String> StringBlocks;
+
+  void Build();
+};
 
 /// @brief Class that holds the interface management, use ImGui as library, the current program must be running just one instance of this class
 /// @attention In the future, we need to write a self-custom GUI library in C for this Engine
@@ -162,7 +185,7 @@ class Interface {
 
   /// @brief Return a boolean representing if the program have been initialize with success
   /// @return True if initialize, false if not
-  bool getInitStatus() { return m_Control.Initialize; }
+  YEAGER_FORCE_INLINE bool getInitStatus() const { return m_Control.Initialize; }
 
   void ScreenShotWindow();
   /**
@@ -186,23 +209,23 @@ class Interface {
   /// @brief Displays the current warning window stored in the Interface class
   void DisplayWarningWindow();
   /// @brief  Add a warning window to the Interface class, and waits to be display when the DisplayWarningWindow is called
-  void AddWarningWindow(const YgString& warning, unsigned int size_x = 400, unsigned int size_y = 100);
+  void AddWarningWindow(const String& warning, unsigned int size_x = 400, unsigned int size_y = 100);
   /// @brief Self explain, apply the colorscheme given to the interface UI by calling LoadColorscheme
   /// @param colorscheme The colorscheme to be apply
-  void ApplyColorscheme(ColorschemeConfig colorscheme)
+  YEAGER_FORCE_INLINE void ApplyColorscheme(ColorschemeConfig colorscheme)
   {
     m_Colorscheme = colorscheme;
     LoadColorscheme();
   }
   /// @brief Set a boolean value to the current interface, representing if the Exit Program window need to the rendered to the screen
   /// @param exit Boolean representing if the window should render
-  void SetExitProgramWindowOpen(bool exit) { m_Control.ExitProgramWindowIsOpen = exit; }
+  YEAGER_FORCE_INLINE void SetExitProgramWindowOpen(bool exit) { m_Control.ExitProgramWindowIsOpen = exit; }
   /// @brief Get a boolean value representing if the current interface have the Exit Program window set to be rendered or already been render
   /// @return True if the window is set to render, false if not
-  bool GetExitProgramWindowOpen() { return m_Control.ExitProgramWindowIsOpen; }
+  YEAGER_FORCE_INLINE bool GetExitProgramWindowOpen() const { return m_Control.ExitProgramWindowIsOpen; }
   /// @brief In the Exit Program window, the user can choice to cancel the operation or exit, this function return a boolean representing if the user choice to exit the program or not
   /// @return True if the user set to Exit the Program, false if not
-  bool GetUserChoiceExitProgram() { return m_Control.UserExitProgram; }
+  YEAGER_FORCE_INLINE bool GetUserChoiceExitProgram() const { return m_Control.UserExitProgram; }
   /// @brief Display the Exit Program Window
   /// @return The user choice to exit the program or not
   bool WindowExitProgram();
@@ -210,62 +233,92 @@ class Interface {
    * @brief Get the launcher information that the user had selected, in this case, if is done using the launcher
    * @return True if the user is done, False if not
    */
-  bool GetLauncherDone() { return m_Control.LauncherDone; }
+  YEAGER_FORCE_INLINE bool GetLauncherDone() const { return m_Control.LauncherDone; }
 
   /**
    * @brief Makes the screenshot window appear to the user
    * @param appear if the window must appear to the user
    */
-  void MakeScreenShotAppear(bool appear) { m_MakeScreenShotWindowShouldAppear = appear; }
+  YEAGER_FORCE_INLINE void MakeScreenShotAppear(bool appear) { m_MakeScreenShotWindowShouldAppear = appear; }
   /**
    * @brief Returns a boolean representing if the screenshot window is appearing to the user
    * @return True if is appearing, false if not
    */
-  bool MakeScreenShotIsAppearing() { return m_MakeScreenShotWindowShouldAppear; }
-  /**
-   * @brief Renders the window with shaders debugging information
-   */
-  void ShadersControlWindow();
+  YEAGER_FORCE_INLINE bool MakeScreenShotIsAppearing() const { return m_MakeScreenShotWindowShouldAppear; }
 
   void LightHandleControlWindow();
-
   void PhysXHandleControlWindow();
 
+  /**
+     * @brief Return a boolean represeting if in the current time the render frame is being drawn to the screen. 
+     * That means that imgui is drawing the ui, and the terminate function have not been called yet!
+     * @return True if is being drawn, false if not. 
+     */
+  YEAGER_FORCE_INLINE bool IsRenderFrameBeingDraw() const { return m_DrawingRenderFrame; }
+
+  static void CenteredText(String text);
+  static void AlignForWidth(float width, float alignment = 0.5f);
+  static void CreateSpaceX(unsigned int count);
+
  private:
+  String m_NewProjectCurrentRenderer = "Default";
+  String m_NewProjectAuthorName = "Default";
+  String m_NewProjectCurrentSceneType = "Default";
+  String m_NewProjectCurrentPlataformTarget = "Default";
+  String m_NewProjectFolder = "NONE";
+  String m_NewScreenShootName;
+
+  /* The Drawing render frame is set to true when the imgui ui is being draw between the calls InitRenderFrame and TerminateRenderFrame*/
+  bool m_DrawingRenderFrame = false;
+
+  bool m_ConsoleShowMessages = true;
+  bool m_ConsoleShowWarnings = true;
+  bool m_ConsoleShowErrors = true;
+
+  bool m_OpenProjectWindowOpen = false;
+  bool m_NewProjectWindowOpen = false;
+  bool m_NewProjectIsOkayToCreate = true;
+  bool m_MakeScreenShotWindowShouldAppear = false;
+  bool m_ReadyToScreenShot = false;
+  bool m_WindowUserIsSureDeletingProject = false;
+  bool m_NewProjectCreateDirectory = false;
+  bool m_LauncherSettingsWindowOpen = false;
+  bool m_EditorSettingsWindowOpen = false;
+
   InterfaceControl m_Control;
   InterfaceFonts m_Fonts;
-  static unsigned int m_Frames;
+  ColorschemeConfig m_Colorscheme;
+  InterfaceWarningWindow m_CurrentWarning;
+  ScreenShotMode m_ScreenShotMode = ScreenShotMode::EFullScreen;
 
   Yeager::ApplicationCore* m_Application;
-  ColorschemeConfig m_Colorscheme;
-  YgString m_Comment;
-  InterfaceWarningWindow m_CurrentWarning;
   Yeager::InterfaceWindow m_ConsoleWindow;
   Yeager::InterfaceWindow m_ToolboxWindow;
   Yeager::InterfaceWindow m_ExplorerWindow;
   Yeager::InterfaceWindow m_DebuggerWindow;
   Yeager::InterfaceWindow m_ScreenShotWindow;
-
-  bool m_OpenProjectWindowOpen = false;
-  std::vector<OpenProjectsDisplay> m_OpenProjectToDisplay;
-
-  bool m_NewProjectWindowOpen = false;
-  bool m_NewProjectIsOkayToCreate = true;
   Yeager::LauncherProjectPicker* m_NewProjectHandle = YEAGER_NULLPTR;
-  YgString m_NewProjectCurrentRenderer = "Default";
-  YgString m_NewProjectAuthorName = "Default";
-  YgString m_NewProjectCurrentSceneType = "Default";
-  YgString m_NewProjectCurrentPlataformTarget = "Default";
-  YgString m_NewProjectFolder = "NONE";
-  std::vector<YgString> m_ProjectsNamesAlreadyTaken;
-  bool m_MakeScreenShotWindowShouldAppear = false;
-  YgString m_NewScreenShootName;
-  ScreenShotMode m_ScreenShotMode = ScreenShotMode::EFullScreen;
-  bool m_ReadyToScreenShot = false;
+
+  std::vector<OpenProjectsDisplay> m_OpenProjectToDisplay;
+  std::vector<String> m_ProjectsNamesAlreadyTaken;
+  std::pair<OpenProjectsDisplay, int> m_ProjectSelectedToDelete;
+
+  static unsigned int m_Frames;
   int m_ScreenShotPosition[2] = {0};
   int m_ScreenShotSize[2] = {0};
 
-  void NewProjectWindow();
+  SpaceFitText m_LauncherInformation;
+
+  String* m_ImGuiConfigurationPath;
+
+  void OpenProjectWindow(Yeager::Launcher* launcher, InterfaceButton& button, Yeager::InterfaceWindow& window);
+  void NewProjectWindow(Yeager::Launcher* launcher, InterfaceButton& button, Yeager::InterfaceWindow& window);
+
+  void LauncherSettingsWindow(InterfaceButton& button, Yeager::InterfaceWindow& window);
+  void LauncherSettingsVideoSettings();
+  VideoSettings m_VideoSettingsValues;
+  /* Lets abreviate Video Settings to VS for the sake of the name of the variable */
+  String m_VSAntiAliasingOptionSelected = YEAGER_NULL_LITERAL;
 
   void LaunchImGui(Window* window);
   void DrawExplorer();
@@ -273,17 +326,18 @@ class Interface {
   void DrawEditorMenu();
   void DrawConsole();
 
-  void RenderAwait();
-
   void RenderEditor();
-  void RenderSettings(){};
-  void RenderError(){};
-
-  void logButton(InterfaceButton button);
-  void LoadColorscheme();
-  void CenteredText(YgString text);
-  void AlignForWidth(float width, float alignment = 0.5f);
-  void CreateSpaceX(unsigned int count);
   void RenderDebugger();
+  void LoadColorscheme();
+  void WindowUserIsSureDeletingProject();
+  String NewProjectCreateDirectory(String folder_path);
+  /*
+   When deleting a project handle from the LoadedProject.yml configuration of the engine (the file that handles all the projects 
+   name and path to directories) the vector that handles the projects been displayed in the interface isnt the same as the application 
+   project handle, so, when the user deletes a project handle, this function is called with the project given path, to delete it in the application
+   vector 
+   */
+  bool FindProjectHandleInApplicationAndDelete(String path);
+  String ProjectTimeOfCreationToString(YgTime_t time);
 };
 }  // namespace Yeager

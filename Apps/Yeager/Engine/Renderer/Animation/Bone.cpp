@@ -1,7 +1,7 @@
 #include "Bone.h"
 using namespace Yeager;
 
-Bone::Bone(const YgString& Name, int ID, const aiNodeAnim* Channel) : m_Name(Name), m_ID(ID), m_LocalTransform(1.0f)
+Bone::Bone(const String& Name, int ID, const aiNodeAnim* Channel) : m_Name(Name), m_ID(ID), m_LocalTransform(1.0f)
 {
   m_NumPositions = Channel->mNumPositionKeys;
   for (int positionIndex = 0; positionIndex < m_NumPositions; ++positionIndex) {
@@ -36,9 +36,9 @@ Bone::Bone(const YgString& Name, int ID, const aiNodeAnim* Channel) : m_Name(Nam
 
 void Bone::Update(float AnimationTime)
 {
-  YgMatrix4 trans = InterpolatePosition(AnimationTime);
-  YgMatrix4 rotation = InterpolateRotation(AnimationTime);
-  YgMatrix4 scale = InterpolateScaling(AnimationTime);
+  Matrix4 trans = InterpolatePosition(AnimationTime);
+  Matrix4 rotation = InterpolateRotation(AnimationTime);
+  Matrix4 scale = InterpolateScaling(AnimationTime);
   m_LocalTransform = trans * rotation * scale;
 }
 
@@ -84,20 +84,20 @@ float Bone::GetScaleFactor(float LastTimeStamp, float NextTimeStamp, float Anima
   return scaleFator;
 }
 
-YgMatrix4 Bone::InterpolatePosition(float AnimationTime)
+Matrix4 Bone::InterpolatePosition(float AnimationTime)
 {
   if (m_NumPositions == 1) {
-    return glm::translate(YgMatrix4(1.0f), m_Positions[0].Position);
+    return glm::translate(Matrix4(1.0f), m_Positions[0].Position);
   }
 
   int p0Index = GetPositionIndex(AnimationTime);
   int p1Index = p0Index + 1;
   float scaleFactor = GetScaleFactor(m_Positions[p0Index].TimeStamp, m_Positions[p1Index].TimeStamp, AnimationTime);
-  YgVector3 finalPos = glm::mix(m_Positions[p0Index].Position, m_Positions[p1Index].Position, scaleFactor);
-  return glm::translate(YgMatrix4(1.0f), finalPos);
+  Vector3 finalPos = glm::mix(m_Positions[p0Index].Position, m_Positions[p1Index].Position, scaleFactor);
+  return glm::translate(Matrix4(1.0f), finalPos);
 }
 
-YgMatrix4 Bone::InterpolateRotation(float AnimationTime)
+Matrix4 Bone::InterpolateRotation(float AnimationTime)
 {
   if (m_NumRotations == 1) {
     auto rotation = glm::normalize(m_Rotations[0].Orientation);
@@ -112,14 +112,14 @@ YgMatrix4 Bone::InterpolateRotation(float AnimationTime)
   return glm::toMat4(finalRot);
 }
 
-YgMatrix4 Bone::InterpolateScaling(float AnimationTime)
+Matrix4 Bone::InterpolateScaling(float AnimationTime)
 {
   if (m_NumScalings == 1) {
-    return glm::scale(YgMatrix4(1.0f), m_Scales[0].Scale);
+    return glm::scale(Matrix4(1.0f), m_Scales[0].Scale);
   }
   int p0Index = GetScaleIndex(AnimationTime);
   int p1Index = p0Index + 1;
   float scaleFactor = GetScaleFactor(m_Scales[p0Index].TimeStamp, m_Scales[p1Index].TimeStamp, AnimationTime);
-  YgVector3 finalScale = glm::mix(m_Scales[p0Index].Scale, m_Scales[p1Index].Scale, scaleFactor);
-  return glm::scale(YgMatrix4(1.0f), finalScale);
+  Vector3 finalScale = glm::mix(m_Scales[p0Index].Scale, m_Scales[p1Index].Scale, scaleFactor);
+  return glm::scale(Matrix4(1.0f), finalScale);
 }

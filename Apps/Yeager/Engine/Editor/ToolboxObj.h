@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -30,59 +30,11 @@ class GameEntity;
 class Entity;
 class AudioHandle;
 
-enum ExplorerObjectType {
-  EExplorerTypeObject,
-  EExplorerTypeAnimatedObject,
-  EExplorerTypeShader,
-  EExplorerTypeSkybox,
-  EExplorerTypeInstancedObject,
-  EExplorerTypeAnimatedInstancedObject,
-  EExplorerTypeAudio,
-  EExplorerTypeAudio3D,
-  EExplorerTypeNull
+struct ToolboxEntityType {
+  enum Enum { EditorType, GameType, Undefined };
 };
 
-extern YgString ExplorerTypeToString(ExplorerObjectType type);
-
-/**
- * @brief ToolBoxObject represent the selectable object from the toolbox window, listing objects, audios, skyboxes of the current scene to be
- * selected and modify it
- */
-class ToolBoxObject {
- public:
-  ToolBoxObject() { m_Valid = true; };
-  ToolBoxObject(Yeager::GameEntity* entity, ExplorerObjectType type) : m_GameEntityPtr(entity), m_ExplorerType(type)
-  {
-    m_Valid = true;
-  };
-  ~ToolBoxObject() { m_Valid = false; }
-
-  Yeager::Transformation* GetTransformation() { return m_GameEntityPtr->GetTransformationPtr(); }
-  Yeager::GameEntity* GetEntity() { return m_GameEntityPtr; }
-
-  void DrawObject();
-
-  constexpr void SetType(ExplorerObjectType type) { m_ExplorerType = type; }
-  ExplorerObjectType GetType() const { return m_ExplorerType; }
-  constexpr void SetEntity(Yeager::Entity* entity) { m_GameEntityPtr = (GameEntity*)entity; }
-  constexpr void SetScheduleDeletion(bool deletion) { m_ScheduleDeletion = deletion; }
-  constexpr bool GetScheduleDeletion() const { return m_ScheduleDeletion; }
-  constexpr bool IsValid() const { return m_Valid; }
-  constexpr bool* IsSelected() { return &m_SelectedToolbox; }
-  constexpr void SetSelected(bool selected) { m_SelectedToolbox = selected; }
-
- private:
-  ExplorerObjectType m_ExplorerType = EExplorerTypeNull;
-  Yeager::GameEntity* m_GameEntityPtr = YEAGER_NULLPTR;
-
-  bool m_Valid = false;
-  bool m_SelectedToolbox = false;
-
-  void DrawToolboxObjectType();
-  void DrawToolboxObjectAnimated();
-  void DrawToolboxAudio();
-  void DrawToolboxAudio3D();
-
+struct ToolboxOptionsHandle {
   float m_ObjectPhysicWeight = 1.0f;
   float m_ObjectPhysicGravityConst = 1.0f;
   float m_RandomRotationPower = 1.0f;
@@ -90,7 +42,59 @@ class ToolBoxObject {
   bool m_PhysicGravityCheckbox = true;
   bool m_PhysicReverseGravityCheckbox = false;
   float m_Audio3DPosition[3] = {0.0f, 0.0f, 0.0f};
-  bool m_ScheduleDeletion = false;
   irrklang::ik_f32 m_AudioVolume = 0.5f;
+  float m_TextureSpaceTaken = 0;
+};
+
+static bool ValidateToolbox(ToolboxHandle* handle);
+
+static bool EntityToolboxIsSeen(EntityObjectType::Enum type);
+
+/**
+ * @brief ToolboxHandle represent the selectable object from the toolbox window, listing objects, audios, skyboxes of the current scene to be
+ * selected and modify it. The ToolboxHandle MUST be built by the editor entity
+ */
+class ToolboxHandle {
+ public:
+  ToolboxHandle() = default;
+
+  ToolboxHandle(Yeager::EditorEntity* entity);
+  ToolboxHandle(Yeager::GameEntity* entity);
+
+  ~ToolboxHandle() {}
+
+  Yeager::Transformation* GetTransformation()
+  {
+    return static_cast<Yeager::GameEntity*>(m_EntityPtr)->GetTransformationPtr();
+  }
+  Yeager::EditorEntity* GetEntity() { return m_EntityPtr; }
+
+  void DrawObject();
+
+  constexpr void SetEntity(Yeager::Entity* entity) { m_EntityPtr = (GameEntity*)entity; }
+  constexpr void SetScheduleDeletion(bool deletion) { m_ScheduleDeletion = deletion; }
+  constexpr bool GetScheduleDeletion() const { return m_ScheduleDeletion; }
+  constexpr bool* IsSelected() { return &m_SelectedToolbox; }
+  constexpr void SetSelected(bool selected) { m_SelectedToolbox = selected; }
+
+  ToolboxEntityType::Enum GetEntityType() const { return m_EntityType; }
+
+  constexpr bool IsSeen() const { return m_IsSeen; }
+
+ private:
+  ToolboxEntityType::Enum m_EntityType = ToolboxEntityType::Undefined;
+  Yeager::EditorEntity* m_EntityPtr = YEAGER_NULLPTR;
+
+  bool m_SelectedToolbox = false;
+  bool m_ScheduleDeletion = false;
+  bool m_IsSeen = false;
+
+  void DrawToolboxObjectType();
+  void DrawToolboxObjectAnimated();
+  void DrawToolboxAudio();
+  void DrawToolboxAudio3D();
+  void DrawToolboxSkybox();
+
+  ToolboxOptionsHandle m_Options;
 };
 }  // namespace Yeager

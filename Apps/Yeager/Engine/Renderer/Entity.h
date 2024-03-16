@@ -1,6 +1,7 @@
+
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -20,40 +21,44 @@
 
 #include "../../Common/Common.h"
 #include "../../Common/LogEngine.h"
+#include "../../Kernel/Allocator.h"
 
 namespace Yeager {
 
 class ApplicationCore;
 class Shader;
 class Texture2D;
-class ToolBoxObject;
-struct ObjectTexture;
+class ToolboxHandle;
+class NodeComponent;
+class MaterialBase;
 
-typedef struct {
-  YgMatrix4 model = YgMatrix4(1.0);
-  YgVector3 position = YgVector3(0.0);
-  YgVector3 rotation = YgVector3(0.0);
-  YgVector3 scale = YgVector3(1.0);
-} Transformation;
+struct Transformation {
+  Matrix4 model = YEAGER_IDENTITY_MATRIX4x4;
+  Vector3 position = YEAGER_ZERO_VECTOR3;
+  Vector3 rotation = YEAGER_ZERO_VECTOR3;
+  Vector3 scale = Vector3(1.0);
+};
 
 extern Transformation GetDefaultTransformation();
-extern void ProcessTransformation(Transformation* trans);
+extern void ApplyTransformation(Transformation* trans);
 
 struct EntityObjectType {
   enum Enum {
-    eOBJECT,
-    eOBJECT_ANIMATED,
-    eOBJECT_INSTANCED,
-    eOBJECT_INSTANCED_ANIMATED,
-    eAUDIO_HANDLE,
-    eAUDIO_3D_HANDLE,
-    eTEXTURE,
-    eLIGHT_HANDLE,
-    eSKYBOX,
-    eCAMERA,
-    eNULL
+    OBJECT,
+    OBJECT_ANIMATED,
+    OBJECT_INSTANCED,
+    OBJECT_INSTANCED_ANIMATED,
+    AUDIO_HANDLE,
+    AUDIO_3D_HANDLE,
+    TEXTURE,
+    LIGHT_HANDLE,
+    SKYBOX,
+    CAMERA,
+    UNDEFINED
   };
+  static String ToString(Enum type);
 };
+
 /**
  * @brief Entities are the most basic type of class that almost all classes in this engine inherit, it contains variables that all classes share in common
  * like the name and global id, also it can be used to set a object to non serialization status, where the object doesnt get saved in the configuration file.
@@ -61,29 +66,31 @@ struct EntityObjectType {
  */
 class Entity {
  public:
-  Entity(EntityObjectType::Enum type, Yeager::ApplicationCore* app, YgString name = YEAGER_NULL_LITERAL);
+  Entity(EntityObjectType::Enum type, Yeager::ApplicationCore* app, String name = YEAGER_NULL_LITERAL);
   ~Entity();
 
-  YgString GetName();
+  String GetName();
+  void SetName(const String& name) { m_Name = name; }
   unsigned int GetId();
 
   void SetEntityType(EntityObjectType::Enum type) { m_Type = type; }
   EntityObjectType::Enum GetEntityType() const { return m_Type; }
 
-  constexpr bool IsValid() const { return m_Valid; }
-
   YEAGER_FORCE_INLINE bool CanBeSerialize() const { return m_CanBeSerialize; }
   YEAGER_FORCE_INLINE void SetCanBeSerialize(bool serial) { m_CanBeSerialize = serial; }
 
+  /* User data can be any type of data that a object or class that ihherit the Entity class can link to it, and extract in some point during the process */
+  UserDataHandle* GetUserData() { return &m_UserData; }
+
  protected:
-  EntityObjectType::Enum m_Type = EntityObjectType::eNULL;
+  EntityObjectType::Enum m_Type = EntityObjectType::UNDEFINED;
   Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
-  YgString m_Name = YEAGER_NULL_LITERAL;
+  UserDataHandle m_UserData;
+  String m_Name = YEAGER_NULL_LITERAL;
   bool m_Render = true;
-  bool m_Valid = false;
   bool m_CanBeSerialize = true;
-  const unsigned int m_id;
-  static unsigned int m_entityCountId;
+  const unsigned int m_EntityID;
+  static unsigned int m_EntityCountID;
 };
 
 /**
@@ -94,11 +101,10 @@ class Entity {
  */
 class EditorEntity : public Entity {
  public:
-  EditorEntity(EntityObjectType::Enum type, Yeager::ApplicationCore* app, YgString name = YEAGER_NULL_LITERAL);
+  EditorEntity(EntityObjectType::Enum type, Yeager::ApplicationCore* app, String name = YEAGER_NULL_LITERAL);
   ~EditorEntity();
 
-  void SetToolbox(const std::shared_ptr<ToolBoxObject>& toolbox) { m_Toolbox = toolbox; }
-  std::shared_ptr<ToolBoxObject> GetToolbox() { return m_Toolbox; }
+  std::shared_ptr<ToolboxHandle> GetToolbox() { return m_Toolbox; }
 
   /**
    * @brief Sets to true, when the scene calls for search for schedule deletions, it will remove this entity from the 
@@ -111,8 +117,16 @@ class EditorEntity : public Entity {
   */
   constexpr bool GetScheduleDeletion() const { return m_ScheduleDeletion; }
 
+  void BuildNode(Yeager::NodeComponent* parent);
+  Yeager::NodeComponent* GetNodeComponent() { return m_Node; }
+
  protected:
-  std::shared_ptr<ToolBoxObject> m_Toolbox = YEAGER_NULLPTR;
+  /* Toolbox object handles the information about the entity, name, id, and custom propieties*/
+  std::shared_ptr<ToolboxHandle> m_Toolbox = YEAGER_NULLPTR;
+  /* Node component handles the relation of the entity with other entities, like if the are parent, children. 
+    This build a hierarchy of information about parent nodes and their children */
+  Yeager::NodeComponent* m_Node = YEAGER_NULLPTR;
+
   bool m_ScheduleDeletion = false;
 };
 
@@ -122,17 +136,18 @@ class EditorEntity : public Entity {
  */
 class GameEntity : public EditorEntity {
  public:
-  GameEntity(EntityObjectType::Enum type, Yeager::ApplicationCore* app, YgString name = YEAGER_NULL_LITERAL);
+  GameEntity(EntityObjectType::Enum type, Yeager::ApplicationCore* app, String name = YEAGER_NULL_LITERAL);
   ~GameEntity();
   Transformation GetTransformation();
   Transformation* GetTransformationPtr();
-  virtual void ProcessTransformation(Shader* Shader);
+
+  virtual void ApplyTransformation(Shader* Shader);
   void inline SetTransformation(const Transformation& trans) { m_EntityTransformation = trans; }
 
-  constexpr inline std::vector<ObjectTexture*>* GetLoadedTextures() { return &m_EntityLoadedTextures; };
+  constexpr inline std::vector<MaterialBase*>* GetLoadedTextures() { return &m_EntityLoadedTextures; };
 
  protected:
-  std::vector<ObjectTexture*> m_EntityLoadedTextures;
+  std::vector<MaterialBase*> m_EntityLoadedTextures;
   Transformation m_EntityTransformation;
 };
 

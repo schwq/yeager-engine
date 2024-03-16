@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023-present
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -33,23 +33,23 @@ namespace Yeager {
 class ApplicationCore;
 
 struct PointLight {
-  YgVector3 Position = YgVector3(0.0f);
+  Vector3 Position = Vector3(0.0f);
   float Constant = 1.0f;
   float Linear = 0.09f;
   float Quadratic = 0.032f;
-  YgVector3 Ambient = YgVector3(0.05f);
-  YgVector3 Diffuse = YgVector3(0.8f);
-  YgVector3 Specular = YgVector3(1.0f);
-  YgVector3 Color = YgVector3(1.0f);
+  Vector3 Ambient = Vector3(0.05f);
+  Vector3 Diffuse = Vector3(0.8f);
+  Vector3 Specular = Vector3(1.0f);
+  Vector3 Color = Vector3(1.0f);
   bool Active = false;
 };
 
 struct DirectionalLight {
-  YgVector3 Direction = YgVector3(-0.2f, -1.0f, -0.3f);
-  YgVector3 Ambient = YgVector3(0.03f);
-  YgVector3 Diffuse = YgVector3(0.4f);
-  YgVector3 Specular = YgVector3(0.5f);
-  YgVector3 Color = YgVector3(1.0f);
+  Vector3 Direction = Vector3(-0.2f, -1.0f, -0.3f);
+  Vector3 Ambient = Vector3(0.03f);
+  Vector3 Diffuse = Vector3(0.4f);
+  Vector3 Specular = Vector3(0.5f);
+  Vector3 Color = Vector3(1.0f);
 };
 
 struct Material {
@@ -57,20 +57,20 @@ struct Material {
 };
 
 struct Viewer {
-  YgVector3 Position = YgVector3(0.0f);
+  Vector3 Position = Vector3(0.0f);
 };
 
 struct SpotLight {
-  YgVector3 Position = YgVector3(0.0f);
-  YgVector3 Direction = YgVector3(0.0f);
+  Vector3 Position = Vector3(0.0f);
+  Vector3 Direction = Vector3(0.0f);
   float CutOff = glm::cos(glm::radians(12.5f));
   float OuterCutOff = glm::cos(glm::radians(15.0f));
   float Constant = 1;
   float Linear = 0.09f;
   float Quadratic = 0.032f;
-  YgVector3 Ambient = YgVector3(0.0f);
-  YgVector3 Diffuse = YgVector3(1.0f);
-  YgVector3 Specular = YgVector3(1.0f);
+  Vector3 Ambient = Vector3(0.0f);
+  Vector3 Diffuse = Vector3(1.0f);
+  Vector3 Specular = Vector3(1.0f);
   bool Active = true;
 };
 
@@ -85,7 +85,7 @@ struct ObjectPointLight : public PointLight {
 
 class LightBaseHandle : public EditorEntity {
  public:
-  LightBaseHandle(YgString name, ApplicationCore* app, std::vector<Shader*> link_shaders);
+  LightBaseHandle(String name, ApplicationCore* app, std::vector<Shader*> link_shaders);
   ~LightBaseHandle() {}
 
   std::vector<PointLight>* GetPointLights() { return &m_PointLights; }
@@ -93,7 +93,7 @@ class LightBaseHandle : public EditorEntity {
   Material* GetMaterial() { return &m_Material; }
   Viewer* GetViewer() { return &m_Viewer; }
   SpotLight* GetSpotLight() { return &spotLight; }
-  virtual void BuildShaderProps(YgVector3 viewPos, YgVector3 front, float shininess);
+  virtual void BuildShaderProps(Vector3 viewPos, Vector3 front, float shininess);
 
   /* Returns linked shaders, that are the shaders affected by the class lighting management */
   std::vector<Shader*>* GetLinkedShaders() { return &m_LinkedShader; }
@@ -113,7 +113,7 @@ class LightBaseHandle : public EditorEntity {
 */
 class PhysicalLightHandle : public LightBaseHandle {
  public:
-  PhysicalLightHandle(YgString name, ApplicationCore* app, std::vector<Shader*> link_shader, Shader* draw_shader);
+  PhysicalLightHandle(String name, ApplicationCore* app, std::vector<Shader*> link_shader, Shader* draw_shader);
   ~PhysicalLightHandle();
 
   bool operator==(const PhysicalLightHandle& rhs) { return (this->m_Name == rhs.m_Name); }
@@ -129,9 +129,9 @@ class PhysicalLightHandle : public LightBaseHandle {
   void AddObjectPointLight(const ObjectPointLight& obj, Transformation& trans);
   void AddObjectPointLight(const ObjectPointLight& obj, Yeager::Object& custom_obj);
   void AddObjectPointLight(const ObjectPointLight& obj);
-  void AddObjectPointLight(ObjectPointLight* light, ObjectGeometryType type);
-  void BuildShaderProps(YgVector3 viewPos, YgVector3 front, float shininess);
-  void DrawLightSources();
+  void AddObjectPointLight(ObjectPointLight* light, ObjectGeometryType::Enum type);
+  void BuildShaderProps(Vector3 viewPos, Vector3 front, float shininess);
+  void DrawLightSources(float delta);
 
   /* Returns the pointer to shader which is used to draw the light sources in the scene */
   Shader* GetDrawableShader() const { return m_DrawableShader; }

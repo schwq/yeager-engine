@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -34,34 +34,51 @@
 namespace Yeager {
 class ApplicationCore;
 
-#define YEAGER_ASSIMP_DEFAULT_FLAGS aiProcess_Triangulate | aiProcess_FlipUVs
+#define YEAGER_ASSIMP_DEFAULT_FLAGS aiProcess_Triangulate
 #define YEAGER_ASSIMP_DEFAULT_FLAGS_ANIMATED \
-  aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_FlipUVs
+  aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace
 
 enum ThreadType {
   ESingleThreaded,
   EMultiThreaded,
 };
 
+/**
+    https://www.khronos.org/opengl/wiki/Calculating_a_Surface_Normal
+    A surface normal for a triangle can be calculated by taking the vector cross product of two edges of 
+    that triangle. The order of the vertices used in the calculation will affect the direction of the normal (in or out of the face w.r.t. winding).
+    So for a triangle p1, p2, p3, if the vector U = p2 - p1 and the vector V = p3 - p1 then 
+    the normal N = U X V and can be calculated by:
+    Nx = UyVz - UzVy
+    Ny = UzVx - UxVz
+    Nz = UxVy - UyVx 
+ */
+extern Vector3 CalculateTriangleNormalFromPoints(Vector3 p1, Vector3 p2, Vector3 p3);
+/* Newell's Method */
+extern Vector3 CalculatePolygonNormalFromPoints(std::vector<Vector3>& points);
+
+extern std::vector<physx::PxVec3> ConvertYgVectors3ToPhysXVec3(const std::vector<Vector3>& vectors);
+
 /// @brief this class can be used to import 2d and 3d models and assets to the editor by using assimp
 class Importer {
  public:
-  Importer(YgString source = YEAGER_IMPORTER_DEFAULT_SOURCE, ApplicationCore* app = YEAGER_NULLPTR);
+  Importer(String source = YEAGER_IMPORTER_DEFAULT_SOURCE, ApplicationCore* app = YEAGER_NULLPTR);
   ~Importer();
 
-  ObjectModelData Import(YgCchar path, bool flip_image = false,
-                         unsigned int assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS);
-  AnimatedObjectModelData ImportAnimated(YgCchar path, bool flip_image = false,
+  ObjectModelData Import(Cchar path, bool flip_image = false, unsigned int assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS);
+  AnimatedObjectModelData ImportAnimated(Cchar path, bool flip_image = false,
                                          unsigned int assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS_ANIMATED);
-  PhysXTriangleMeshInput ImportToPhysX(YgCchar path, unsigned int assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS);
+  ObjectModelData ImportToPhysX(Cchar path, physx::PxRigidActor* actor, bool flip_image = false,
+                                unsigned int assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS);
+
   static unsigned int GetModelsCount() { return m_ImportedModelsCount; };
 
  protected:
   void ProcessNode(aiNode* node, const aiScene* scene, ObjectModelData* data);
   ObjectMeshData ProcessMesh(aiMesh* mesh, const aiScene* scene, ObjectModelData* data);
-  std::vector<ObjectTexture*> LoadMaterialTexture(aiMaterial* material, aiTextureType type, YgString typeName,
-                                                  CommonModelData* data);
-  STBIDataOutput* LoadStbiDataOutput(YgString path, bool flip = false);
+  std::vector<MaterialTexture2D*> LoadMaterialTexture(aiMaterial* material, aiTextureType type, String typeName,
+                                                      CommonModelData* data);
+  STBIDataOutput* LoadStbiDataOutput(String path, bool flip = false);
 
   void ProcessAnimatedNode(aiNode* node, const aiScene* scene, AnimatedObjectModelData* data);
   AnimatedObjectMeshData ProcessAnimatedMesh(aiMesh* mesh, const aiScene* scene, AnimatedObjectModelData* data);
@@ -70,21 +87,22 @@ class Importer {
   void ExtractBoneWeightForVertices(std::vector<AnimatedVertexData>& vertices, aiMesh* mesh, const aiScene* scene,
                                     AnimatedObjectModelData* data);
 
-  void ProcessPhysXNode(aiNode* node, const aiScene* scene, PhysXTriangleMeshInput* input);
-  void ProcessPhysXMesh(aiMesh* mesh, const aiScene* scene, PhysXTriangleMeshInput* input);
+  void ProcessPhysXNode(physx::PxRigidActor* actor, aiNode* node, const aiScene* scene, ObjectModelData* data);
+  ObjectMeshData ProcessPhysXMesh(physx::PxRigidActor* actor, aiMesh* mesh, const aiScene* scene,
+                                  ObjectModelData* data);
 
   static unsigned int m_ImportedModelsCount;
   ApplicationCore* m_Application = YEAGER_NULLPTR;
-  YgString m_FullPath;
-  YgString m_Source;
+  String m_FullPath;
+  String m_Source;
   bool m_ImageFlip = false;
 };
 
 class ImporterThreaded : public Importer {
  public:
-  ImporterThreaded(YgString source, ApplicationCore* app);
+  ImporterThreaded(String source, ApplicationCore* app);
   ~ImporterThreaded();
-  virtual void ThreadImport(YgCchar path, bool flip_image = false,
+  virtual void ThreadImport(Cchar path, bool flip_image = false,
                             unsigned int assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS);
   bool IsThreadFinish();
   std::thread* GetThreadPtr() { return &m_Thread; }
@@ -101,9 +119,9 @@ class ImporterThreaded : public Importer {
 
 class ImporterThreadedAnimated : public ImporterThreaded {
  public:
-  ImporterThreadedAnimated(YgString source, ApplicationCore* app);
+  ImporterThreadedAnimated(String source, ApplicationCore* app);
   ~ImporterThreadedAnimated();
-  void ThreadImport(YgCchar path, bool flip_image = false, unsigned int assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS);
+  void ThreadImport(Cchar path, bool flip_image = false, unsigned int assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS);
   AnimatedObjectModelData GetValue() { return m_FutureObject.get(); }
 
  private:

@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -25,39 +25,39 @@
 namespace Yeager {
 class Shader {
  public:
-  Shader(YgCchar fragmentPath, YgCchar vertexPath, YgString name);
+  Shader(Cchar fragmentPath, Cchar vertexPath, String name);
   ~Shader();
 
   void UseShader();
-  void SetInt(const YgString& name, int value);
-  void SetBool(const YgString& name, bool value);
-  void SetFloat(const YgString& name, float value);
-  void SetMat4(const YgString& name, YgMatrix4 value);
-  void SetVec3(const YgString& name, YgVector3 value);
-  void SetVec2(const YgString& name, glm::vec2 value);
-  void SetUniform1i(const YgString& name, int value);
-  void SetVec4(const YgString& name, glm::vec4 value);
+  void SetInt(const String& name, int value);
+  void SetBool(const String& name, bool value);
+  void SetFloat(const String& name, float value);
+  void SetMat4(const String& name, Matrix4 value);
+  void SetVec3(const String& name, Vector3 value);
+  void SetVec2(const String& name, glm::vec2 value);
+  void SetUniform1i(const String& name, int value);
+  void SetVec4(const String& name, glm::vec4 value);
 
-  constexpr inline GLuint GetId() { return m_id; }
+  constexpr inline GLuint GetId() { return m_EntityID; }
   constexpr inline bool IsInitialized() { return m_initialize; }
 
-  inline YgString GetName() { return m_Name; }
-  inline YgString GetVarName() { return m_VarName; }
-  inline void SetVarName(const YgString& str) { m_VarName = str; }
+  inline String GetName() { return m_Name; }
+  inline String GetVarName() { return m_VarName; }
+  inline void SetVarName(const String& str) { m_VarName = str; }
 
  private:
-  GLuint m_id;
+  GLuint m_EntityID;
   bool m_initialize = false;
   bool m_fragment_build = false;
   bool m_vertex_build = false;
   static unsigned int m_shader_count;
   unsigned int m_shader_num = 0;
 
-  YgString m_VarName;
-  YgString m_Name;
+  String m_VarName;
+  String m_Name;
 
-  YEAGER_NODISCARD unsigned int CreateVertexGL(YgCchar vertexPath);
-  YEAGER_NODISCARD unsigned int CreateFragmentGL(YgCchar fragmentPath);
+  YEAGER_NODISCARD unsigned int CreateVertexGL(Cchar vertexPath);
+  YEAGER_NODISCARD unsigned int CreateFragmentGL(Cchar fragmentPath);
   void LinkShaders(unsigned int vertexShader, unsigned int fragmentShader);
 };
 }  // namespace Yeager

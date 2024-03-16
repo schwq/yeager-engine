@@ -17,7 +17,7 @@ static physx::PxRigidDynamic* Yeager::CreateDynamic(Yeager::PhysXHandle* handle,
 {
   PxRigidDynamic* dynamic = PxCreateDynamic(*handle->GetPxPhysics(), trans, geometry, material, density);
   dynamic->setLinearVelocity(velocity);
-  handle->GetPxScene()->addActor(*dynamic);
+  handle->PushToScene(dynamic);
   return dynamic;
 }
 
@@ -28,9 +28,9 @@ physx::PxRigidStatic* Yeager::CreateStatic(Yeager::PhysXHandle* handle, const ph
   PxRigidStatic* stat = PxCreateStatic(*handle->GetPxPhysics(), trans, geometry, material);
   if (shape != YEAGER_NULLPTR) {
     stat->attachShape(*shape);
-    shape->release();  // TODO review this behavior and check if the shape can be release
+    PX_RELEASE(shape);
   }
-  handle->GetPxScene()->addActor(*stat);
+  handle->PushToScene(stat);
   return stat;
 }
 
@@ -50,134 +50,74 @@ PxRigidActor* PhysXGeometryHandle::CreatePrimitiveSphere(physx::PxU32 rigidType,
 {
   if (rigidType == YEAGER_PHYSX_RIGID_STATIC_BODY) {
     physx::PxRigidStatic* sphere = CreateStatic(m_PhysXHandle, initialPos, physx::PxSphereGeometry(radius), material);
-    m_PhysXHandle->GetActorsHandle()->push_back(sphere);
     return sphere;
   } else if (rigidType == YEAGER_PHYSX_RIGID_DYNAMIC_BODY) {
     physx::PxRigidDynamic* sphere = CreateDynamic(m_PhysXHandle, initialPos, physx::PxSphereGeometry(radius), material);
-    m_PhysXHandle->GetActorsHandle()->push_back(sphere);
     return sphere;
-
-  } else {
-    Yeager::Log(ERROR, "Create Primitive Sphere PhysX, the rigid type flag havent been set!");
-    return YEAGER_NULLPTR;
   }
+
+  Yeager::Log(ERROR, "Create Primitive Sphere PhysX, the rigid type flag havent been set!");
+  return YEAGER_NULLPTR;
 }
-void PhysXGeometryHandle::CreatePrimitiveBox(physx::PxU32 rigidType, physx::PxMaterial& material,
-                                             const physx::PxTransform& initialPos, const physx::PxVec3 extents,
-                                             const physx::PxVec3& velocity, physx::PxReal density)
+physx::PxRigidActor* PhysXGeometryHandle::CreatePrimitiveBox(physx::PxU32 rigidType, physx::PxMaterial& material,
+                                                             const physx::PxTransform& initialPos,
+                                                             const physx::PxVec3 extents, const physx::PxVec3& velocity,
+                                                             physx::PxReal density)
 {
   if (rigidType == YEAGER_PHYSX_RIGID_STATIC_BODY) {
     physx::PxRigidStatic* box = CreateStatic(m_PhysXHandle, initialPos, physx::PxBoxGeometry(extents), material);
-    m_PhysXHandle->GetActorsHandle()->push_back(box);
+    return box;
   } else if (rigidType == YEAGER_PHYSX_RIGID_DYNAMIC_BODY) {
     physx::PxRigidDynamic* box = CreateDynamic(m_PhysXHandle, initialPos, physx::PxBoxGeometry(extents), material);
-    m_PhysXHandle->GetActorsHandle()->push_back(box);
-  } else {
-    Yeager::Log(ERROR, "Create Primitive Box PhysX, the rigid type flag havent been set!");
+    return box;
   }
+
+  Yeager::Log(ERROR, "Create Primitive Box PhysX, the rigid type flag havent been set!");
+  return YEAGER_NULLPTR;
 }
 
-void PhysXGeometryHandle::CreatePrimitiveCapsule(physx::PxU32 rigidType, physx::PxMaterial& material,
-                                                 const physx::PxTransform& initialPos, const physx::PxU32 radius,
-                                                 const physx::PxU32 half_height, const physx::PxVec3& velocity,
-                                                 physx::PxReal density)
+physx::PxRigidActor* PhysXGeometryHandle::CreatePrimitiveCapsule(physx::PxU32 rigidType, physx::PxMaterial& material,
+                                                                 const physx::PxTransform& initialPos,
+                                                                 const physx::PxU32 radius,
+                                                                 const physx::PxU32 half_height,
+                                                                 const physx::PxVec3& velocity, physx::PxReal density)
 {
   if (rigidType == YEAGER_PHYSX_RIGID_STATIC_BODY) {
     physx::PxRigidStatic* capsule =
         CreateStatic(m_PhysXHandle, initialPos, physx::PxCapsuleGeometry(radius, half_height), material);
-    m_PhysXHandle->GetActorsHandle()->push_back(capsule);
+    return capsule;
   } else if (rigidType == YEAGER_PHYSX_RIGID_DYNAMIC_BODY) {
     physx::PxRigidDynamic* capsule =
         CreateDynamic(m_PhysXHandle, initialPos, physx::PxCapsuleGeometry(radius, half_height), material);
-    m_PhysXHandle->GetActorsHandle()->push_back(capsule);
-  } else {
-    Yeager::Log(ERROR, "Create Primitive Capsule PhysX, the rigid type flag havent been set!");
+    return capsule;
   }
+  Yeager::Log(ERROR, "Create Primitive Capsule PhysX, the rigid type flag havent been set!");
+  return YEAGER_NULLPTR;
 }
 
 /* A plane divices space into above and below, it may only be created for static actors */
-void PhysXGeometryHandle::CreatePrimitivePlane(physx::PxMaterial& material, const physx::PxF32 nx,
-                                               const physx::PxF32 ny, const physx::PxF32 nz,
-                                               const physx::PxF32 distance)
+physx::PxRigidActor* PhysXGeometryHandle::CreatePrimitivePlane(physx::PxMaterial& material, const physx::PxF32 nx,
+                                                               const physx::PxF32 ny, const physx::PxF32 nz,
+                                                               const physx::PxF32 distance)
 {
   PxRigidStatic* plane = PxCreatePlane(*m_PhysXHandle->GetPxPhysics(), PxPlane(nx, ny, nz, distance), material);
-  m_PhysXHandle->GetActorsHandle()->push_back(plane);
-  m_PhysXHandle->GetPxScene()->addActor(*plane);
-}
-
-void PhysXGeometryHandle::CreateTriangleMeshModel(YgCchar path)
-{
-  Yeager::Log(INFO, "Creating TriangleMeshModel from PhysX!");
-
-  PhysXTriangleMesh* triangle = new PhysXTriangleMesh();
-  Importer imp("PhysX Create Triangle Mesh Model", m_Application);
-  PxTolerancesScale scale;
-
-  triangle->aTriangleActor = m_PhysXHandle->GetPxPhysics()->createRigidStatic(PxTransform(PxVec3(0)));
-  triangle->aMaterial = m_PhysXHandle->GetPxPhysics()->createMaterial(1.0f, 1.0f, 1.0f);
-
-  triangle->aTrianguleShape = PxRigidActorExt::createExclusiveShape(
-      *triangle->aTriangleActor, PxTriangleMeshGeometry(CreateTriangleMesh(imp.ImportToPhysX(path))),
-      *triangle->aMaterial);
-  triangle->aTrianguleShape->setFlag(PxShapeFlag::eVISUALIZATION, true);
-  triangle->aTriangleActor->setActorFlag(PxActorFlag::eVISUALIZATION, true);
-
-  m_PhysXHandle->GetPxScene()->addActor(*triangle->aTriangleActor);
-  m_PhysXHandle->GetTrianglesMeshes()->push_back(triangle);
-  Yeager::Log(INFO, "Done Creating TriangleMeshModel from PhysX!");
-}
-
-bool PhysXGeometryHandle::CreateConvexMesh(YEAGER_UINT count, const std::vector<physx::PxVec3>& data,
-                                           YEAGER_UINT stride, physx::PxConvexFlags flags)
-{
-  PxConvexMeshDesc convexDesc;
-  convexDesc.points.count = count;
-  convexDesc.points.stride = stride;
-  convexDesc.points.data = data.data();
-  convexDesc.flags = flags;
-
-  PxTolerancesScale scale;
-  PxCookingParams params(scale);
-
-  PxDefaultMemoryOutputStream buffer;
-  PxConvexMeshCookingResult::Enum result;
-
-#ifdef YEAGER_DEBUG
-  bool res = PxValidateConvexMesh(params, convexDesc);
-  PX_ASSERT(res);
-#endif
-
-  if (!PxCookConvexMesh(params, convexDesc, buffer, &result)) {
-    Yeager::Log(ERROR, "Cannot PxCookConvexMesh failed!");
-    return false;
-  }
-
-  PxDefaultMemoryInputData input(buffer.getData(), buffer.getSize());
-  PxConvexMesh* convexMesh = m_PhysXHandle->GetPxPhysics()->createConvexMesh(input);
-  PxRigidDynamic* aConvexActor = m_PhysXHandle->GetPxPhysics()->createRigidDynamic(PxTransform(PxVec3(0)));
-  PxMaterial* aMaterial = m_PhysXHandle->GetPxPhysics()->createMaterial(0, 0, 0);
-  PxMaterial* materials[] = {aMaterial, aMaterial};
-  PxShape* aConvexShape =
-      PxRigidActorExt::createExclusiveShape(*aConvexActor, PxConvexMeshGeometry(convexMesh), materials, 2);
-  PxRigidBodyExt::updateMassAndInertia(*aConvexActor, 1);
-  m_PhysXHandle->GetPxScene()->addActor(*aConvexActor);
-  return true;
+  m_PhysXHandle->PushToScene(plane);
+  return plane;
 }
 
 PxTriangleMesh* PhysXGeometryHandle::CreateTriangleMesh(physx::PxU32 pointCount, physx::PxU32 trianglesCount,
                                                         physx::PxU32 pointStride, physx::PxU32 triangleStride,
-                                                        const std::vector<PxVec3>& vertices,
-                                                        const std::vector<physx::PxU32>& indices,
-                                                        physx::PxTriangleMeshFlags flags, physx::PxU32 yeagerPhysxFlags)
+                                                        physx::PxVec3* vertices, physx::PxU32* indices,
+                                                        physx::PxU32 yeagerPhysxFlags)
 {
   PxTriangleMeshDesc meshDesc;
   meshDesc.points.count = pointCount;
   meshDesc.points.stride = pointStride;
-  meshDesc.points.data = vertices.data();
+  meshDesc.points.data = vertices;
 
   meshDesc.triangles.count = trianglesCount;
   meshDesc.triangles.stride = triangleStride;
-  meshDesc.triangles.data = indices.data();
+  meshDesc.triangles.data = indices;
 
   PxTolerancesScale scale;
   PxCookingParams params(scale);

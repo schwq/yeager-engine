@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -35,7 +35,7 @@ template <class Type>
 class ThreadHandle {
  public:
   template <class Type>
-  ThreadHandle(YgString processName, Yeager::ApplicationCore* app) : m_ProcessName(processName), m_Application(app)
+  ThreadHandle(String processName, Yeager::ApplicationCore* app) : m_ProcessName(processName), m_Application(app)
   {
     m_FutureType = m_PromiseType.get_future();
     Yeager::Log(INFO, "Thread {} created!", processName);
@@ -60,7 +60,7 @@ class ThreadHandle {
   Type GetValue() { return m_FutureType.get(); }
 
  protected:
-  YgString m_ProcessName = YEAGER_THREAD_PROCESS_DEFAULT_NAME;
+  String m_ProcessName = YEAGER_THREAD_PROCESS_DEFAULT_NAME;
   Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
   std::promise<Type> m_PromiseType;
   std::future<Type> m_FutureType;

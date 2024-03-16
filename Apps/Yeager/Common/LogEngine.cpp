@@ -1,7 +1,7 @@
 #include "LogEngine.h"
 using namespace Yeager;
 
-EditorConsole kConsole;
+EditorConsole gGlobalConsole;
 
 ImVec4 VerbosityToColor(int verbosity)
 {

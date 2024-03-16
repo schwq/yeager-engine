@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 //    Copyright (C) 2023
 //
 //    This program is free software: you can redistribute it and/or modify
@@ -32,13 +32,13 @@ class ApplicationCore;
 
 struct KeyMap {
   KeyMap(uint64_t GlfwMacro) { this->GlfwMacro = GlfwMacro; }
-  constexpr KeyMap(Yeager::KeyMap&& other)
+  constexpr KeyMap(Yeager::KeyMap&& other) noexcept
   {
     this->GlfwMacro = other.GlfwMacro;
     this->state = other.state;
     this->action = other.action;
   }
-  constexpr KeyMap(const Yeager::KeyMap& other)
+  constexpr KeyMap(const Yeager::KeyMap& other) noexcept
   {
     this->GlfwMacro = other.GlfwMacro;
     this->state = other.state;
@@ -79,8 +79,8 @@ struct CameraCursorLastState {
   bool CursorShouldAppear = false;
   bool CameraShouldMove = false;
   bool CursorCanDissapear = false;
-  const inline bool CursorWasDissapearing() noexcept { return CursorCanDissapear; }
-  const inline bool WasMoving() noexcept { return CursorShouldAppear && CameraShouldMove; }
+  const inline bool CursorWasDissapearing() const noexcept { return CursorCanDissapear; }
+  const inline bool WasMoving() const noexcept { return CursorShouldAppear && CameraShouldMove; }
 };
 
 /// @brief Class that handles all keyboard and mouse inputs and process them into the respective requests

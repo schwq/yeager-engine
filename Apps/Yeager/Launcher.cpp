@@ -3,7 +3,7 @@
 using namespace Yeager;
 using namespace ImGui;
 
-Launcher::Launcher(unsigned int width, unsigned int height, YgString title, ApplicationCore* app)
+Launcher::Launcher(unsigned int width, unsigned int height, String title, ApplicationCore* app)
     : m_Application(app), m_WindowTitle(title)
 {
   Yeager::Log(INFO, "Launching the Engine Launcher");
@@ -20,6 +20,7 @@ void Launcher::Render()
     m_Application->GetInput()->ProcessInputRender(m_Application->GetWindow(), 1.0f);
     m_Application->GetInterface()->TerminateRenderFrame();
     glfwSwapBuffers(m_Application->GetWindow()->getWindow());
+    m_Application->GetRequestHandle()->HandleRequests();
   }
 }
 void Launcher::BuildNewProject(const Yeager::LauncherProjectPicker& project)

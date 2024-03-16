@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/yeager-engine
+//    Repo : https://github.com/schwq/YeagerEngine
 
 //    Copyright (C) 2023
 //
@@ -23,6 +23,8 @@
 #include "Common/Common.h"
 #include "Common/LogEngine.h"
 #include "Common/Utilities.h"
+#include "Engine/Editor/Camera.h"
+#include "Engine/Editor/NodeHierarchy.h"
 #include "Engine/Editor/ToolboxObj.h"
 #include "Engine/Lighting/LightHandle.h"
 #include "Engine/Media/AudioHandle.h"
@@ -32,56 +34,66 @@
 namespace Yeager {
 class ApplicationCore;
 
+template <typename Type>
+using VecSharedPtr = std::vector<std::shared_ptr<Type>>;
+template <typename Ty1, typename Ty2>
+using VecPair = std::vector<std::pair<Ty1, Ty2>>;
+
 enum SceneType { Scene2D, Scene3D, SceneError };
 enum SceneRenderer { OpenGL3_3, OpenGL4, RendererError };
-extern YgString SceneTypeToString(SceneType type);
-extern YgString SceneRendererToString(SceneRenderer renderer);
-extern SceneType StringToSceneType(YgString str);
-extern SceneRenderer StringToSceneRenderer(YgString str);
+extern String SceneTypeToString(SceneType type);
+extern String SceneRendererToString(SceneRenderer renderer);
+extern SceneType StringToSceneType(String str);
+extern SceneRenderer StringToSceneRenderer(String str);
 
 struct SceneContext {
-  YgString m_name = YEAGER_NULL_LITERAL;
-  YgString m_file_path = YEAGER_NULL_LITERAL;
-  YgString m_ProjectFolderPath = YEAGER_NULL_LITERAL;
-  YgString m_ProjectRelativeConfigurationPath = YEAGER_NULL_LITERAL;
-  YgString m_ProjectSavePath = YEAGER_NULL_LITERAL;
-  YgString m_ProjectAuthor = YEAGER_NULL_LITERAL;
+  String m_name = YEAGER_NULL_LITERAL;
+  String m_file_path = YEAGER_NULL_LITERAL;
+  String m_ProjectFolderPath = YEAGER_NULL_LITERAL;
+  String m_ProjectRelativeConfigurationPath = YEAGER_NULL_LITERAL;
+  String m_ProjectSavePath = YEAGER_NULL_LITERAL;
+  String m_ProjectAuthor = YEAGER_NULL_LITERAL;
   SceneType m_ExplorerType = SceneType::Scene2D;
   SceneRenderer m_renderer = SceneRenderer::OpenGL3_3;
+  YgTime_t m_TimeOfCreation;
 };
+
+static SceneContext InitializeContext(String name, String author, SceneType type, String folderPath,
+                                      SceneRenderer renderer, YgTime_t dateOfCreation);
 
 class Scene {
  public:
-  Scene(YgString name, YgString Author, SceneType type, YgString folder_path, SceneRenderer renderer,
-        Yeager::ApplicationCore* app);
+  Scene(Yeager::ApplicationCore* app);
+
   ~Scene();
   Scene() {}
 
+  void BuildScene(String name, String Author, SceneType type, String folder_path, SceneRenderer renderer,
+                  YgTime_t dateOfCreation);
+
   void Save();
-  void Load(YgString path);
+  void Load(String path);
   void LoadEditorColorscheme(Interface* intr);
 
-  SceneContext GetContext() { return m_Context; }
+  SceneContext* GetContext() { return &m_Context; }
   void SetContextType(SceneType type);
   void SetContextRenderer(SceneRenderer renderer);
   void LoadSceneSave();
-  YgString GetPathRelative(YgString path);
-  YgString GetAssetsPath() { return m_AssetsFolderPath;}
+  String GetPathRelative(String path);
+  String GetAssetsPath() { return m_AssetsFolderPath; }
 
   /**
    *  Scene Objects and Entities (Everything that is stored where is going to be saved) 
    */
-  std::vector<std::shared_ptr<Yeager::Audio3DHandle>>* GetAudios3D();
-  std::vector<std::shared_ptr<Yeager::AudioHandle>>* GetAudios();
-  std::vector<std::shared_ptr<Yeager::Object>>* GetObjects();
-  std::vector<std::shared_ptr<ToolBoxObject>>* GetToolboxs();
-  std::vector<std::shared_ptr<Yeager::InstancedObject>>* GetInstancedObjects();
-  std::vector<std::shared_ptr<Yeager::AnimatedObject>>* GetAnimatedObject();
-  std::vector<std::shared_ptr<Yeager::InstancedAnimatedObject>>* GetInstancedAnimatedObjects();
-  std::vector<std::shared_ptr<Yeager::PhysicalLightHandle>>* GetLightSources();
+  VecSharedPtr<Yeager::Audio3DHandle>* GetAudios3D();
+  VecSharedPtr<Yeager::AudioHandle>* GetAudios();
+  VecSharedPtr<Yeager::Object>* GetObjects();
+  VecSharedPtr<ToolboxHandle>* GetToolboxs();
+  VecSharedPtr<Yeager::AnimatedObject>* GetAnimatedObject();
+  VecSharedPtr<Yeager::PhysicalLightHandle>* GetLightSources();
 
-  std::vector<std::pair<ImporterThreaded*, Yeager::Object*>>* GetThreadImporters();
-  std::vector<std::pair<ImporterThreadedAnimated*, Yeager::AnimatedObject*>>* GetThreadAnimatedImporters();
+  VecPair<ImporterThreaded*, Yeager::Object*>* GetThreadImporters();
+  VecPair<ImporterThreadedAnimated*, Yeager::AnimatedObject*>* GetThreadAnimatedImporters();
   void CheckThreadsAndTriggerActions();
 
   void CheckAndAwaitThreadsToFinish();
@@ -91,7 +103,7 @@ class Scene {
 
   /* Check for duplicate elements in the vector and returns the positions of the duplicates */
   template <typename Type>
-  std::vector<size_t> CheckDuplicatesEntities(std::vector<std::shared_ptr<Type>>* vec)
+  std::vector<size_t> CheckDuplicatesEntities(VecSharedPtr<Type>* vec)
   {
     if (vec->empty() || vec->size() == 1)
       return std::vector<size_t>();
@@ -120,7 +132,7 @@ class Scene {
   /* Attention using this function, it only removes the element for the vector, it does not handle the proper deletion of 
   objects and entities in the engine! */
   template <typename Type>
-  void DeleteDuplicatesEntities(std::vector<std::shared_ptr<Type>>* vec)
+  void DeleteDuplicatesEntities(VecSharedPtr<Type>* vec)
   {
     std::vector<size_t> pos = CheckDuplicatesEntities(vec);
     for (const auto& index : pos) {
@@ -132,37 +144,55 @@ class Scene {
   }
 
   void CheckDuplicatesLightSources();
+
   /* Will try to find sound files in the /Assets/Sound folder of the project and return a pair of the file name and the complete path */
-  std::vector<std::pair<YgString, YgString>> VerifySoundsOptionsInAssetFolder();
+  VecPair<String, String> VerifySoundsOptionsInAssetFolder();
+
   /* Will try to search for folders and model files inside of it on the /Assets/ImportedModels folder of the project, and return a pair of the file name and complete path */
-  std::vector<std::pair<YgString, YgString>> VerifyImportedModelsOptionsInAssetsFolder();
+  VecPair<String, String> VerifyImportedModelsOptionsInAssetsFolder();
+
+  YEAGER_FORCE_INLINE Yeager::PlayerCamera* GetPlayerCamera() { return m_PlayerCamera; }
+
+  std::vector<Yeager::NodeComponent*>* GetNodeHierarchy() { return &m_NodeHierarchy; }
+
+  YEAGER_FORCE_INLINE constexpr bool SceneContainsRootNode() const { return m_SceneContainsRootNode; }
+  constexpr Yeager::NodeComponent* GetRootNode() { return m_RootNodeOfScene; }
+
+  /* I dont think about a scenario where is going to be possible to just dont have a root node
+  but will leave it this way, for now. */
+  void SetSceneContainsRootNode(bool contains, Yeager::NodeComponent* root)
+  {
+    m_SceneContainsRootNode = contains;
+    m_RootNodeOfScene = root;
+  }
 
  private:
   // The toolbox destroryed can be the selected one, if its stays selected after deletion, it will cause a read to nullptr!
   // This function disable the selected toolbox in the Explorer
-  void CheckToolboxIsSelectedAndDisable(Yeager::ToolBoxObject* toolbox);
-
-  void RemoveDuplicatesEntities();
-
+  void CheckToolboxIsSelectedAndDisable(Yeager::ToolboxHandle* toolbox);
   void ValidatesCommonFolders();
-  YgString m_AssetsFolderPath = YEAGER_NULL_LITERAL;
-
+  void RemoveDuplicatesEntities();
   void VerifyAssetsSubFolders();
-
-  std::vector<std::pair<ImporterThreaded*, Yeager::Object*>> m_ThreadImporters;
-  std::vector<std::pair<ImporterThreadedAnimated*, Yeager::AnimatedObject*>> m_ThreadAnimatedImporters;
+  void InitializeRootNode();
+  String GetConfigurationFilePath(String path) const;
 
   SceneContext m_Context;
+  bool m_SceneContainsRootNode = false;
+  String m_AssetsFolderPath = YEAGER_NULL_LITERAL;
+  Yeager::PlayerCamera* m_PlayerCamera = YEAGER_NULLPTR;
   Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
-  std::vector<std::shared_ptr<Yeager::Audio3DHandle>> m_Audios3D;
-  std::vector<std::shared_ptr<Yeager::AudioHandle>> m_Audios;
-  std::vector<std::shared_ptr<Yeager::Object>> m_Objects;
-  std::vector<std::shared_ptr<Yeager::InstancedObject>> m_InstancedObjects;
-  std::vector<std::shared_ptr<Yeager::AnimatedObject>> m_AnimatedObject;
-  std::vector<std::shared_ptr<Yeager::InstancedAnimatedObject>> m_InstancedAnimatedObjects;
-  std::vector<std::shared_ptr<Yeager::ToolBoxObject>> m_Toolboxes;
-  std::vector<std::shared_ptr<Yeager::PhysicalLightHandle>> m_LightSources;
+  Yeager::NodeComponent* m_RootNodeOfScene = YEAGER_NULLPTR;
 
-  YgString GetConfigurationFilePath(YgString path);
+  VecPair<ImporterThreaded*, Yeager::Object*> m_ThreadImporters;
+  VecPair<ImporterThreadedAnimated*, Yeager::AnimatedObject*> m_ThreadAnimatedImporters;
+
+  VecSharedPtr<Yeager::Audio3DHandle> m_Audios3D;
+  VecSharedPtr<Yeager::AudioHandle> m_Audios;
+  VecSharedPtr<Yeager::Object> m_Objects;
+  VecSharedPtr<Yeager::AnimatedObject> m_AnimatedObject;
+  VecSharedPtr<Yeager::ToolboxHandle> m_Toolboxes;
+  VecSharedPtr<Yeager::PhysicalLightHandle> m_LightSources;
+
+  std::vector<Yeager::NodeComponent*> m_NodeHierarchy;
 };
 }  // namespace Yeager

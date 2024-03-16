@@ -4,7 +4,7 @@
 using namespace Yeager;
 
 /* TODO Remake this struct about project`s information, there are already 3 of them in the engine, must refactor*/
-std::vector<OpenProjectsDisplay> Yeager::ReadProjectsToDisplay(YgString dir)
+std::vector<OpenProjectsDisplay> Yeager::ReadProjectsToDisplay(String dir, Yeager::ApplicationCore* app)
 {
   std::vector<OpenProjectsDisplay> proj;
   YAML::Node node = YAML::LoadFile(dir);
@@ -15,29 +15,32 @@ std::vector<OpenProjectsDisplay> Yeager::ReadProjectsToDisplay(YgString dir)
       bool exists;
 
       if (project["ProjectName"]) {
-        disp.Name = project["ProjectName"].as<YgString>();
+        disp.Name = project["ProjectName"].as<String>();
       }
 
       if (project["ProjectFolderPath"]) {
-        disp.FolderPath = project["ProjectFolderPath"].as<YgString>();
+        disp.FolderPath = project["ProjectFolderPath"].as<String>();
       }
       /* Reads each project configuration and return basic information about them*/
       if (project["ProjectConfigurationPath"]) {
         /* The variable inside the configuration file is alright, but the path points to a unknown place, we wouldnt load 
             TODO make the user choice the right place by displaying a screen for troubleshoot */
-        exists = Yeager::ValidatesPath(project["ProjectConfigurationPath"].as<YgString>());
+        exists = Yeager::ValidatesPath(project["ProjectConfigurationPath"].as<String>());
 
         if (exists) {
-          YAML::Node indiv_proj = YAML::LoadFile(project["ProjectConfigurationPath"].as<YgString>());
-          disp.Path = project["ProjectConfigurationPath"].as<YgString>();
+          YAML::Node indiv_proj = YAML::LoadFile(project["ProjectConfigurationPath"].as<String>());
+          disp.Path = project["ProjectConfigurationPath"].as<String>();
           if (indiv_proj["Renderer"]) {
-            disp.RendererType = indiv_proj["Renderer"].as<YgString>();
+            disp.RendererType = indiv_proj["Renderer"].as<String>();
           }
           if (indiv_proj["SceneType"]) {
-            disp.SceneType = indiv_proj["SceneType"].as<YgString>();
+            disp.SceneType = indiv_proj["SceneType"].as<String>();
           }
           if (indiv_proj["Author"]) {
-            disp.Author = indiv_proj["Author"].as<YgString>();
+            disp.Author = indiv_proj["Author"].as<String>();
+          }
+          if (indiv_proj["TimeOfCreation"]) {
+            disp.TimeOfCreation = app->GetSerial()->DeserializeProjectTimeOfCreation(indiv_proj["TimeOfCreation"]);
           }
         } else {
           Yeager::Log(ERROR,
@@ -58,14 +61,14 @@ std::vector<OpenProjectsDisplay> Yeager::ReadProjectsToDisplay(YgString dir)
   return proj;
 }
 
-YAML::Emitter& operator<<(YAML::Emitter& out, const YgVector3& vector)
+YAML::Emitter& operator<<(YAML::Emitter& out, const Vector3& vector)
 {
   out << YAML::Flow;
   out << YAML::BeginSeq << vector.x << vector.y << vector.z << YAML::EndSeq;
   return out;
 }
 
-YAML::Emitter& operator<<(YAML::Emitter& out, const YgMatrix4& matrix)
+YAML::Emitter& operator<<(YAML::Emitter& out, const Matrix4& matrix)
 {
   out << YAML::Flow;
   out << YAML::BeginSeq;
@@ -96,22 +99,22 @@ void inline Serialization::SerializeBasicObjectType(YAML::Emitter& out, Yeager::
   SerializeObject(out, "Geometry", ObjectGeometryTypeToString(obj->GetGeometry()));
   SerializeBegin(out, "TexturesLoaded", YAML::BeginMap);
 
-  if (obj->GetGeometry() == ObjectGeometryType::ECustom) {
+  if (obj->GetGeometry() == ObjectGeometryType::eCUSTOM) {
     for (unsigned int y = 0; y < obj->GetModelData()->TexturesLoaded.size(); y++) {
-      ObjectTexture tex = obj->GetModelData()->TexturesLoaded.at(y)->first;
-      SerializeObject(out, "Path", tex.Path);
-      SerializeObject(out, "Type", tex.Type);
-      SerializeObject(out, "Name", tex.Name);
-      SerializeObject(out, "Flip", tex.FlipImage);
+      MaterialTexture2D tex = obj->GetModelData()->TexturesLoaded.at(y)->first;
+      SerializeObject(out, "Path", tex.GetPath());
+      SerializeObject(out, "Type", MaterialTextureType::ToString(tex.GetTextureType()));
+      SerializeObject(out, "Name", tex.GetName());
+      SerializeObject(out, "Flip", tex.GetTextureDataHandle()->Flipped);
     }
   } else {
-    for (unsigned int y = 0; y < obj->GetGeometryData()->Textures.size(); y++) {
-      ObjectTexture tex = obj->GetGeometryData()->Textures.at(y);
-      SerializeObject(out, "Path", tex.Path);
-      SerializeObject(out, "Type", tex.Type);
-      SerializeObject(out, "Name", tex.Name);
-      SerializeObject(out, "Flip", tex.FlipImage);
-    }
+
+    MaterialTexture2D* tex = obj->GetGeometryData()->Texture;
+
+    SerializeObject(out, "Path", tex->GetPath());
+    SerializeObject(out, "Type", MaterialTextureType::ToString(tex->GetTextureType()));
+    SerializeObject(out, "Name", tex->GetName());
+    SerializeObject(out, "Flip", tex->GetTextureDataHandle()->Flipped);
   }
   out << YAML::EndMap;
 }
@@ -137,26 +140,26 @@ ImVec4 NodeVec4ToImVec4(const YAML::Node& node, const char* item)
   return vector;
 }
 
-void inline Serialization::SerializeBasicEntity(YAML::Emitter& out, YgString name, unsigned int id, YgString type)
+void inline Serialization::SerializeBasicEntity(YAML::Emitter& out, String name, unsigned int id, String type)
 {
   out << YAML::Key << "Entity" << YAML::Value << id;
   out << YAML::Key << "Name" << YAML::Value << name;
   out << YAML::Key << "Type" << YAML::Value << type;
 }
 
-void inline Serialization::SerializeObjectTransformation(YAML::Emitter& out, YgString name,
+void inline Serialization::SerializeObjectTransformation(YAML::Emitter& out, String name,
                                                          Yeager::Transformation& transf) noexcept
 {
-  out << YAML::Flow;
-  out << YAML::Key << name << YAML::Value << YAML::BeginSeq;
+
+  out << YAML::BeginMap;
   out << YAML::Key << "Position" << YAML::Value << transf.position;
   out << YAML::Key << "Scale" << YAML::Value << transf.position;
   out << YAML::Key << "Rotation" << YAML::Value << transf.position;
   out << YAML::Key << "Model" << YAML::Value << transf.model;
-  out << YAML::EndSeq;
+  out << YAML::EndMap;
 }
 
-void Serialization::SerializeScene(Yeager::Scene* scene, YgString path)
+void Serialization::SerializeScene(Yeager::Scene* scene, String path)
 {
   YAML::Emitter out;
 
@@ -166,16 +169,19 @@ void Serialization::SerializeScene(Yeager::Scene* scene, YgString path)
       "understand the architeture of the save file!)");
 
   SerializeSystemInfo(out, scene);
-  SerializeObject(out, "Scene", scene->GetContext().m_name);
-  SerializeObject(out, "Author", scene->GetContext().m_ProjectAuthor);
-  SerializeObject(out, "Renderer", SceneRendererToString(scene->GetContext().m_renderer));
-  SerializeObject(out, "SceneType", SceneTypeToString(scene->GetContext().m_ExplorerType));
+  SerializeObject(out, "Scene", scene->GetContext()->m_name);
+  SerializeProjectTimeOfCreation(out, scene, "TimeOfCreation");
+  SerializeObject(out, "Author", scene->GetContext()->m_ProjectAuthor);
+  SerializeObject(out, "Renderer", SceneRendererToString(scene->GetContext()->m_renderer));
+  SerializeObject(out, "SceneType", SceneTypeToString(scene->GetContext()->m_ExplorerType));
   SerializeObject(out, "Camera Position", m_Application->GetCamera()->GetPosition());
   SerializeObject(out, "Camera Direction", m_Application->GetCamera()->GetDirection());
   SerializeBegin(out, "SceneEntities", YAML::BeginSeq);
 
   for (unsigned int x = 0; x < scene->GetAudios()->size(); x++) {
     AudioHandle* audio = scene->GetAudios()->at(x).get();
+    if (!audio->CanBeSerialize())
+      continue;
     out << YAML::BeginMap;
     SerializeBasicEntity(out, audio->GetName(), audio->GetId(), "AudioHandle");
     SerializeObject(out, "Path", audio->GetPath());
@@ -184,6 +190,8 @@ void Serialization::SerializeScene(Yeager::Scene* scene, YgString path)
 
   for (unsigned int x = 0; x < scene->GetAudios3D()->size(); x++) {
     Audio3DHandle* audio = scene->GetAudios3D()->at(x).get();
+    if (!audio->CanBeSerialize())
+      continue;
     out << YAML::BeginMap;
     SerializeBasicEntity(out, audio->GetName(), audio->GetId(), "Audio3DHandle");
     SerializeObject(out, "Path", audio->GetPath());
@@ -194,54 +202,51 @@ void Serialization::SerializeScene(Yeager::Scene* scene, YgString path)
   for (unsigned int x = 0; x < scene->GetObjects()->size(); x++) {
 
     Object* obj = scene->GetObjects()->at(x).get();
+    if (!obj->CanBeSerialize()) {
+      continue;
+    }
     out << YAML::BeginMap;
 
     SerializeBasicEntity(out, obj->GetName(), obj->GetId(), "Object");
-    SerializeBasicObjectType(out, obj);
-    out << YAML::EndMap;
-  }
+    SerializeObject(out, "InstancedType", ObjectInstancedType::EnumToString(obj->GetInstancedType()));
+    if (obj->IsInstanced()) {
+      SerializeObject(out, "InstancedCount", obj->GetInstancedNum());
+      SerializeBegin(out, "Props", YAML::BeginSeq);
+      for (auto& prop : *obj->GetInstancedProps()) {
 
-  for (unsigned int x = 0; x < scene->GetInstancedObjects()->size(); x++) {
-    InstancedObject* obj = scene->GetInstancedObjects()->at(x).get();
-    out << YAML::BeginMap;
-
-    SerializeBasicEntity(out, obj->GetName(), obj->GetId(), "InstacedObject");
-    SerializeObject(out, "InstancedCount", obj->GetInstancedNumber());
-    SerializeBegin(out, "Props", YAML::BeginSeq);
-    for (auto& prop : *obj->GetProps()) {
-      SerializeObjectTransformation(out, "ObjectTransformation", prop);
+        SerializeObjectTransformation(out, "ObjectTransformation", *prop);
+      }
+      out << YAML::EndSeq;
     }
-    out << YAML::EndSeq;
     SerializeBasicObjectType(out, obj);
     out << YAML::EndMap;
   }
 
   for (unsigned int x = 0; x < scene->GetAnimatedObject()->size(); x++) {
     AnimatedObject* obj = scene->GetAnimatedObject()->at(x).get();
+    if (!obj->CanBeSerialize())
+      continue;
     out << YAML::BeginMap;
 
     SerializeBasicEntity(out, obj->GetName(), obj->GetId(), "AnimatedObject");
     SerializeBasicObjectType(out, obj);
-    out << YAML::EndMap;
-  }
+    SerializeObject(out, "InstancedType", ObjectInstancedType::EnumToString(obj->GetInstancedType()));
+    if (obj->IsInstanced()) {
+      SerializeObject(out, "InstancedCount", obj->GetInstancedNum());
+      SerializeBegin(out, "Props", YAML::BeginSeq);
+      for (auto& prop : *obj->GetInstancedProps()) {
 
-  for (unsigned int x = 0; x < scene->GetInstancedAnimatedObjects()->size(); x++) {
-    InstancedAnimatedObject* obj = scene->GetInstancedAnimatedObjects()->at(x).get();
-    out << YAML::BeginMap;
-
-    SerializeBasicEntity(out, obj->GetName(), obj->GetId(), "InstancedAnimatedObject");
-    SerializeObject(out, "InstancedCount", obj->GetInstancedNumber());
-    SerializeBegin(out, "Props", YAML::BeginSeq);
-    for (auto& prop : *obj->GetProps()) {
-      SerializeObjectTransformation(out, "ObjectTransformation", prop);
+        SerializeObjectTransformation(out, "ObjectTransformation", *prop);
+      }
+      out << YAML::EndSeq;
     }
-    out << YAML::EndSeq;
-    SerializeBasicObjectType(out, obj);
     out << YAML::EndMap;
   }
 
   for (unsigned int x = 0; x < scene->GetLightSources()->size(); x++) {
     PhysicalLightHandle* obj = scene->GetLightSources()->at(x).get();
+    if (!obj->CanBeSerialize())
+      continue;
     out << YAML::BeginMap;
 
     SerializeBasicEntity(out, obj->GetName(), obj->GetId(), "LightSource");
@@ -249,9 +254,9 @@ void Serialization::SerializeScene(Yeager::Scene* scene, YgString path)
 
     SerializeBegin(out, "LinkedShaderVar", YAML::BeginSeq);
     for (auto& shader : *obj->GetLinkedShaders()) {
-        out << YAML::BeginMap;
+      out << YAML::BeginMap;
       SerializeObject(out, "VarName", shader->GetVarName());
-        out << YAML::EndMap;
+      out << YAML::EndMap;
     }
     out << YAML::EndSeq;
 
@@ -474,24 +479,24 @@ ColorschemeConfig Serialization::ReadColorschemeConfig()
   return colorscheme;
 }
 
-void Serialization::ReadSceneShadersConfig(YgString path)
+void Serialization::ReadSceneShadersConfig(String path)
 {
   YAML::Node node = YAML::LoadFile(path);
 
   if (node["SceneShader"]) {
-    Yeager::Log(INFO, "Reading shader configuration {}", node["SceneShader"].as<YgString>());
+    Yeager::Log(INFO, "Reading shader configuration {}", node["SceneShader"].as<String>());
   }
   auto shaders = node["Shaders"];
   if (shaders) {
     for (auto shader : shaders) {
       try {
-        YgString name = shader["Shader"].as<YgString>();
-        YgString fragment = shader["FragmentPath"].as<YgString>();
-        YgString vertex = shader["VertexPath"].as<YgString>();
-        YgString var = shader["VarName"].as<YgString>();
+        String name = shader["Shader"].as<String>();
+        String fragment = shader["FragmentPath"].as<String>();
+        String vertex = shader["VertexPath"].as<String>();
+        String var = shader["VarName"].as<String>();
         auto ps_shader = std::make_shared<Yeager::Shader>(GetPath(fragment).c_str(), GetPath(vertex).c_str(), name);
         ps_shader->SetVarName(var);
-        std::pair<std::shared_ptr<Shader>, YgString> sh;
+        std::pair<std::shared_ptr<Shader>, String> sh;
         sh.first = ps_shader;
         sh.second = var;
         m_Application->GetConfigShaders()->push_back(sh);
@@ -503,7 +508,7 @@ void Serialization::ReadSceneShadersConfig(YgString path)
   }
 }
 
-void Serialization::DeserializeScene(Yeager::Scene* scene, YgString path)
+void Serialization::DeserializeScene(Yeager::Scene* scene, String path)
 {
   YAML::Node node = YAML::LoadFile(path);
 
@@ -516,7 +521,7 @@ void Serialization::DeserializeScene(Yeager::Scene* scene, YgString path)
     } catch (YAML::BadConversion exc) {
       Yeager::Log(ERROR,
                   "Something went wrong at reading the Scene Entities configuration! Have the user change itself?");
-    } catch(YAML::BadSubscript exc) {
+    } catch (YAML::BadSubscript exc) {
       Yeager::Log(ERROR, "Something went wront at reading the Scene Entities configuration! YAML::BadSubscript!");
     }
   }
@@ -526,43 +531,45 @@ void inline Serialization::DeserializeSceneInfo(Yeager::Scene* scene, YAML::Node
 {
   if (node) {
     if (node["Scene"]) {
-      scene->GetContext().m_name = node["Scene"].as<YgString>();
+      scene->GetContext()->m_name = node["Scene"].as<String>();
     }
     if (node["Renderer"]) {
-      scene->SetContextRenderer(StringToSceneRenderer(node["Renderer"].as<YgString>()));
+      scene->SetContextRenderer(StringToSceneRenderer(node["Renderer"].as<String>()));
     }
     if (node["SceneType"]) {
-      scene->SetContextType(StringToSceneType(node["SceneType"].as<YgString>()));
+      scene->SetContextType(StringToSceneType(node["SceneType"].as<String>()));
     }
     if (node["Camera Position"]) {
-      m_Application->GetCamera()->SetPosition(node["Camera Position"].as<YgVector3>());
+      m_Application->GetCamera()->SetPosition(node["Camera Position"].as<Vector3>());
     }
     if (node["Camera Direction"]) {
-      m_Application->GetCamera()->SetDirection(node["Camera Direction"].as<YgVector3>());
+      m_Application->GetCamera()->SetDirection(node["Camera Direction"].as<Vector3>());
+    }
+    if (node["TimeOfCreation"]) {
+      scene->GetContext()->m_TimeOfCreation = DeserializeProjectTimeOfCreation(node["TimeOfCreation"]);
     }
   }
 }
-
-ObjectGeometryType inline Serialization::DeserializeBasicObject(Yeager::Object* BaseClassObj,
-                                                                YAML::detail::iterator_value& entity)
+ObjectGeometryType::Enum inline Serialization::DeserializeBasicObject(Yeager::Object* BaseClassObj,
+                                                                      YAML::detail::iterator_value& entity)
 {
-  BaseClassObj->GetTransformationPtr()->position = entity["Position"].as<YgVector3>();
-  BaseClassObj->GetTransformationPtr()->rotation = entity["Rotation"].as<YgVector3>();
-  BaseClassObj->GetTransformationPtr()->scale = entity["Scale"].as<YgVector3>();
-  ObjectGeometryType geometry = StringToObjectGeometryType(entity["Geometry"].as<YgString>());
+  BaseClassObj->GetTransformationPtr()->position = entity["Position"].as<Vector3>();
+  BaseClassObj->GetTransformationPtr()->rotation = entity["Rotation"].as<Vector3>();
+  BaseClassObj->GetTransformationPtr()->scale = entity["Scale"].as<Vector3>();
+  ObjectGeometryType::Enum geometry = StringToObjectGeometryType(entity["Geometry"].as<String>());
   BaseClassObj->SetGeometry(geometry);
   return geometry;
 }
 
-std::vector<Transformation> inline Serialization::DeserializeObjectProperties(YAML::detail::iterator_value& entity)
+std::vector<Transformation*> inline Serialization::DeserializeObjectProperties(YAML::detail::iterator_value& entity)
 {
-  std::vector<Transformation> tr;
+  std::vector<Transformation*> tr;
   YAML::Node props = entity["Props"];
   for (const auto& propertie : props) {
-    Transformation trans;
-    trans.position = propertie["Position"].as<YgVector3>();
-    trans.scale = propertie["Scale"].as<YgVector3>();
-    trans.rotation = propertie["Rotation"].as<YgVector3>();
+    Transformation* trans = new Transformation();
+    trans->position = propertie["Position"].as<Vector3>();
+    trans->scale = propertie["Scale"].as<Vector3>();
+    trans->rotation = propertie["Rotation"].as<Vector3>();
     tr.push_back(trans);
   }
   return tr;
@@ -574,50 +581,57 @@ void inline Serialization::DeserializeEntity(Yeager::Scene* scene, YAML::Node& n
   /// All entities have theses values, name, id and type, if for some reason, one of them is missing, them the user have change something in the configuration file itself
   /// or someone implemented a new type of entity without the proper configuration in the serialization class for saving it correctly
   unsigned int id = entity["Entity"].as<unsigned int>();
-  YgString name = entity["Name"].as<YgString>();
-  YgString type = entity["Type"].as<YgString>();
+  String name = entity["Name"].as<String>();
+  String type = entity["Type"].as<String>();
 
   switch (StringToInteger(type.c_str())) {
 
     case StringToInteger("AudioHandle"): {
-      YgString path = entity["Path"].as<YgString>();
+      String path = entity["Path"].as<String>();
       auto audio =
           std::make_shared<Yeager::AudioHandle>(path, name, m_Application->GetAudioEngine(), false, m_Application);
       scene->GetAudios()->push_back(audio);
-      auto toolbox = std::make_shared<Yeager::ToolBoxObject>();
-      toolbox->SetEntity(audio.get());
-      toolbox->SetType(EExplorerTypeAudio);
-      scene->GetToolboxs()->push_back(toolbox);
+
     } break;
 
     case StringToInteger("Audio3DHandle"): {
-      YgString path = entity["Path"].as<YgString>();
-      YgVector3 position = entity["Position"].as<YgVector3>();
+      String path = entity["Path"].as<String>();
+      Vector3 position = entity["Position"].as<Vector3>();
       auto audio = std::make_shared<Yeager::Audio3DHandle>(path, name, m_Application->GetAudioEngine(), false,
                                                            YgVec3_to_Vec3df(position), m_Application);
       scene->GetAudios3D()->push_back(audio);
-      auto toolbox = std::make_shared<Yeager::ToolBoxObject>();
-      toolbox->SetType(EExplorerTypeAudio3D);
-      toolbox->SetEntity(audio.get());
-      scene->GetToolboxs()->push_back(toolbox);
+
     } break;
 
     case StringToInteger("Object"): {
-      auto obj = std::make_shared<Yeager::Object>(name, m_Application);
+
+      std::shared_ptr<Yeager::Object> obj;
+
+      String instancedType = entity["InstancedType"].as<String>();
+      if (instancedType == "Instanced") {
+        obj = std::make_shared<Yeager::Object>(name, m_Application, entity["InstancedCount"].as<int>());
+        std::vector<Transformation*> positions = DeserializeObjectProperties(entity);
+        obj->BuildProps(positions, m_Application->ShaderFromVarName("SimpleInstanced"));
+      } else {
+        obj = std::make_shared<Yeager::Object>(name, m_Application);
+      }
+
       // Gets transformation, and geometry of the object serialized
-      ObjectGeometryType geometry = DeserializeBasicObject(obj.get(), entity);
+      ObjectGeometryType::Enum geometry = DeserializeBasicObject(obj.get(), entity);
       bool succceded = true;
 
-      if (geometry == ObjectGeometryType::ECustom) {
+      if (geometry == ObjectGeometryType::eCUSTOM) {
         // Import Custom model object
-        if (!obj->ThreadImportObjectFromFile(entity["Path"].as<YgString>().c_str())) {
+        if (!obj->ThreadImportObjectFromFile(entity["Path"].as<String>().c_str())) {
           Yeager::Log(WARNING, "Error importing object from file during deserialization!");
           succceded = false;
         }
 
       } else {
         // Generates geometry for object
-        if (!obj->GenerateObjectGeometry(geometry)) {
+        if (!obj->GenerateObjectGeometry(geometry, ObjectPhysXCreationStatic(obj->GetTransformationPtr()->position,
+                                                                             obj->GetTransformationPtr()->rotation,
+                                                                             obj->GetTransformationPtr()->scale))) {
           Yeager::Log(WARNING, "Error generating object geometry during deserialization!");
           succceded = false;
         }
@@ -628,85 +642,47 @@ void inline Serialization::DeserializeEntity(Yeager::Scene* scene, YAML::Node& n
       }
     } break;
 
-    case StringToInteger("InstancedObject"): {
-      unsigned int instanced = entity["InstancedCount"].as<unsigned int>();
-      auto obj = std::make_shared<Yeager::InstancedObject>(name, m_Application, instanced);
-      ObjectGeometryType geometry = DeserializeBasicObject(obj.get(), entity);
-      std::vector<Transformation> positions = DeserializeObjectProperties(entity);
-      obj->BuildProp(positions, m_Application->ShaderFromVarName("SimpleInstanced"));
-      bool succceded = true;
-
-      if (geometry == ObjectGeometryType::ECustom) {
-        if (!obj->ThreadImportObjectFromFile(entity["Path"].as<YgString>().c_str())) {
-          Yeager::Log(WARNING, "Error importing instanced object from file during deserialization!");
-          succceded = false;
-        }
-      } else {
-        if (!obj->GenerateObjectGeometry(geometry)) {
-          Yeager::Log(WARNING, "Error generating instanced object geometry during deserialization!");
-          succceded = false;
-        }
-      }
-      if (succceded) {
-        scene->GetInstancedObjects()->push_back(obj);
-      }
-    } break;
-
     case StringToInteger("AnimatedObject"): {
-      auto obj = std::make_shared<Yeager::AnimatedObject>(name, m_Application);
-      ObjectGeometryType geometry = DeserializeBasicObject(obj.get(), entity);
+
+      std::shared_ptr<Yeager::AnimatedObject> obj;
+      String instancedType = entity["InstancedType"].as<String>();
+      if (instancedType == "Instanced") {
+        obj = std::make_shared<Yeager::AnimatedObject>(name, m_Application, entity["InstancedCount"].as<int>());
+        std::vector<Transformation*> positions = DeserializeObjectProperties(entity);
+        obj->BuildProps(positions, m_Application->ShaderFromVarName("SimpleInstanced"));
+      } else {
+        obj = std::make_shared<Yeager::AnimatedObject>(name, m_Application);
+      }
+
+      ObjectGeometryType::Enum geometry = DeserializeBasicObject(obj.get(), entity);
       bool succceded = true;
 
-      if (geometry == ObjectGeometryType::ECustom) {
-        if (!obj->ThreadImportObjectFromFile(entity["Path"].as<YgString>().c_str(), false)) {
+      if (geometry == ObjectGeometryType::eCUSTOM) {
+        if (!obj->ThreadImportObjectFromFile(entity["Path"].as<String>().c_str(), false)) {
           Yeager::Log(WARNING, "Error importing animated object from file during deserialization!");
           succceded = false;
         }
       } else {
-        if (!obj->GenerateObjectGeometry(geometry)) {
+        if (!obj->GenerateObjectGeometry(geometry, ObjectPhysXCreationStatic(obj->GetTransformationPtr()->position,
+                                                                             obj->GetTransformationPtr()->rotation,
+                                                                             obj->GetTransformationPtr()->scale))) {
           Yeager::Log(WARNING, "Error generating animated object geometry during deserialization!");
           succceded = false;
         }
       }
       if (succceded) {
-        obj->BuildAnimation(entity["Path"].as<YgString>());
+        obj->BuildAnimation(entity["Path"].as<String>());
         scene->GetAnimatedObject()->push_back(obj);
       }
     } break;
 
-    case StringToInteger("InstancedAnimatedObject"): {
-      unsigned int instanced = entity["InstancedCount"].as<unsigned int>();
-      auto obj = std::make_shared<Yeager::InstancedAnimatedObject>(name, m_Application, instanced);
-      ObjectGeometryType geometry = DeserializeBasicObject(obj.get(), entity);
-      std::vector<Transformation> positions = DeserializeObjectProperties(entity);
-      obj->BuildProp(positions, m_Application->ShaderFromVarName("SimpleInstancedAnimated"));
-
-      bool succceded = true;
-
-      if (geometry == ObjectGeometryType::ECustom) {
-        if (!obj->ThreadImportObjectFromFile(entity["Path"].as<YgString>().c_str(), false)) {
-          Yeager::Log(WARNING, "Error importing instanced animated object from file during deserialization!");
-          succceded = false;
-        }
-      } else {
-        if (!obj->GenerateObjectGeometry(geometry)) {
-          Yeager::Log(WARNING, "Error generating instanced animated object geometry during deserialization!");
-          succceded = false;
-        }
-      }
-      if (succceded) {
-        obj->BuildAnimation(entity["Path"].as<YgString>());
-        scene->GetInstancedAnimatedObjects()->push_back(obj);
-      }
-    } break;
-
     case StringToInteger("LightSource"): {
-      YgString drawable_shader_var = entity["DrawableShaderVar"].as<YgString>();
+      String drawable_shader_var = entity["DrawableShaderVar"].as<String>();
       std::vector<Shader*> link_shader;
       auto linked_shaders = entity["LinkedShaderVar"];
       for (const auto& shader : linked_shaders) {
-        if (m_Application->ShaderFromVarName(shader["VarName"].as<YgString>())->IsInitialized()) {
-          link_shader.push_back(m_Application->ShaderFromVarName(shader["VarName"].as<YgString>()));
+        if (m_Application->ShaderFromVarName(shader["VarName"].as<String>())->IsInitialized()) {
+          link_shader.push_back(m_Application->ShaderFromVarName(shader["VarName"].as<String>()));
         } else {
           Yeager::Log(WARNING, "Configuration file trying to push a uninitialized shader to the light source!");
         }
@@ -714,26 +690,26 @@ void inline Serialization::DeserializeEntity(Yeager::Scene* scene, YAML::Node& n
       auto obj = std::make_shared<Yeager::PhysicalLightHandle>(name, m_Application, link_shader,
                                                                m_Application->ShaderFromVarName(drawable_shader_var));
       YAML::Node DirectionalLight = entity["DirectionalLight"];
-      obj->GetDirectionalLight()->Direction = DirectionalLight["Direction"].as<YgVector3>();
-      obj->GetDirectionalLight()->Ambient = DirectionalLight["Ambient"].as<YgVector3>();
-      obj->GetDirectionalLight()->Diffuse = DirectionalLight["Diffuse"].as<YgVector3>();
-      obj->GetDirectionalLight()->Specular = DirectionalLight["Specular"].as<YgVector3>();
-      obj->GetDirectionalLight()->Color = DirectionalLight["Color"].as<YgVector3>();
+      obj->GetDirectionalLight()->Direction = DirectionalLight["Direction"].as<Vector3>();
+      obj->GetDirectionalLight()->Ambient = DirectionalLight["Ambient"].as<Vector3>();
+      obj->GetDirectionalLight()->Diffuse = DirectionalLight["Diffuse"].as<Vector3>();
+      obj->GetDirectionalLight()->Specular = DirectionalLight["Specular"].as<Vector3>();
+      obj->GetDirectionalLight()->Color = DirectionalLight["Color"].as<Vector3>();
 
       YAML::Node Material = entity["Material"];
       obj->GetMaterial()->Shininess = Material["Shininess"].as<float>();
 
       YAML::Node SpotLight = entity["SpotLight"];
-      obj->GetSpotLight()->Position = SpotLight["Position"].as<YgVector3>();
-      obj->GetSpotLight()->Direction = SpotLight["Direction"].as<YgVector3>();
+      obj->GetSpotLight()->Position = SpotLight["Position"].as<Vector3>();
+      obj->GetSpotLight()->Direction = SpotLight["Direction"].as<Vector3>();
       obj->GetSpotLight()->CutOff = SpotLight["CutOff"].as<float>();
       obj->GetSpotLight()->OuterCutOff = SpotLight["OuterCutOff"].as<float>();
       obj->GetSpotLight()->Constant = SpotLight["Constant"].as<float>();
       obj->GetSpotLight()->Linear = SpotLight["Linear"].as<float>();
       obj->GetSpotLight()->Quadratic = SpotLight["Quadratic"].as<float>();
-      obj->GetSpotLight()->Ambient = SpotLight["Ambient"].as<YgVector3>();
-      obj->GetSpotLight()->Diffuse = SpotLight["Diffuse"].as<YgVector3>();
-      obj->GetSpotLight()->Specular = SpotLight["Specular"].as<YgVector3>();
+      obj->GetSpotLight()->Ambient = SpotLight["Ambient"].as<Vector3>();
+      obj->GetSpotLight()->Diffuse = SpotLight["Diffuse"].as<Vector3>();
+      obj->GetSpotLight()->Specular = SpotLight["Specular"].as<Vector3>();
       obj->GetSpotLight()->Active = SpotLight["Active"].as<bool>();
 
       for (const auto& pointLight : entity["ObjectPointLight"]) {
@@ -742,14 +718,14 @@ void inline Serialization::DeserializeEntity(Yeager::Scene* scene, YAML::Node& n
         light.Constant = pointLight["Constant"].as<float>();
         light.Linear = pointLight["Linear"].as<float>();
         light.Quadratic = pointLight["Quadratic"].as<float>();
-        light.Ambient = pointLight["Ambient"].as<YgVector3>();
-        light.Diffuse = pointLight["Diffuse"].as<YgVector3>();
-        light.Specular = pointLight["Specular"].as<YgVector3>();
+        light.Ambient = pointLight["Ambient"].as<Vector3>();
+        light.Diffuse = pointLight["Diffuse"].as<Vector3>();
+        light.Specular = pointLight["Specular"].as<Vector3>();
         light.Active = pointLight["Active"].as<bool>();
-        light.Color = pointLight["Color"].as<YgVector3>();
-        trans.position = pointLight["Position"].as<YgVector3>();
-        trans.rotation = pointLight["Rotation"].as<YgVector3>();
-        trans.scale = pointLight["Scale"].as<YgVector3>();
+        light.Color = pointLight["Color"].as<Vector3>();
+        trans.position = pointLight["Position"].as<Vector3>();
+        trans.rotation = pointLight["Rotation"].as<Vector3>();
+        trans.scale = pointLight["Scale"].as<Vector3>();
         obj->AddObjectPointLight(light, trans);
       }
 
@@ -761,7 +737,7 @@ void inline Serialization::DeserializeEntity(Yeager::Scene* scene, YAML::Node& n
   }
 }
 
-void Serialization::ReadEditorVariables(YgCchar path)
+void Serialization::ReadEditorVariables(Cchar path)
 {
   YAML::Node node = YAML::LoadFile(path);
   if (node) {
@@ -774,7 +750,7 @@ void Serialization::ReadEditorVariables(YgCchar path)
   }
 }
 
-void Serialization::SaveEditorVariables(YgCchar path)
+void Serialization::SaveEditorVariables(Cchar path)
 {
   YAML::Emitter out;
   out << YAML::BeginMap;
@@ -792,19 +768,19 @@ void Serialization::SaveEditorVariables(YgCchar path)
   }
 }
 
-void Serialization::ReadLoadedProjectsHandles(YgString externalFolder)
+void Serialization::ReadLoadedProjectsHandles(String externalFolder)
 {
   YAML::Node node = YAML::LoadFile(externalFolder + YG_PS + "LoadedProjectsPath.yml");
   for (const auto& project : node["ProjectsLoaded"]) {
     LoadedProjectHandle handle;
-    handle.m_ProjectName = project["ProjectName"].as<YgString>();
-    handle.m_ProjectFolderPath = project["ProjectFolderPath"].as<YgString>();
-    handle.m_ProjectConfigurationPath = project["ProjectConfigurationPath"].as<YgString>();
+    handle.m_ProjectName = project["ProjectName"].as<String>();
+    handle.m_ProjectFolderPath = project["ProjectFolderPath"].as<String>();
+    handle.m_ProjectConfigurationPath = project["ProjectConfigurationPath"].as<String>();
     m_Application->GetLoadedProjectsHandles()->push_back(handle);
   }
 }
 
-void Serialization::WriteLoadedProjectsHandles(YgString externalFolder)
+void Serialization::WriteLoadedProjectsHandles(String externalFolder)
 {
   YAML::Emitter out;
   out << YAML::BeginMap;
@@ -826,4 +802,30 @@ void Serialization::WriteLoadedProjectsHandles(YgString externalFolder)
     Yeager::Log(ERROR, "Cannot open external project paths configuration file!");
   }
   of.close();
+}
+
+YgTime_t Serialization::DeserializeProjectTimeOfCreation(YAML::Node& node)
+{
+  YgTime_t time;
+  time.Date.Year = node["Year"].as<int>();
+  time.Date.Month = node["Month"].as<int>();
+  time.Date.Day = node["Day"].as<int>();
+  time.Time.Hours = node["Hour"].as<int>();
+  time.Time.Minutes = node["Minutes"].as<int>();
+  return time;
+}
+
+void Serialization::SerializeProjectTimeOfCreation(YAML::Emitter& out, Yeager::Scene* scene, const char* key)
+{
+  out << YAML::Flow;
+  out << YAML::Key << key << YAML::Value << YAML::BeginMap;
+
+  SerializeObject(out, "Year", scene->GetContext()->m_TimeOfCreation.Date.Year);
+  SerializeObject(out, "Month", scene->GetContext()->m_TimeOfCreation.Date.Month);
+  SerializeObject(out, "Day", scene->GetContext()->m_TimeOfCreation.Date.Day);
+
+  SerializeObject(out, "Hour", scene->GetContext()->m_TimeOfCreation.Time.Hours);
+  SerializeObject(out, "Minutes", scene->GetContext()->m_TimeOfCreation.Time.Minutes);
+
+  out << YAML::EndMap;
 }

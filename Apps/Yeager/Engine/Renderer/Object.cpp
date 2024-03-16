@@ -1,61 +1,118 @@
 #include "Object.h"
 #include "../../Application.h"
+#include "../Physics/PhysXActor.h"
 #include "Animation/AnimationEngine.h"
 #include "Importer.h"
 using namespace Yeager;
+using namespace physx;
 
-YgString Yeager::ObjectGeometryTypeToString(ObjectGeometryType type)
+void Yeager::SpawnCubeObject(Yeager::ApplicationCore* application, const String& name, const Vector3& position,
+                             const Vector3& rotation, const Vector3& scale, const ObjectPhysicsType::Enum physics)
+{
+  auto object = std::make_shared<Yeager::Object>(name, application);
+  object->SetCanBeSerialize(false);
+  object->GenerateGeometryTexture(application->monarch.get());
+  object->GenerateObjectGeometry(ObjectGeometryType::eCUBE, ObjectPhysXCreationStatic(position, rotation, scale));
+  application->GetScene()->GetObjects()->push_back(object);
+}
+
+String Yeager::ObjectGeometryTypeToString(ObjectGeometryType::Enum type)
 {
   switch (type) {
-    case ObjectGeometryType::ECube:
+    case ObjectGeometryType::eCUBE:
       return "Cube";
-    case ObjectGeometryType::ESphere:
+    case ObjectGeometryType::eSPHERE:
       return "Sphere";
-    case ObjectGeometryType::ETriangule:
+    case ObjectGeometryType::eTRIANGLE:
       return "Triangle";
-    case ObjectGeometryType::ECustom:
+    case ObjectGeometryType::eCUSTOM:
       return "Custom";
     default:
       return "ERROR_CANNOT_FIND_TYPE";
   }
 }
 
-ObjectGeometryType Yeager::StringToObjectGeometryType(const YgString& str)
+String ObjectInstancedType::EnumToString(ObjectInstancedType::Enum e)
 {
-  switch (StringToInteger(str.c_str())) {
-    case StringToInteger("Cube"):
-      return ObjectGeometryType::ECube;
-    case StringToInteger("Sphere"):
-      return ObjectGeometryType::ESphere;
-    case StringToInteger("Triangle"):
-      return ObjectGeometryType::ETriangule;
-    case StringToInteger("Custom"):
-      return ObjectGeometryType::ECustom;
+  switch (e) {
+    case ObjectInstancedType::eINSTANCED:
+      return "Instanced";
+    case ObjectInstancedType::eNON_INSTACED:
+      return "Non Instanced";
     default:
-      Yeager::Log(ERROR,
-                  "StringToObjectGeometryType error! Cannot find the type of the string given! Returning Custom!");
-      return ObjectGeometryType::ECustom;
+      return "NULL";
   }
 }
 
-Object::Object(YgString name, ApplicationCore* application)
-    : GameEntity(EntityObjectType::eOBJECT, application, name), m_Physics(this)
+ObjectGeometryType::Enum Yeager::StringToObjectGeometryType(const String& str)
 {
-  m_Toolbox = std::make_shared<ToolBoxObject>();
+  switch (StringToInteger(str.c_str())) {
+    case StringToInteger("Cube"):
+      return ObjectGeometryType::eCUBE;
+    case StringToInteger("Sphere"):
+      return ObjectGeometryType::eSPHERE;
+    case StringToInteger("Triangle"):
+      return ObjectGeometryType::eTRIANGLE;
+    case StringToInteger("Custom"):
+      return ObjectGeometryType::eCUSTOM;
+    default:
+      Yeager::Log(ERROR,
+                  "StringToObjectGeometryType error! Cannot find the type of the string given! Returning Custom!");
+      return ObjectGeometryType::eCUSTOM;
+  }
+}
+
+Object::Object(String name, ApplicationCore* application) : GameEntity(EntityObjectType::OBJECT, application, name)
+{
+  m_InstancedType = ObjectInstancedType::eNON_INSTACED;
+  m_Actor = new PhysXActor(m_Application, this);
+
   m_ThreadImporter = new ImporterThreaded("Object", m_Application);
+}
+
+Object::Object(String name, ApplicationCore* application, GLuint amount)
+    : GameEntity(EntityObjectType::OBJECT, application, name), m_InstancedObjs(amount)
+{
+  m_InstancedType = ObjectInstancedType::eINSTANCED;
+  m_Props.reserve(amount);
+  m_Actor = new PhysXActor(m_Application, this);
+
+  m_ThreadImporter = new ImporterThreaded("Object", m_Application);
+}
+
+void Object::BuildProps(const std::vector<Transformation*>& transformations, Shader* shader)
+{
+  if (transformations.size() > m_InstancedObjs)
+    Yeager::Log(WARNING,
+                "Trying to build instanced props with a std::vector bigger that the amount that was declared! {} ",
+                m_Name);
+  m_Props = transformations;
+  shader->UseShader();
+  /* The number of instances can differ from the actual number of props that exists*/
+  if (m_Props.size() == m_InstancedObjs) {
+    for (unsigned int x = 0; x < m_InstancedObjs; x++) {
+      Yeager::ApplyTransformation(m_Props.at(x));
+      shader->SetMat4("matrices[" + std::to_string(x) + "]", m_Props.at(x)->model);
+    }
+  }
 }
 
 Object::~Object()
 {
+  if (m_InstancedType == ObjectInstancedType::eINSTANCED) {
+    for (auto& trans : m_Props)
+      YEAGER_DELETE(trans);
+  }
+
   if (!m_ThreadImporter->IsThreadFinish()) {
     Yeager::Log(INFO, "Awaiting Object {} thread to finish", GetName());
     if (m_ThreadImporter->GetThreadPtr()->joinable()) {
       m_ThreadImporter->GetThreadPtr()->join();
     }
   }
-  delete m_ThreadImporter;
+  YEAGER_DELETE(m_ThreadImporter);
   if (m_ObjectDataLoaded) {
-    if (m_GeometryType == ObjectGeometryType::ECustom) {
+    if (m_GeometryType == ObjectGeometryType::eCUSTOM) {
       glDeleteVertexArrays(1, &m_GeometryData.m_Vao);
       glDeleteBuffers(1, &m_GeometryData.m_Vbo);
       glDeleteBuffers(1, &m_GeometryData.m_Ebo);
@@ -64,22 +121,16 @@ Object::~Object()
         DeleteMeshGLBuffers(&mesh);
       }
     }
-    m_Toolbox = YEAGER_NULLPTR;
+    YEAGER_DELETE(m_Actor);
     Yeager::Log(INFO, "Destroying object {}", m_Name);
   }
 }
 
 AnimatedObject::~AnimatedObject()
 {
-  if (m_Animation) {
-    delete m_Animation;
-  }
-
-  if (m_AnimationEngine) {
-    delete m_AnimationEngine;
-  }
-
-  delete m_ThreadImporter;
+  YEAGER_DELETE(m_Animation)
+  YEAGER_DELETE(m_AnimationEngine)
+  YEAGER_DELETE(m_ThreadImporter)
 }
 
 void Yeager::DeleteMeshGLBuffers(ObjectMeshData* mesh)
@@ -108,12 +159,12 @@ std::vector<GLfloat> Yeager::ExtractVerticesFromEveryMesh(ObjectModelData* model
   return vertices;
 }
 
-std::vector<YgVector3> Yeager::ExtractVerticesPositionToVector(ObjectModelData* model)
+std::vector<Vector3> Yeager::ExtractVerticesPositionToVector(ObjectModelData* model)
 {
-  std::vector<YgVector3> Positions;
+  std::vector<Vector3> Positions;
   for (const auto& mesh : model->Meshes) {
     for (const auto& vertex : mesh.Vertices) {
-      YgVector3 vec(vertex.Position.x, vertex.Position.y, vertex.Position.z);
+      Vector3 vec(vertex.Position.x, vertex.Position.y, vertex.Position.z);
       Positions.push_back(vec);
     }
   }
@@ -142,16 +193,16 @@ void Yeager::DrawSeparateMesh(ObjectMeshData* mesh, Yeager::Shader* shader)
 
   for (unsigned int x = 0; x < mesh->Textures.size(); x++) {
     glActiveTexture(GL_TEXTURE0 + x);
-    YgString number;
-    YgString name = mesh->Textures[x]->Name;
+    String number;
+    String name = mesh->Textures[x]->GetName();
     if (name == "texture_diffuse") {
       number = std::to_string(diffuseNum++);
     } else if (name == "texture_specular") {
       number = std::to_string(specularNum++);
     }
-    YgString mat = ("material." + name + number).c_str();
+    String mat = ("material." + name + number).c_str();
     shader->SetInt(mat, x);
-    glBindTexture(GL_TEXTURE_2D, mesh->Textures[x]->ID);
+    glBindTexture(GL_TEXTURE_2D, mesh->Textures[x]->GetTextureID());
   }
 
   glBindVertexArray(mesh->m_Vao);
@@ -169,15 +220,15 @@ void Yeager::DrawSeparateInstancedMesh(ObjectMeshData* mesh, Yeager::Shader* sha
 
   for (unsigned int x = 0; x < mesh->Textures.size(); x++) {
     glActiveTexture(GL_TEXTURE0 + x);
-    YgString number;
-    YgString name = mesh->Textures[x]->Name;
+    String number;
+    String name = mesh->Textures[x]->GetName();
     if (name == "texture_diffuse") {
       number = std::to_string(diffuseNum++);
     } else if (name == "texture_specular") {
       number = std::to_string(specularNum++);
     }
     shader->SetInt((name + number).c_str(), x);
-    glBindTexture(GL_TEXTURE_2D, mesh->Textures[x]->ID);
+    glBindTexture(GL_TEXTURE_2D, mesh->Textures[x]->GetTextureID());
   }
 
   glBindVertexArray(mesh->m_Vao);
@@ -189,17 +240,17 @@ void Yeager::DrawSeparateInstancedMesh(ObjectMeshData* mesh, Yeager::Shader* sha
   glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-bool Object::GenerateObjectGeometry(ObjectGeometryType geometry)
+bool Object::GenerateObjectGeometry(ObjectGeometryType::Enum geometry, const ObjectPhysXCreationBase& physics)
 {
   if (!m_ObjectDataLoaded) {
     /* Defines geometry and pull all the vertices and indices */
     m_GeometryType = geometry;
     switch (geometry) {
-      case ObjectGeometryType::ECube:
+      case ObjectGeometryType::eCUBE:
         m_GeometryData.Vertices = GenerateCubeVertices();
         m_GeometryData.Indices = GenerateCubeIndices();
         break;
-      case ObjectGeometryType::ESphere:
+      case ObjectGeometryType::eSPHERE:
         m_GeometryData.Vertices = GenerateSphereVertices(50, 50);
         m_GeometryData.Indices = GenerateSphereIndices(50, 50);
         break;
@@ -207,15 +258,14 @@ bool Object::GenerateObjectGeometry(ObjectGeometryType geometry)
         Yeager::Log(ERROR, "Cannot generate geometry, invalid type! model {}", m_Name);
         return false;
     }
-
+    m_PhysicsType = physics.Type;
+    physics.ApplyToObjectTransformation(&m_EntityTransformation);
+    m_Actor->BuildActor(physics);
     Setup();
     m_ObjectDataLoaded = true;
 
-#ifdef YEAGER_DEBUG
-    Yeager::Log(INFO, "Success in loading geometry {}", m_Name);
-#endif
+    Yeager::LogDebug(INFO, "Success in loading geometry {}", m_Name);
 
-    BuildToolbox(EExplorerTypeObject);
     return true;
 
   } else {
@@ -224,12 +274,13 @@ bool Object::GenerateObjectGeometry(ObjectGeometryType geometry)
   }
 }
 
-bool Object::ImportObjectFromFile(YgCchar path, bool flip_image)
+bool Object::ImportObjectFromFile(Cchar path, bool flip_image)
 {
-  m_Path = path;
+  Path = path;
 
   if (!m_ObjectDataLoaded) {
     Importer imp(m_Name, m_Application);
+
     m_ModelData = imp.Import(path, flip_image);
 
     if (!m_ModelData.SuccessfulLoaded) {
@@ -238,18 +289,16 @@ bool Object::ImportObjectFromFile(YgCchar path, bool flip_image)
       return false;
     }
 
-    m_GeometryType = ObjectGeometryType::ECustom;
+    m_GeometryType = ObjectGeometryType::eCUSTOM;
     m_ObjectDataLoaded = true;
+
     Setup();
-    BuildToolbox(EExplorerTypeObject);
 
     for (auto& tex : m_ModelData.TexturesLoaded) {
       m_EntityLoadedTextures.push_back(&tex->first);
     }
 
-#ifdef YEAGER_DEBUG
-    Yeager::Log(INFO, "Success in loading mode {} path {}", m_Name, path);
-#endif
+    Yeager::LogDebug(INFO, "Success in loading mode {} path {}", m_Name, path);
 
     return true;
 
@@ -259,9 +308,9 @@ bool Object::ImportObjectFromFile(YgCchar path, bool flip_image)
   }
 }
 
-bool Object::ThreadImportObjectFromFile(YgCchar path, bool flip_image)
+bool Object::ThreadImportObjectFromFile(Cchar path, bool flip_image)
 {
-  m_Path = path;
+  Path = path;
 
   if (!m_ObjectDataLoaded) {
     m_ThreadImporter->ThreadImport(path, flip_image);
@@ -276,11 +325,12 @@ bool Object::ThreadImportObjectFromFile(YgCchar path, bool flip_image)
   }
 }
 
-void Object::ThreadLoadIncompleteTetxtures()
+void Object::ThreadLoadIncompleteTextures()
 {
   for (auto& tex : m_ModelData.TexturesLoaded) {
-    if (tex->first.ImcompleteId) {
-      tex->first.ID = LoadTextureFromData(tex->second);
+    if (tex->first.GetTextureDataHandle()->ImcompletedID) {
+      tex->first.GenerateFromData(tex->second);
+      tex->first.GetTextureDataHandle()->ImcompletedID = false;
       if (tex->second != YEAGER_NULLPTR) {
         delete tex->second;
       }
@@ -300,25 +350,22 @@ void Object::ThreadSetup()
     return;
   }
 
-  ThreadLoadIncompleteTetxtures();
+  ThreadLoadIncompleteTextures();
 
-  m_GeometryType = ObjectGeometryType::ECustom;
+  m_GeometryType = ObjectGeometryType::eCUSTOM;
   m_ObjectDataLoaded = true;
   Setup();
-
-  BuildToolbox(EExplorerTypeObject);
 
   for (auto& tex : m_ModelData.TexturesLoaded) {
     m_EntityLoadedTextures.push_back(&tex->first);
   }
-#ifdef YEAGER_DEBUG
-  Yeager::Log(INFO, "Success in loading mode {}", m_Name);
-#endif
+
+  Yeager::LogDebug(INFO, "Success in loading mode {}", m_Name);
 }
 
-bool AnimatedObject::ThreadImportObjectFromFile(YgCchar path, bool flip_image)
+bool AnimatedObject::ThreadImportObjectFromFile(Cchar path, bool flip_image)
 {
-  m_Path = path;
+  Path = path;
 
   if (!m_ObjectDataLoaded) {
     m_ThreadImporter->ThreadImport(path, flip_image);
@@ -334,11 +381,11 @@ bool AnimatedObject::ThreadImportObjectFromFile(YgCchar path, bool flip_image)
   }
 }
 
-void AnimatedObject::ThreadLoadIncompleteTetxtures()
+void AnimatedObject::ThreadLoadIncompleteTextures()
 {
   for (auto& tex : m_ModelData.TexturesLoaded) {
-    if (tex->first.ImcompleteId) {
-      tex->first.ID = LoadTextureFromData(tex->second);
+    if (tex->first.GetTextureDataHandle()->ImcompletedID) {
+      tex->first.GenerateFromData(tex->second);
       if (tex->second != YEAGER_NULLPTR) {
         delete tex->second;
       }
@@ -357,33 +404,25 @@ void AnimatedObject::ThreadSetup()
     return;
   }
 
-  ThreadLoadIncompleteTetxtures();
+  ThreadLoadIncompleteTextures();
 
-  m_GeometryType = ObjectGeometryType::ECustom;
+  m_GeometryType = ObjectGeometryType::eCUSTOM;
   m_ObjectDataLoaded = true;
 
   Setup();
-  BuildToolbox(EExplorerTypeAnimatedObject);
 
   for (auto& tex : m_ModelData.TexturesLoaded) {
     m_EntityLoadedTextures.push_back(&tex->first);
   }
 
-  BuildAnimation(m_Path);
+  BuildAnimation(Path);
 
 #ifdef YEAGER_DEBUG
   Yeager::Log(INFO, "Success in loading mode {}", m_Name);
 #endif
 }
 
-void Object::BuildToolbox(ExplorerObjectType type)
-{
-  m_Toolbox->SetType(type);
-  m_Toolbox->SetEntity(this);
-  m_Application->GetScene()->GetToolboxs()->push_back(m_Toolbox);
-}
-
-void InstancedObject::DrawGeometry(Yeager::Shader* shader)
+void Object::DrawInstancedGeometry(Yeager::Shader* shader)
 {
   glBindVertexArray(m_GeometryData.m_Vao);
 
@@ -396,60 +435,49 @@ void InstancedObject::DrawGeometry(Yeager::Shader* shader)
 
 void Object::DrawGeometry(Yeager::Shader* shader)
 {
+  if (m_GeometryData.Texture) {
+    glActiveTexture(GL_TEXTURE0);
+    shader->SetInt("material.texture_diffuse1", 0);
+    glBindTexture(GL_TEXTURE_2D, m_GeometryData.Texture->GetTextureID());
+  }
+
   glBindVertexArray(m_GeometryData.m_Vao);
 
   glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(m_GeometryData.Indices.size()), GL_UNSIGNED_INT, 0);
 
   glBindVertexArray(0);
   glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, NULL);
 }
 
 void Object::DrawModel(Yeager::Shader* shader)
 {
   for (auto& mesh : m_ModelData.Meshes) {
-    DrawSeparateMesh(&mesh, shader);
-  }
-}
-
-void InstancedObject::DrawModel(Yeager::Shader* shader, int amount)
-{
-  for (auto& mesh : m_ModelData.Meshes) {
-    DrawSeparateInstancedMesh(&mesh, shader, amount);
-  }
-}
-
-void Object::Draw(Yeager::Shader* shader)
-{
-  if (m_ObjectDataLoaded && m_Render) {
-
-    shader->UseShader();
-
-    if (m_GeometryType == ObjectGeometryType::ECustom) {
-      DrawModel(shader);
+    if (m_InstancedType == ObjectInstancedType::eNON_INSTACED) {
+      DrawSeparateMesh(&mesh, shader);
     } else {
-      DrawGeometry(shader);
+      DrawSeparateInstancedMesh(&mesh, shader, m_InstancedObjs);
     }
   }
 }
 
-void InstancedObject::BuildProp(std::vector<Transformation>& positions, Shader* shader)
-{
-  m_Props = positions;
-  shader->UseShader();
-  for (unsigned int x = 0; x < positions.size(); x++) {
-    Yeager::ProcessTransformation(&positions.at(x));
-    shader->SetMat4("matrices[" + std::to_string(x) + "]", positions.at(x).model);
-  }
-}
-
-void InstancedObject::Draw(Yeager::Shader* shader, int amount)
+void Object::Draw(Yeager::Shader* shader, float delta)
 {
   if (m_ObjectDataLoaded && m_Render) {
+
     shader->UseShader();
-    if (m_GeometryType == ObjectGeometryType::ECustom) {
-      DrawModel(shader, m_InstancedObjs);
+    if (m_PhysicsType == ObjectPhysicsType::eDYNAMIC_BODY)
+      m_Actor->ProcessTransformation(delta);
+    ApplyTransformation(shader);
+
+    if (m_GeometryType == ObjectGeometryType::eCUSTOM) {
+      DrawModel(shader);
     } else {
-      DrawGeometry(shader);
+      if (m_InstancedType == ObjectInstancedType::eNON_INSTACED) {
+        DrawGeometry(shader);
+      } else {
+        DrawInstancedGeometry(shader);
+      }
     }
   }
 }
@@ -457,7 +485,7 @@ void InstancedObject::Draw(Yeager::Shader* shader, int amount)
 void Object::Setup()
 {
 
-  if (m_GeometryType == ObjectGeometryType::ECustom) {
+  if (m_GeometryType == ObjectGeometryType::eCUSTOM) {
 
     for (auto& mesh : m_ModelData.Meshes) {
       glGenVertexArrays(1, &mesh.m_Vao);
@@ -512,21 +540,33 @@ void Object::Setup()
   }
 }
 
-AnimatedObject::AnimatedObject(YgString name, ApplicationCore* application) : Object(name, application)
+void Object::GenerateGeometryTexture(MaterialTexture2D* texture)
 {
-  SetEntityType(EntityObjectType::eOBJECT_ANIMATED);
+  m_GeometryData.Texture = texture;
+}
+
+AnimatedObject::AnimatedObject(String name, ApplicationCore* application) : Object(name, application)
+{
+  SetEntityType(EntityObjectType::OBJECT_ANIMATED);
   m_ThreadImporter = new ImporterThreadedAnimated("ObjectAnimated", m_Application);
 }
 
-void AnimatedObject::BuildAnimation(YgString path)
+AnimatedObject::AnimatedObject(String name, ApplicationCore* application, GLuint amount)
+    : Object(name, application, amount)
+{
+  SetEntityType(EntityObjectType::OBJECT_ANIMATED);
+  m_ThreadImporter = new ImporterThreadedAnimated("ObjectAnimated", m_Application);
+}
+
+void AnimatedObject::BuildAnimation(String path)
 {
   m_Animation = new Animation(path, this);
   m_AnimationEngine = new AnimationEngine(m_Animation);
 }
 
-bool AnimatedObject::ImportObjectFromFile(YgCchar path, bool flip_image)
+bool AnimatedObject::ImportObjectFromFile(Cchar path, bool flip_image)
 {
-  m_Path = path;
+  Path = path;
 
   if (!m_ObjectDataLoaded) {
     Importer imp(m_Name, m_Application);
@@ -537,11 +577,10 @@ bool AnimatedObject::ImportObjectFromFile(YgCchar path, bool flip_image)
       m_ObjectDataLoaded = false;
       return false;
     }
-    m_GeometryType = ObjectGeometryType::ECustom;
+    m_GeometryType = ObjectGeometryType::eCUSTOM;
     m_ObjectDataLoaded = true;
 
     Setup();
-    BuildToolbox(EExplorerTypeAnimatedObject);
 
     for (auto& tex : m_ModelData.TexturesLoaded) {
       m_EntityLoadedTextures.push_back(&tex->first);
@@ -554,8 +593,10 @@ bool AnimatedObject::ImportObjectFromFile(YgCchar path, bool flip_image)
     return false;
   }
 }
+
 void AnimatedObject::Setup()
 {
+
   for (auto& mesh : m_ModelData.Meshes) {
     glGenVertexArrays(1, &mesh.m_Vao);
     glGenBuffers(1, &mesh.m_Vbo);
@@ -604,7 +645,8 @@ void AnimatedObject::Draw(Shader* shader)
 {
   if (m_ObjectDataLoaded && m_Render) {
     shader->UseShader();
-    ProcessTransformation(shader);
+    if (m_InstancedType == ObjectInstancedType::eNON_INSTACED)
+      ApplyTransformation(shader);
     DrawMeshes(shader);
   }
 }
@@ -619,8 +661,8 @@ void AnimatedObject::DrawMeshes(Shader* shader)
 
     for (unsigned int x = 0; x < mesh.Textures.size(); x++) {
       glActiveTexture(GL_TEXTURE0 + x);
-      YgString number;
-      YgString name = mesh.Textures[x]->Name;
+      String number;
+      String name = mesh.Textures[x]->GetName();
       if (name == "texture_diffuse") {
         number = std::to_string(diffuseNum++);
       } else if (name == "texture_specular") {
@@ -631,11 +673,16 @@ void AnimatedObject::DrawMeshes(Shader* shader)
         number = std::to_string(heightNum++);
       }
       shader->SetInt(("material." + name + number).c_str(), x);
-      glBindTexture(GL_TEXTURE_2D, mesh.Textures[x]->ID);
+      glBindTexture(GL_TEXTURE_2D, mesh.Textures[x]->GetTextureID());
     }
 
     glBindVertexArray(mesh.m_Vao);
-    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh.Indices.size()), GL_UNSIGNED_INT, YEAGER_NULLPTR);
+    if (m_InstancedType == ObjectInstancedType::eNON_INSTACED) {
+      glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh.Indices.size()), GL_UNSIGNED_INT, YEAGER_NULLPTR);
+    } else {
+      glDrawElementsInstanced(GL_TRIANGLES, static_cast<GLsizei>(mesh.Indices.size()), GL_UNSIGNED_INT, YEAGER_NULLPTR,
+                              m_InstancedObjs);
+    }
 
     glBindVertexArray(0);
     glActiveTexture(GL_TEXTURE0);
@@ -743,59 +790,4 @@ std::vector<GLuint> Yeager::GenerateSphereIndices(int stackCount, int sectorCoun
     }
   }
   return indices;
-}
-
-void Yeager::InstancedAnimatedObject::Draw(Yeager::Shader* shader)
-{
-  if (m_ObjectDataLoaded && m_Render) {
-    shader->UseShader();
-    DrawAnimatedMeshes(shader);
-  }
-}
-
-void Yeager::InstancedAnimatedObject::BuildProp(std::vector<Transformation>& positions, Shader* shader)
-{
-  m_Props = positions;
-  shader->UseShader();
-
-  for (unsigned int x = 0; x < m_InstancedObjs; x++) {
-    Yeager::ProcessTransformation(&positions.at(x));
-    shader->SetMat4("matrices[" + std::to_string(x) + "]", positions.at(x).model);
-  }
-}
-
-void Yeager::InstancedAnimatedObject::DrawAnimatedMeshes(Shader* shader)
-{
-  for (auto& mesh : m_ModelData.Meshes) {
-    unsigned int diffuseNum = 1;
-    unsigned int specularNum = 1;
-    unsigned int normalNum = 1;
-    unsigned int heightNum = 1;
-
-    for (unsigned int x = 0; x < mesh.Textures.size(); x++) {
-      glActiveTexture(GL_TEXTURE0 + x);
-      YgString number;
-      YgString name = mesh.Textures[x]->Name;
-      if (name == "texture_diffuse") {
-        number = std::to_string(diffuseNum++);
-      } else if (name == "texture_specular") {
-        number = std::to_string(specularNum++);
-      } else if (name == "texture_normal") {
-        number = std::to_string(normalNum++);
-      } else if (name == "texture_height") {
-        number = std::to_string(heightNum++);
-      }
-      YgString mat = ("material." + name + number).c_str();
-      shader->SetInt(mat, x);
-      glBindTexture(GL_TEXTURE_2D, mesh.Textures[x]->ID);
-    }
-
-    glBindVertexArray(mesh.m_Vao);
-    glDrawElementsInstanced(GL_TRIANGLES, static_cast<GLsizei>(mesh.Indices.size()), GL_UNSIGNED_INT, YEAGER_NULLPTR,
-                            m_InstancedObjs);
-
-    glBindVertexArray(0);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-  }
 }

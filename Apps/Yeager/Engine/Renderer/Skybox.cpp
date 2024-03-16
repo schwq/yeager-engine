@@ -1,31 +1,32 @@
+
 #include "Skybox.h"
 
 #include "Object.h"
 #include "TextureHandle.h"
 using namespace Yeager;
 
-Skybox::Skybox(YgString name, ObjectGeometryType type, ApplicationCore* application, bool flip_image)
-    : Entity(EntityObjectType::eSKYBOX, application, name), m_Geometry(type)
+Skybox::Skybox(String name, ObjectGeometryType::Enum type, ApplicationCore* application)
+    : EditorEntity(EntityObjectType::SKYBOX, application, name), m_Geometry(type)
 {
   Yeager::Log(INFO, "Loading skybox {}", name);
-  m_ImageFlip = flip_image;
-  m_Toolbox = std::make_shared<ToolBoxObject>();
+  m_Texture = std::make_shared<MaterialTexture2D>(application, name, MaterialTextureType::eDIFFUSE);
 }
 
-bool Skybox::BuildSkyboxFromImport(YgString path)
+bool Skybox::BuildSkyboxFromImport(String path, bool flip)
 {
   if (!m_SkyboxDataLoaded) {
-    m_Path = path;
+    Path = path;
 
     Importer imp("Skybox", m_Application);
-    m_Model = imp.Import(path.c_str(), m_ImageFlip);
+    m_Model = imp.Import(path.c_str(), flip);
 
     if (!m_Model.SuccessfulLoaded) {
       Yeager::Log(ERROR, "Cannot load model to skybox!");
       return false;
     }
-    m_ID = m_Model.TexturesLoaded[0]->first.ID;
-    m_Geometry = ObjectGeometryType::ECustom;
+
+    m_Texture->GetTextureDataHandle()->Texture = m_Model.TexturesLoaded[0]->first.GetTextureID();
+    m_Geometry = ObjectGeometryType::eCUSTOM;
     m_Type = SkyboxTextureType::ESampler2D;
     m_SkyboxDataLoaded = true;
     SetupModel();
@@ -40,7 +41,7 @@ bool Skybox::BuildSkyboxFromImport(YgString path)
 void Skybox::GenerateGeometry()
 {
   switch (m_Geometry) {
-    case ObjectGeometryType::ECube:
+    case ObjectGeometryType::eCUBE:
       m_Data.Vertices = Yeager::GenerateCubeVertices();
       m_VerticesIndex = m_Data.Vertices.size() / 3;
       break;
@@ -55,29 +56,29 @@ void Skybox::GenerateCubemapGeometry()
   m_VerticesIndex = m_Data.Vertices.size() / 3;
 }
 
-bool Skybox::BuildSkyboxFromCubemap(YgString directory, Yeager::ImageExtension ext)
+bool Skybox::BuildSkyboxFromCubemap(String directory, Yeager::ImageExtension ext, bool flip)
 {
   if (!m_SkyboxDataLoaded) {
     if (NumberOfFilesInDir(directory) == 6) {
-      std::vector<YgString> paths = {
+      std::vector<String> paths = {
           (directory + "right" + ImageExtensionToString(ext)), (directory + "left" + ImageExtensionToString(ext)),
           (directory + "top" + ImageExtensionToString(ext)),   (directory + "bottom" + ImageExtensionToString(ext)),
 
           (directory + "front" + ImageExtensionToString(ext)), (directory + "back" + ImageExtensionToString(ext))};
-      m_ID = LoadTextureCubeMap(paths, m_ImageFlip);
+      m_Texture->GenerateCubeMapFromFile(paths, flip);
       m_SkyboxDataLoaded = true;
       m_Type = SkyboxTextureType::ESamplerCube;
       GenerateCubemapGeometry();
       Setup();
       return true;
     } else if (NumberOfFilesInDir(directory) == 1) {
-      std::vector<YgString> paths;
+      std::vector<String> paths;
       for (unsigned int x = 0; x < 6; x++) {
         for (const auto& path : std::filesystem::directory_iterator(directory)) {
           paths.push_back(path.path().string());
         }
       }
-      m_ID = LoadTextureCubeMap(paths, m_ImageFlip);
+      m_Texture->GenerateCubeMapFromFile(paths, flip);
       m_SkyboxDataLoaded = true;
       m_Type = SkyboxTextureType::ESamplerCube;
       GenerateCubemapGeometry();
@@ -95,11 +96,10 @@ bool Skybox::BuildSkyboxFromCubemap(YgString directory, Yeager::ImageExtension e
   }
 }
 
-bool Skybox::BuildSkyboxFrom2DTexture(YgString path)
+bool Skybox::BuildSkyboxFrom2DTexture(String path, bool flip)
 {
   if (!m_SkyboxDataLoaded) {
-    ObjectTexture tex;
-    m_ID = LoadTextureFromFile(path, m_ImageFlip);
+    m_Texture->GenerateFromFile(path, flip);
     m_SkyboxDataLoaded = true;
     m_Type = SkyboxTextureType::ESampler2D;
     GenerateGeometry();
@@ -113,10 +113,8 @@ bool Skybox::BuildSkyboxFrom2DTexture(YgString path)
 
 void Skybox::SetupModel()
 {
+
   for (auto& mesh : m_Model.Meshes) {
-    m_Toolbox->SetType(EExplorerTypeSkybox);
-    m_Toolbox->SetEntity(this);
-    m_Application->GetScene()->GetToolboxs()->push_back(m_Toolbox);
 
     glGenVertexArrays(1, &mesh.m_Vao);
     glGenBuffers(1, &mesh.m_Vbo);
@@ -147,9 +145,6 @@ void Skybox::SetupModel()
 
 void Skybox::Setup()
 {
-  m_Toolbox->SetType(EExplorerTypeSkybox);
-  m_Toolbox->SetEntity(this);
-  m_Application->GetScene()->GetToolboxs()->push_back(m_Toolbox);
 
   glGenVertexArrays(1, &m_Vao);
   glGenBuffers(1, &m_Vbo);
@@ -182,7 +177,7 @@ Skybox::~Skybox()
   }
 }
 
-void Skybox::Draw(Yeager::Shader* shader, YgMatrix4 view, YgMatrix4 projection)
+void Skybox::Draw(Yeager::Shader* shader, Matrix4 view, Matrix4 projection)
 {
   if (m_SkyboxDataLoaded && m_Render) {
     glDepthFunc(GL_LEQUAL);
@@ -191,8 +186,9 @@ void Skybox::Draw(Yeager::Shader* shader, YgMatrix4 view, YgMatrix4 projection)
     shader->SetMat4("projection", projection);
     glBindVertexArray(m_Vao);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(m_Type == SkyboxTextureType::ESampler2D ? GL_TEXTURE_2D : GL_TEXTURE_CUBE_MAP, m_ID);
-    if (m_Geometry != ObjectGeometryType::ECustom) {
+    glBindTexture(m_Type == SkyboxTextureType::ESampler2D ? GL_TEXTURE_2D : GL_TEXTURE_CUBE_MAP,
+                  m_Texture->GetTextureID());
+    if (m_Geometry != ObjectGeometryType::eCUSTOM) {
       glDrawArrays(GL_TRIANGLES, 0, m_VerticesIndex);
     } else {
       for (auto& mesh : m_Model.Meshes) {
