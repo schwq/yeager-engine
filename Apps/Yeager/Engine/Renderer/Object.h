@@ -24,7 +24,6 @@
 #include "../Editor/ToolboxObj.h"
 #include "../Physics/PhysXActor.h"
 #include "../Physics/PhysXHandle.h"
-#include "../Physics/PhysicsHandle.h"
 #include "Animation/Bone.h"
 #include "Entity.h"
 
@@ -120,9 +119,18 @@ struct ObjectGeometryType {
   enum Enum { eCUBE, eTRIANGLE, eSPHERE, eCUSTOM };
 };
 
+struct RenderingGLPolygonMode {
+  enum Enum { eFILL, ePOINTS, eLINES };
+};
+
 struct ObjectInstancedType {
   enum Enum { eINSTANCED, eNON_INSTACED };
   static String EnumToString(ObjectInstancedType::Enum e);
+};
+
+struct ObjectOnScreenProprieties {
+  bool m_CullingEnabled = true;
+  RenderingGLPolygonMode::Enum m_PolygonMode = RenderingGLPolygonMode::eFILL;
 };
 
 extern String ObjectGeometryTypeToString(ObjectGeometryType::Enum type);
@@ -141,6 +149,10 @@ extern std::vector<Vector3> ExtractVerticesPositionToVector(ObjectModelData* mod
 extern void SpawnCubeObject(Yeager::ApplicationCore* application, const String& name, const Vector3& position,
                             const Vector3& rotation, const Vector3& scale,
                             const ObjectPhysicsType::Enum physics = ObjectPhysicsType::eUNDEFINED);
+
+extern void SpawnSphereObject(Yeager::ApplicationCore* application, const String& name, const Vector3& position,
+                              const Vector3& rotation, const Vector3& scale,
+                              const ObjectPhysicsType::Enum physics = ObjectPhysicsType::eUNDEFINED);
 
 class Object : public GameEntity {
  public:
@@ -190,6 +202,9 @@ class Object : public GameEntity {
   YEAGER_FORCE_INLINE bool IsInstanced() const { return (m_InstancedType == ObjectInstancedType::eINSTANCED); }
   YEAGER_FORCE_INLINE ObjectInstancedType::Enum GetInstancedType() { return m_InstancedType; }
 
+  YEAGER_FORCE_INLINE ObjectOnScreenProprieties* GetOnScreenProprieties() { return &m_OnScreenProprieties; }
+  YEAGER_FORCE_INLINE void SetCullingEnabled(bool cull) { m_ObjectDataLoaded = cull; }
+
  protected:
   virtual void Setup();
   virtual void DrawGeometry(Yeager::Shader* shader);
@@ -200,6 +215,11 @@ class Object : public GameEntity {
 
   String Path;
   bool m_ObjectDataLoaded = false;
+
+  ObjectOnScreenProprieties m_OnScreenProprieties;
+  virtual void ProcessOnScreenProprieties();     // Before calling the drawing openGL
+  virtual void PosProcessOnScreenProprieties();  // After calling the drawing openGL to sets everything to the default
+
   ObjectModelData m_ModelData;
   ObjectGeometryData m_GeometryData;
   ObjectGeometryType::Enum m_GeometryType;
@@ -222,6 +242,8 @@ class AnimatedObject : public Object {
   virtual void ThreadSetup();
   AnimatedObjectModelData* GetModelData() { return &m_ModelData; }
 
+  AnimationEngine* GetAnimationEngine() { return m_AnimationEngine; }
+
   void UpdateAnimation(float delta);
   void BuildAnimationMatrices(Shader* shader);
   void BuildAnimation(String path);
@@ -231,7 +253,6 @@ class AnimatedObject : public Object {
   void Setup();
   void DrawMeshes(Shader* shader);
   AnimatedObjectModelData m_ModelData;
-  Animation* m_Animation = YEAGER_NULLPTR;
   AnimationEngine* m_AnimationEngine = YEAGER_NULLPTR;
   ImporterThreadedAnimated* m_ThreadImporter = YEAGER_NULLPTR;
 };

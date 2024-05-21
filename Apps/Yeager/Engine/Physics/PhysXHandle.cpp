@@ -164,8 +164,8 @@ void PhysXHandle::TerminateEngine()
 
   PX_RELEASE(m_PxFoundation);
 
-  delete m_PhysXGeometryHandle;
-  delete m_CharacterController;
+  YEAGER_DELETE(m_PhysXGeometryHandle);
+  //YEAGER_DELETE(m_CharacterController);
   Yeager::Log(INFO, "PhysX Engine terminated!");
 }
 

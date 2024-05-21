@@ -28,17 +28,28 @@
 namespace Yeager {
 class AnimationEngine {
  public:
-  AnimationEngine(Animation* animation);
+  AnimationEngine();
+
+  void Initialize();
+  void LoadAnimationsFromFile(const String& path, AnimatedObject* model);
 
   void UpdateAnimation(float dt);
   void PlayAnimation(Animation* animation);
+  void PlayAnimation(Uint index);
   void CalculateBoneTransform(const AssimpNodeData* node, Matrix4 parentTrans);
   std::vector<Matrix4> GetFinalBoneMatrices() const { return m_FinalBoneMatrices; }
+  std::vector<Animation>* GetAnimations() { &m_Animations; }
+
+  bool IsAnimationsLoaded() const { return m_AnimationsLoaded; }
+  bool IsPlayingAnimation() const { return m_PlayingAnimation; }
 
  protected:
+  std::vector<Animation> m_Animations;
   std::vector<Matrix4> m_FinalBoneMatrices;
-  Animation* m_CurrentAnimation;
+  Animation* m_CurrentAnimation = YEAGER_NULLPTR;
   float m_CurrentTime;
   float m_DeltaTime;
+  bool m_PlayingAnimation = false;
+  bool m_AnimationsLoaded = false;
 };
 }  // namespace Yeager

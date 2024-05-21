@@ -4,8 +4,9 @@
 #include "Engine/Editor/Camera.h"
 using namespace Yeager;
 
-std::vector<KeyMap> Yeager::KeyMapping = {KeyMap(GLFW_MOUSE_BUTTON_1), KeyMap(GLFW_MOUSE_BUTTON_2), KeyMap(GLFW_KEY_E),
-                                          KeyMap(GLFW_KEY_LEFT_CONTROL)};
+std::vector<KeyMap> Yeager::KeyMapping = {KeyMap(GLFW_MOUSE_BUTTON_1), KeyMap(GLFW_MOUSE_BUTTON_2),
+                                          KeyMap(GLFW_KEY_E),          KeyMap(GLFW_KEY_LEFT_CONTROL),
+                                          KeyMap(GLFW_KEY_P),          KeyMap(GLFW_KEY_R)};
 KeyMap* Yeager::FindKeyMap(uint8_t key)
 {
   for (auto& keymap : KeyMapping) {
@@ -22,9 +23,12 @@ float Input::m_LastMouseHeight = ygWindowHeight / 2.0f;
 bool Input::m_FirstMouse = true;
 CameraCursorLastState Input::m_LastState;
 bool Input::m_CursorShouldAppear = true;
-
+bool Input::m_SilentInputHandling = false;
 void Input::KeyboardKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+  if (m_SilentInputHandling)
+    return;
+
   if (m_Application->GetMode() == YgApplicationMode::eAPPLICATION_EDITOR) {
     switch (key) {
       case GLFW_KEY_E:
@@ -39,6 +43,29 @@ void Input::KeyboardKeyCallback(GLFWwindow* window, int key, int scancode, int a
           }
         }
         break;
+      case GLFW_KEY_P:
+        if (FindKeyMap(GLFW_KEY_P)->AddStateAwaitAction(action) && YEAGER_ALT_SHIFT(mods)) {
+          Yeager::Interface* inter = m_Application->GetInterface();
+          if (!inter->GetDebugControlWindowOpen()) {  // If already open, close it, if its closed, it open it
+            inter->SetDebugControlWindowOpen(true);   // Debug control window open
+          } else {
+            inter->SetDebugControlWindowOpen(false);
+          }
+        }
+        break;
+      case GLFW_KEY_R:
+        if (FindKeyMap(GLFW_KEY_R)->AddStateAwaitAction(action) &&
+            YEAGER_ALT_SHIFT(mods)) {  // Quick Troubleshoot the engine
+          Yeager::BaseCamera* camera = m_Application->GetCamera();
+          camera->SetShouldMove(false);  // release the camera
+          SetCursorAppear(true);         // release the cursor
+        }
+        break;
+      case GLFW_KEY_S:
+        if (FindKeyMap(GLFW_KEY_S)->AddStateAwaitAction(action) && mods & GLFW_MOD_CONTROL) {
+          m_Application->GetScene()->Save();  // Ctrl + S saves the scene
+          Yeager::LogDebug(INFO, "Scene saved!");
+        }
     }
   }
 }
@@ -47,24 +74,6 @@ void Input::MouseKeyCallback(GLFWwindow* window, int button, int action, int mod
 {
   if (m_Application->GetMode() == YgApplicationMode::eAPPLICATION_EDITOR) {
     switch (button) {
-      case GLFW_MOUSE_BUTTON_1:
-        if (FindKeyMap(GLFW_MOUSE_BUTTON_1)->AddStateAwaitAction(action)) {
-
-          auto object = std::make_shared<Yeager::Object>("test", m_Application);
-          Transformation trans;
-          trans.position =
-              m_Application->GetCamera()->GetPosition() + glm::normalize(m_Application->GetCamera()->GetDirection());
-          trans.scale = Vector3(0.1f);
-          object->SetTransformation(trans);
-          object->GenerateGeometryTexture(m_Application->material.get());
-          object->GenerateObjectGeometry(ObjectGeometryType::eSPHERE,
-                                         ObjectPhysXCreationDynamic(m_Application->GetCamera()->GetPosition() +
-                                                                        m_Application->GetCamera()->GetDirection(),
-                                                                    Vector3(0.0f), Vector3(0.1f)));
-          object->SetCanBeSerialize(false);
-          m_Application->GetScene()->GetObjects()->push_back(object);
-        }
-        break;
       case GLFW_MOUSE_BUTTON_2:
         if (FindKeyMap(GLFW_MOUSE_BUTTON_2)->AddStateAwaitAction(action)) {}
         break;
@@ -78,7 +87,7 @@ Input::~Input()
   Yeager::Log(INFO, "Destrorying InputHandle!");
 }
 
-unsigned int Input::m_FramesCount = 0;
+Uint Input::m_FramesCount = 0;
 Input::Input(Yeager::ApplicationCore* app)
 {
   m_Application = app;
@@ -117,10 +126,12 @@ void Input::SetCameraCursorToWindowState(bool state)
 {
   if (state) {
     m_CursorCanDisappear = false;
+    m_SilentInputHandling = true;
     SetCursorAppear(true);
     m_Application->GetCamera()->SetShouldMove(false);
   } else {
     m_CursorCanDisappear = true;
+    m_SilentInputHandling = false;
     SetCursorAppear(true);
     m_Application->GetCamera()->SetShouldMove(false);
   }
@@ -135,6 +146,7 @@ void Input::ProcessInputRender(Window* window, float delta)
 {
   m_FramesCount++;
   Yeager::Interface* intr = m_Application->GetInterface();
+  Yeager::BaseCamera* camera = m_Application->GetCamera();
   if (glfwGetKey(window->getWindow(), GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 
     if (!intr->GetExitProgramWindowOpen()) {
@@ -145,19 +157,18 @@ void Input::ProcessInputRender(Window* window, float delta)
     glfwSetWindowShouldClose(window->getWindow(), true);
   }
 
-  if (m_Application->GetMode() == YgApplicationMode::eAPPLICATION_EDITOR &&
-      m_Application->GetCamera()->GetShouldMove()) {
+  if (m_Application->GetMode() == YgApplicationMode::eAPPLICATION_EDITOR && camera->GetShouldMove()) {
     if (GetKeyPressed(GLFW_KEY_W)) {
-      m_Application->GetCamera()->UpdatePosition(YgCameraPosition::eCAMERA_FORWARD, delta);
+      camera->UpdatePosition(YgCameraPosition::eCAMERA_FORWARD, delta);
     }
     if (GetKeyPressed(GLFW_KEY_D)) {
-      m_Application->GetCamera()->UpdatePosition(YgCameraPosition::eCAMERA_RIGHT, delta);
+      camera->UpdatePosition(YgCameraPosition::eCAMERA_RIGHT, delta);
     }
     if (GetKeyPressed(GLFW_KEY_A)) {
-      m_Application->GetCamera()->UpdatePosition(YgCameraPosition::eCAMERA_LEFT, delta);
+      camera->UpdatePosition(YgCameraPosition::eCAMERA_LEFT, delta);
     }
     if (GetKeyPressed(GLFW_KEY_S)) {
-      m_Application->GetCamera()->UpdatePosition(YgCameraPosition::eCAMERA_BACKWARD, delta);
+      camera->UpdatePosition(YgCameraPosition::eCAMERA_BACKWARD, delta);
     }
   }
   if (m_Application->GetMode() == YgApplicationMode::eAPPLICATION_EDITOR) {

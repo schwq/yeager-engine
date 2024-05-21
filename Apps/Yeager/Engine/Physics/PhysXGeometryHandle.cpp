@@ -196,17 +196,17 @@ void PhysXGeometryHandle::RenderGeometryInformation(physx::PxRigidActor* actor, 
   switch (geom.getType()) {
     case PxGeometryType::eBOX:
       ImGui::Text("Box Geometry");
-      ImGui::Text("Extents x: %u y: %u z: %u", geom.box().halfExtents.x, geom.box().halfExtents.y,
+      ImGui::Text("Extents x: %f y: %f z: %f", geom.box().halfExtents.x, geom.box().halfExtents.y,
                   geom.box().halfExtents.z);
       break;
     case PxGeometryType::eCAPSULE:
       ImGui::Text("Capsule Geometry");
-      ImGui::Text("Half Height %u", geom.capsule().halfHeight);
-      ImGui::Text("Radius %u", geom.capsule().radius);
+      ImGui::Text("Half Height %f", geom.capsule().halfHeight);
+      ImGui::Text("Radius %f", geom.capsule().radius);
       break;
     case PxGeometryType::eSPHERE:
       ImGui::Text("Sphere Geometry");
-      ImGui::Text("Radius %u", geom.sphere().radius);
+      ImGui::Text("Radius %f", geom.sphere().radius);
       break;
     case PxGeometryType::ePLANE:
       ImGui::Text("Plane Geometry");

@@ -11,8 +11,8 @@ PerlinNoise::PerlinNoise(int width, int lenght)
   RegenerateSeed();
 }
 
-void PerlinNoise::GeneratePerlin(Array2D<float>* arr, int octaves, int bias, int width, int height, float max_height,
-                                 bool regenerate_seed)
+void PerlinNoise::GeneratePerlin(Yeager::Math::Array2D<float>* arr, int octaves, int bias, int width, int height,
+                                 float max_height, bool regenerate_seed)
 {
   if (regenerate_seed) {
     RegenerateSeed();

@@ -20,7 +20,6 @@
 
 #include "../../Common/Common.h"
 #include "../Media/AudioHandle.h"
-#include "../Physics/PhysicsHandle.h"
 #include "../Renderer/Entity.h"
 #include "../Renderer/TextureHandle.h"
 
@@ -88,9 +87,14 @@ class ToolboxHandle {
   bool m_SelectedToolbox = false;
   bool m_ScheduleDeletion = false;
   bool m_IsSeen = false;
+  bool m_RenameWindowOpen = false;
+  bool m_FlipEveryTexture = false;
+  String m_NewName = YEAGER_NULL_LITERAL;
 
   void DrawToolboxObjectType();
   void DrawToolboxObjectAnimated();
+  void DrawToolboxObjectPlayable();
+  void DrawToolboxObjectAnimatedPlayable();
   void DrawToolboxAudio();
   void DrawToolboxAudio3D();
   void DrawToolboxSkybox();

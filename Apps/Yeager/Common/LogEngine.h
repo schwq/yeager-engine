@@ -72,16 +72,21 @@ void Log(int verbosity, fmt::format_string<T...> fmt, T&&... args)
   console_message.verbosity = verbosity;
   console_message.message = log;
   console_message.type = MessageTypeVerbosity::VerbosityToEnum(verbosity);
-  gGlobalConsole.SetLogString(console_message);
 
   String terminal_prefix;
+  String console_verbose;
   if (verbosity == INFO) {
     terminal_prefix = "(-) ";
+    console_verbose = "[INFO] ";
   } else if (verbosity == WARNING) {
     terminal_prefix = "(??) ";
+    console_verbose = "[WARN] ";
   } else {
     terminal_prefix = "(!!) ";
+    console_verbose = "[ERROR] ";
   }
+  console_message.message = String(console_verbose + console_message.message);
+  gGlobalConsole.SetLogString(console_message);
 
   YgTime_t time = CurrentTimeToTimeType();
   String time_str = "[ " + std::to_string(time.Time.Hours) + ":" + std::to_string(time.Time.Minutes) + ":" +
@@ -101,16 +106,21 @@ void LogDebug(int verbosity, fmt::format_string<T...> fmt, T&&... args)
   console_message.verbosity = verbosity;
   console_message.message = log;
   console_message.type = MessageTypeVerbosity::VerbosityToEnum(verbosity);
-  gGlobalConsole.SetLogString(console_message);
 
   String terminal_prefix;
+  String console_verbose;
   if (verbosity == INFO) {
     terminal_prefix = "(-) ";
+    console_verbose = "[INFO] ";
   } else if (verbosity == WARNING) {
     terminal_prefix = "(??) ";
+    console_verbose = "[WARN] ";
   } else {
     terminal_prefix = "(!!) ";
+    console_verbose = "[ERROR] ";
   }
+  console_message.message = String(console_verbose + console_message.message);
+  gGlobalConsole.SetLogString(console_message);
 
   YgTime_t time = CurrentTimeToTimeType();
   String time_str = "[ " + std::to_string(time.Time.Hours) + ":" + std::to_string(time.Time.Minutes) + ":" +

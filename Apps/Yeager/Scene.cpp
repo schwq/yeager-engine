@@ -114,9 +114,10 @@ void Scene::VerifyAssetsSubFolders()
 
 std::vector<std::pair<String, String>> Scene::VerifyImportedModelsOptionsInAssetsFolder()
 {
-  String assetsFolder = m_Context.m_ProjectFolderPath + YG_PS + "Assets";
+  String assetsFolder = m_Context.m_ProjectFolderPath + "Assets";
   std::vector<std::pair<String, String>> models;
-  if (!Yeager::ValidatesPath(assetsFolder + YG_PS + "ImportedModels", false)) {
+  const String importedModelPath = String(assetsFolder + YG_PS + "ImportedModels");
+  if (!Yeager::ValidatesPath(importedModelPath)) {
     Yeager::Log(WARNING, "Assets sub folder ImportedModels doesnt not exist, options and help wont be avaliable!");
     return models;
   }
@@ -193,14 +194,13 @@ void Scene::CheckDuplicatesLightSources()
       indexMinus--;
     }
   }
-#ifdef YEAGER_DEBUG
-  Yeager::Log(INFO, "Removed {} Duplicates Light Sources", pos.size());
-#endif
+
+  Yeager::LogDebug(INFO, "Removed {} Duplicates Light Sources", pos.size());
 }
 
 void Scene::CheckScheduleDeletions()
 {
-  for (YEAGER_UINT x = 0; x < m_Objects.size(); x++) {
+  for (Uint x = 0; x < m_Objects.size(); x++) {
     Yeager::Object* obj = m_Objects.at(x).get();
     if (obj->GetScheduleDeletion()) {
       obj->GetToolbox()->SetScheduleDeletion(true);
@@ -208,7 +208,7 @@ void Scene::CheckScheduleDeletions()
     }
   }
 
-  for (YEAGER_UINT x = 0; x < m_AnimatedObject.size(); x++) {
+  for (Uint x = 0; x < m_AnimatedObject.size(); x++) {
     Yeager::AnimatedObject* obj = m_AnimatedObject.at(x).get();
     if (obj->GetScheduleDeletion()) {
       obj->GetToolbox()->SetScheduleDeletion(true);
@@ -218,7 +218,7 @@ void Scene::CheckScheduleDeletions()
 
   CheckToolboxesScheduleDeletions();
 
-  for (YEAGER_UINT x = 0; x < m_LightSources.size(); x++) {
+  for (Uint x = 0; x < m_LightSources.size(); x++) {
     Yeager::PhysicalLightHandle* light = m_LightSources.at(x).get();
     if (light->GetScheduleDeletion()) {
       m_LightSources.erase(m_LightSources.begin() + x);
@@ -228,7 +228,7 @@ void Scene::CheckScheduleDeletions()
 
 void Scene::CheckToolboxesScheduleDeletions()
 {
-  for (YEAGER_UINT x = 0; x < m_Toolboxes.size(); x++) {
+  for (Uint x = 0; x < m_Toolboxes.size(); x++) {
     Yeager::ToolboxHandle* obj = m_Toolboxes.at(x).get();
     if (obj->GetScheduleDeletion()) {
       CheckToolboxIsSelectedAndDisable(obj);
@@ -283,7 +283,7 @@ std::vector<std::pair<ImporterThreadedAnimated*, Yeager::AnimatedObject*>>* Scen
 void Scene::CheckAndAwaitThreadsToFinish()
 {
   Yeager::Log(INFO, "Awaiting threads to finish before closing the program");
-  for (unsigned int x = 0; x < m_ThreadImporters.size(); x++) {
+  for (Uint x = 0; x < m_ThreadImporters.size(); x++) {
     std::pair<ImporterThreaded*, Yeager::Object*>* obj = &m_ThreadImporters.at(x);
     if (obj->first->IsThreadFinish()) {
       m_ThreadImporters.erase(m_ThreadImporters.begin() + x);
@@ -293,7 +293,7 @@ void Scene::CheckAndAwaitThreadsToFinish()
     }
   }
 
-  for (unsigned int x = 0; x < m_ThreadAnimatedImporters.size(); x++) {
+  for (Uint x = 0; x < m_ThreadAnimatedImporters.size(); x++) {
     std::pair<ImporterThreadedAnimated*, Yeager::AnimatedObject*>* obj = &m_ThreadAnimatedImporters.at(x);
     if (obj->first->IsThreadFinish()) {
       m_ThreadAnimatedImporters.erase(m_ThreadAnimatedImporters.begin() + x);
@@ -307,7 +307,7 @@ void Scene::CheckAndAwaitThreadsToFinish()
 void Scene::CheckThreadsAndTriggerActions()
 {
   try {
-    for (unsigned int x = 0; x < m_ThreadImporters.size(); x++) {
+    for (Uint x = 0; x < m_ThreadImporters.size(); x++) {
       std::pair<ImporterThreaded*, Yeager::Object*>* obj = &m_ThreadImporters.at(x);
       if (obj->first->IsThreadFinish()) {
         Yeager::Log(INFO, "Object importer thread {} has finished! Detaching", obj->second->GetName());
@@ -316,7 +316,7 @@ void Scene::CheckThreadsAndTriggerActions()
       }
     }
 
-    for (unsigned int x = 0; x < m_ThreadAnimatedImporters.size(); x++) {
+    for (Uint x = 0; x < m_ThreadAnimatedImporters.size(); x++) {
       std::pair<ImporterThreadedAnimated*, Yeager::AnimatedObject*>* obj = &m_ThreadAnimatedImporters.at(x);
       if (obj->first->IsThreadFinish()) {
         Yeager::Log(INFO, "Object importer thread {} has finished! Detaching", obj->second->GetName());

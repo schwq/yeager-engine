@@ -47,6 +47,9 @@ class NodeComponent {
 
   bool LinkToParent(Yeager::NodeComponent* parent);
 
+  // copy assignment
+  Yeager::NodeComponent& operator=(const Yeager::NodeComponent& other);
+
   Yeager::NodeComponent* GetParent()
   {
     if (!m_IsRoot)
@@ -84,5 +87,6 @@ extern bool CopyNodeChildToNewParent(Yeager::NodeComponent* child, Yeager::NodeC
 
 /* The delete child of node, clears EVERY node! it is a recusive function that keeps cleaning children and left only the root node */
 extern void DeleteChildOf(Yeager::NodeComponent* node);
+extern void SwapNodes(Yeager::NodeComponent* node1, Yeager::NodeComponent* node2);
 
 }  // namespace Yeager

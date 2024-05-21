@@ -9,7 +9,7 @@
 using namespace ImGui;
 using namespace Yeager;
 
-unsigned int Yeager::Interface::m_Frames = 0;
+Uint Yeager::Interface::m_Frames = 0;
 
 SpaceFitText::SpaceFitText(const String& text, size_t size)
 {
@@ -164,12 +164,12 @@ Interface::~Interface()
   // This function termination was placed in the Window.h file, but it was causing a error, because interface class that managers imgui and the window class
   // that manage the glfw window are smart pointers, and in the wrong calling sequence, the glfw windows was destroryed before imgui can terminate properly
   glfwTerminate();
-  delete m_ImGuiConfigurationPath;
+  YEAGER_DELETE(m_ImGuiConfigurationPath);
 }
 
 bool Interface::FindProjectHandleInApplicationAndDelete(String path)
 {
-  for (YEAGER_UINT index = 0; index < m_Application->GetLoadedProjectsHandles()->size(); index++) {
+  for (Uint index = 0; index < m_Application->GetLoadedProjectsHandles()->size(); index++) {
     Yeager::LoadedProjectHandle* project = &m_Application->GetLoadedProjectsHandles()->at(index);
     if (project->m_ProjectFolderPath == path) {
       m_Application->GetLoadedProjectsHandles()->erase(m_Application->GetLoadedProjectsHandles()->begin() + index);
@@ -177,6 +177,20 @@ bool Interface::FindProjectHandleInApplicationAndDelete(String path)
     }
   }
   return false;
+}
+
+void Interface::DebugControlWindow()
+{
+  CenteredWindow(500, 500);
+  Begin("Debug control window");
+
+  if (Button("Spawn PhysX sphere")) {
+    Yeager::BaseCamera* camera = m_Application->GetCamera();
+    SpawnSphereObject(m_Application, "DEBUG_DEFAULT", camera->GetPosition() + camera->GetDirection(), Vector3(0.0f),
+                      Vector3(0.1f), ObjectPhysicsType::eDYNAMIC_BODY);
+  }
+
+  End();
 }
 
 bool Interface::WindowExitProgram()
@@ -201,7 +215,7 @@ bool Interface::WindowExitProgram()
   return false;
 }
 
-void Interface::CenteredWindow(unsigned int size_x, unsigned int size_y)
+void Interface::CenteredWindow(Uint size_x, Uint size_y)
 {
   SetNextWindowPos(ImVec2((ygWindowWidth / 2) - (size_x / 2), (ygWindowHeight / 2) - (size_y / 2)));
   SetNextWindowSize(ImVec2(size_x, size_y));
@@ -235,7 +249,7 @@ void Interface::DisplayWarningWindow()
   }
 }
 
-void Interface::AddWarningWindow(const String& warning, unsigned int size_x, unsigned int size_y)
+void Interface::AddWarningWindow(const String& warning, Uint size_x, Uint size_y)
 {
   m_CurrentWarning.Warning = warning;
   m_CurrentWarning.SizeWidth = size_x;
@@ -302,7 +316,7 @@ void Interface::LaunchImGui(Window* window)
   StyleColorsDark();
 
   ImGui_ImplGlfw_InitForOpenGL(window->getWindow(), true);
-  ImGui_ImplOpenGL3_Init("#version 330");
+  ImGui_ImplOpenGL3_Init(YEAGER_IMGUI_OPENGL_VERSION);
 }
 
 void Interface::RequestRestartInterface(Window* window)
@@ -311,7 +325,7 @@ void Interface::RequestRestartInterface(Window* window)
   ImGui_ImplGlfw_Shutdown();
 
   ImGui_ImplGlfw_InitForOpenGL(window->getWindow(), true);
-  ImGui_ImplOpenGL3_Init("#version 330");
+  ImGui_ImplOpenGL3_Init(YEAGER_IMGUI_OPENGL_VERSION);
 }
 
 Interface::Interface(Window* window, Yeager::ApplicationCore* app) : m_Application(app)
@@ -360,10 +374,10 @@ Interface::Interface(Window* window, Yeager::ApplicationCore* app) : m_Applicati
       80);
 }
 
-void Interface::CreateSpaceX(unsigned int count)
+void Interface::CreateSpaceX(Uint count)
 {
   if (count > 0) {
-    for (unsigned int x = 0; x < count; x++) {
+    for (Uint x = 0; x < count; x++) {
       NewLine();
     }
   }
@@ -532,6 +546,10 @@ void Interface::RenderEditor()
 
     LightHandleControlWindow();
   }
+  if (m_DebugControlWindowOpen) {
+    // TODO debug control window must be programmed to troubleshoot the engine too!
+    DebugControlWindow();  // This window is not affect by the affect of the vanish windows of the editor
+  }
 }
 
 void Interface::WindowUserIsSureDeletingProject()
@@ -559,8 +577,8 @@ void Interface::OpenProjectWindow(Yeager::Launcher* launcher, InterfaceButton& b
     m_OpenProjectWindowOpen = true;
 
 #ifdef YEAGER_SYSTEM_LINUX
-    m_OpenProjectToDisplay =
-        Yeager::ReadProjectsToDisplay(GetLinuxHomeDirectory() + "/.YeagerEngine/External/LoadedProjectsPath.yml");
+    m_OpenProjectToDisplay = Yeager::ReadProjectsToDisplay(
+        GetExternalFolderPath() + "/.YeagerEngine/External/LoadedProjectsPath.yml", m_Application);
 #elif defined(YEAGER_SYSTEM_WINDOWS_x64)
     m_OpenProjectToDisplay = Yeager::ReadProjectsToDisplay(
         GetExternalFolderPath() + "\\YeagerEngine\\External\\LoadedProjectsPath.yml", m_Application);
@@ -573,7 +591,7 @@ void Interface::OpenProjectWindow(Yeager::Launcher* launcher, InterfaceButton& b
     if (m_OpenProjectToDisplay.empty()) {
       Text("No projects :(");
     }
-    for (YEAGER_UINT index = 0; index < m_OpenProjectToDisplay.size(); index++) {
+    for (Uint index = 0; index < m_OpenProjectToDisplay.size(); index++) {
       OpenProjectsDisplay project = m_OpenProjectToDisplay.at(index);
       Text("[%s] By: %s", project.Name.c_str(), project.Author.c_str());
       Text("[%s] [%s]", project.RendererType.c_str(), project.SceneType.c_str());
@@ -660,7 +678,7 @@ void Interface::NewProjectWindow(Yeager::Launcher* launcher, InterfaceButton& bu
     m_NewProjectHandle->m_AuthorName = m_NewProjectAuthorName;
 
     if (BeginCombo("Renderer Type", m_NewProjectCurrentRenderer.c_str())) {
-      for (unsigned int x = 0; x < 2; x++) {
+      for (Uint x = 0; x < 2; x++) {
         bool is_selected = (m_NewProjectCurrentRenderer.c_str() == RendererType[x]);
         if (Selectable(RendererType[x], is_selected)) {
           m_NewProjectCurrentRenderer = RendererType[x];
@@ -672,7 +690,7 @@ void Interface::NewProjectWindow(Yeager::Launcher* launcher, InterfaceButton& bu
       EndCombo();
     }
     if (BeginCombo("Scene Type", m_NewProjectCurrentSceneType.c_str())) {
-      for (unsigned int x = 0; x < 2; x++) {
+      for (Uint x = 0; x < 2; x++) {
         bool is_selected = (m_NewProjectCurrentSceneType.c_str() == SceneType[x]);
         if (Selectable(SceneType[x], is_selected)) {
           m_NewProjectCurrentSceneType = SceneType[x];
@@ -685,7 +703,7 @@ void Interface::NewProjectWindow(Yeager::Launcher* launcher, InterfaceButton& bu
     }
 
     if (BeginCombo("Plataform Target", m_NewProjectCurrentPlataformTarget.c_str())) {
-      for (unsigned int x = 0; x < 6; x++) {
+      for (Uint x = 0; x < 6; x++) {
         bool is_selected = (m_NewProjectCurrentPlataformTarget.c_str() == PlataformTarget[x]);
         if (Selectable(PlataformTarget[x], is_selected))
           m_NewProjectCurrentPlataformTarget = PlataformTarget[x];
@@ -734,7 +752,7 @@ void Interface::LauncherSettingsVideoSettings()
   const std::vector<const char*> antiAliasingOptions = {"MSAA x2", "MSAA x4"};
 
   if (BeginCombo("Anti Aliasing *", m_VSAntiAliasingOptionSelected.c_str())) {
-    for (unsigned int x = 0; x < antiAliasingOptions.size(); x++) {
+    for (Uint x = 0; x < antiAliasingOptions.size(); x++) {
       bool is_selected = (m_VSAntiAliasingOptionSelected.c_str() == antiAliasingOptions[x]);
       if (Selectable(antiAliasingOptions[x], is_selected))
         m_VSAntiAliasingOptionSelected = antiAliasingOptions[x];
@@ -744,14 +762,37 @@ void Interface::LauncherSettingsVideoSettings()
     }
     EndCombo();
   }
+
+  const std::vector<const char*> aspectRatioOptions = {"4:3", "21:9"};
+
+  if (BeginCombo("Aspect Ratio ", m_VSAspectRatioOptionSelected.c_str())) {
+    for (Uint x = 0; x < aspectRatioOptions.size(); x++) {
+      bool is_selected = (m_VSAspectRatioOptionSelected.c_str() == aspectRatioOptions[x]);
+      if (Selectable(aspectRatioOptions[x], is_selected))
+        m_VSAspectRatioOptionSelected = aspectRatioOptions[x];
+      m_VideoSettingsValues.WindowDesireAspectRatio = AspectRatio::ToEnum(m_VSAspectRatioOptionSelected);
+      if (is_selected)
+        SetItemDefaultFocus();
+    }
+    EndCombo();
+  }
+
+  Checkbox("Framebuffer obeys aspect ratio", &m_VideoSettingsValues.WindowObeysAspectRatio);
+}
+
+void Interface::InitializeSettingsValues()
+{
+  m_LauncherSettingsWindowOpen = true;
+  m_InterfaceSettingsValues = m_Application->GetSettings()->GetInterfaceSettingsStruct();
+  m_VideoSettingsValues = m_Application->GetSettings()->GetVideoSettingsStruct();
+  m_VSAntiAliasingOptionSelected = AntiAliasingOption::toString(m_VideoSettingsValues.AntiAliasingType);
+  m_VSAspectRatioOptionSelected = AspectRatio::ToString(m_VideoSettingsValues.WindowDesireAspectRatio);
 }
 
 void Interface::LauncherSettingsWindow(InterfaceButton& button, Yeager::InterfaceWindow& window)
 {
   if (button.AddButton()) {
-    m_LauncherSettingsWindowOpen = true;
-    m_VideoSettingsValues = m_Application->GetSettings()->GetVideoSettingsStruct();
-    m_VSAntiAliasingOptionSelected = AntiAliasingOption::toString(m_VideoSettingsValues.AntiAliasingType);
+    InitializeSettingsValues();
   }
 
   if (m_LauncherSettingsWindowOpen) {
@@ -761,11 +802,24 @@ void Interface::LauncherSettingsWindow(InterfaceButton& button, Yeager::Interfac
       LauncherSettingsVideoSettings();
     }
 
+    if (CollapsingHeader("Inteface Settings")) {
+      InputFloat("Global on screen text scale", &m_InterfaceSettingsValues.GlobalOnScreenTextScale);
+    }
+
     if (Button("Apply")) {
       Settings* settings = m_Application->GetSettings();
       m_LauncherSettingsWindowOpen = false;
       if (settings->GetVideoSettingsStruct().AntiAliasingType != m_VideoSettingsValues.AntiAliasingType)
         settings->ChangeVideoSettingsAntiAliasingType(m_VideoSettingsValues.AntiAliasingType);
+      if (settings->GetVideoSettingsStruct().WindowObeysAspectRatio != m_VideoSettingsValues.WindowObeysAspectRatio)
+        settings->GetVideoSettingsStructPtr()->WindowObeysAspectRatio = m_VideoSettingsValues.WindowObeysAspectRatio;
+      if (settings->GetVideoSettingsStruct().WindowDesireAspectRatio != m_VideoSettingsValues.WindowDesireAspectRatio)
+        settings->GetVideoSettingsStructPtr()->WindowDesireAspectRatio = m_VideoSettingsValues.WindowDesireAspectRatio;
+
+      if (settings->GetInterfaceSettingsStruct().GlobalOnScreenTextScale !=
+          m_InterfaceSettingsValues.GlobalOnScreenTextScale)
+        settings->GetInterfaceSettingsStructPtr()->GlobalOnScreenTextScale =
+            m_InterfaceSettingsValues.GlobalOnScreenTextScale;
     }
 
     SameLine();
@@ -799,8 +853,9 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
                                           ImVec2(ygWindowWidth / 2, ygWindowHeight / 2), true,
                                           Yeager::WindowRelativePos::MIDDLE);
 
+  const Vector2 windowSize = m_Application->GetWindow()->GetWindowSize();
   SetNextWindowPos(ImVec2(0, 0));
-  SetNextWindowSize(ImVec2(ygWindowWidth, ygWindowHeight));
+  SetNextWindowSize(ImVec2(windowSize.x, windowSize.y));
   Begin("Yeager Launcher", NULL, YEAGER_LAUNCHER_WINDOW_FLAGS);
 
   CenteredText("Welcome to the Yeager Engine!");
@@ -857,7 +912,6 @@ void Interface::CenteredText(String text)
 {
   auto windowWidth = GetWindowSize().x;
   auto textWidth = CalcTextSize(text.c_str()).x;
-
   SetCursorPosX((windowWidth - textWidth) * 0.5f);
   Text(text.c_str());
 }
@@ -913,11 +967,28 @@ void Interface::RenderDebugger()
     m_Application->GetCamera()->SetPosition(Vector3(0));
   }
 
+  SameLine();
+
+  if (Button("Detach player camera")) {
+    m_Application->DetachPlayerCamera();
+  }
+
+  SameLine();
+
+  if (Button("Attach scene player camera")) {
+    Yeager::PlayerCamera* camera = m_Application->GetScene()->GetPlayerCamera();
+    m_Application->AttachPlayerCamera(camera);
+  }
+
+  Separator();
+
   if (m_Application->GetScene() != YEAGER_NULLPTR) {
     Text("Toolboxes Loaded %u", m_Application->GetScene()->GetToolboxs()->size());
     Text("Objects in Scene %u", m_Application->GetScene()->GetObjects()->size());
     Text("Animated Objects in Scene %u", m_Application->GetScene()->GetAnimatedObject()->size());
   }
+
+  Separator();
 
   Text("Frames %u", m_Frames);
   if (m_Application->GetMode() == YgApplicationMode::eAPPLICATION_EDITOR) {
@@ -928,13 +999,29 @@ void Interface::RenderDebugger()
            m_Application->GetFrameCurrentCount() / (unsigned int)m_Application->GetSecondsElapsedSinceStart());
     }
   }
+
+  Separator();
+
   Text("Camera should move: %s", m_Application->GetCamera()->GetShouldMove() ? "true" : "false");
   Vector3 cameraPos = m_Application->GetCamera()->GetPosition();
   Text("Camera world position: x: %f y: %f z: %f", cameraPos.x, cameraPos.y, cameraPos.z);
   Checkbox("Windows dont move", &m_Control.DontMoveWindowsEditor);
-  unsigned int memory_usage_mb = Yeager::s_MemoryManagement.GetMemortUsage() / 1000000;
-  unsigned int memory_usage_by = Yeager::s_MemoryManagement.GetMemortUsage() % 1000000;
+  Uint memory_usage_mb = Yeager::s_MemoryManagement.GetMemortUsage() / 1000000;
+  Uint memory_usage_by = Yeager::s_MemoryManagement.GetMemortUsage() % 1000000;
   Text("Memory Usage in MB: %u.%u", memory_usage_mb, memory_usage_by);
+
+  Separator();
+
+  /* Display the vector of the direction of the camera */
+  if (m_Application->GetMode() == YgApplicationMode::eAPPLICATION_EDITOR) {
+    const Vector3 cameraDirection = m_Application->GetCamera()->GetFront();
+    const Vector3 rDirection = Vector3(lround(cameraDirection.x), lround(cameraDirection.y), lround(cameraDirection.z));
+    Text("Camera direction: x: %i, y: %i, z: %i", rDirection.x, rDirection.y, rDirection.z);
+    Text("Camera direction float: x: %.4f, y: %.4f, z: %.4f", cameraDirection.x, cameraDirection.y, cameraDirection.z);
+    InputVector3("Forced change of camera direction", m_Application->GetCamera()->GetFrontPtr());
+  }
+
+  Separator();
 
   if (Button(ICON_FA_EXCLAMATION " Throw Console Error")) {
     Yeager::Log(ERROR, "Test Error");
@@ -944,6 +1031,8 @@ void Interface::RenderDebugger()
     Yeager::Log(WARNING, "Test Warning");
   }
 
+  Separator();
+
   if (Button(ICON_FA_ARROW_POINTER " Polygon mode: POINT")) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
   }
@@ -951,9 +1040,18 @@ void Interface::RenderDebugger()
   if (Button(ICON_FA_ARROW_ROTATE_LEFT " Polygon mode: LINES")) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   }
+  SameLine();
   if (Button(ICON_FA_ARROW_ROTATE_LEFT " Polygon mode: FILL")) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   }
+
+  Separator();
+
+  WindowInfo* wnd = m_Application->GetWindow()->GetWindowInformationPtr();
+  Text("Window Editor Size: x: %f y: %f", wnd->EditorSize.x, wnd->EditorSize.y);
+  Text("Window Launcher Size: x: %f y: %f", wnd->LauncherSize.x, wnd->LauncherSize.y);
+  Text("Window Framebuffer Size: x: %f y: %f", wnd->FrameBufferSize.x, wnd->FrameBufferSize.y);
+
   End();
 }
 
@@ -1028,7 +1126,7 @@ void Interface::PhysXHandleControlWindow()
   Begin(ICON_FA_DATABASE " PhysX Debug", NULL, YEAGER_WINDOW_MOVEABLE);
 
   PhysXHandle* handle = m_Application->GetPhysXHandle();
-  unsigned int actorNum =
+  Uint actorNum =
       handle->GetPxScene()->getNbActors(physx::PxActorTypeFlag::eRIGID_DYNAMIC | physx::PxActorTypeFlag::eRIGID_STATIC);
   Text("Count of actors in PhysX Scene %d", actorNum);
   Text("Count of actors loaded in Yeager Engine %d", handle->GetActorsHandle()->size());

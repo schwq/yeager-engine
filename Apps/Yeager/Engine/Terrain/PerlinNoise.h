@@ -29,7 +29,7 @@ class PerlinNoise {
   PerlinNoise(int width = 256, int lenght = 256);
   ~PerlinNoise() = default;
 
-  void GeneratePerlin(Array2D<float>* arr, int octaves, int bias, int width, int height, float max_height,
+  void GeneratePerlin(Yeager::Math::Array2D<float>* arr, int octaves, int bias, int width, int height, float max_height,
                       bool regenerate_seed = false);
   void PerlinNoise2D(int width, int height, float* seed, int octaves, float bias, float* output);
   constexpr void ChangeSize(int width, int height) noexcept

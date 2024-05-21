@@ -46,7 +46,7 @@ struct AssimpNodeData {
 class Animation {
  public:
   Animation() = default;
-  Animation(const String& path, AnimatedObject* model);
+  Animation(const String& name, const aiScene* scene, Uint index, AnimatedObject* model);
   ~Animation() {}
 
   Bone* FindBone(const String& name);
@@ -56,6 +56,10 @@ class Animation {
   inline const AssimpNodeData& GetRootNode() { return m_RootNode; }
   inline const std::map<String, BoneInfo>& GetBoneIDMap() { return m_BoneInfoMap; }
 
+  String GetName() const { return m_Name; }
+  Uint GetIndex() { return m_Index; }
+  void SetIndex(Uint index) { m_Index = index; }
+
  private:
   void ReadMissingBones(const aiAnimation* animation, AnimatedObject& model);
   void ReadHeirarchyData(AssimpNodeData& dest, const aiNode* src);
@@ -63,7 +67,9 @@ class Animation {
   int m_TicksPerSecond;
   std::vector<Bone> m_Bones;
   AssimpNodeData m_RootNode;
+  String m_Name = YEAGER_NULL_LITERAL;
   std::map<String, BoneInfo> m_BoneInfoMap;
+  Uint m_Index = 0;
 };
 
 }  // namespace Yeager

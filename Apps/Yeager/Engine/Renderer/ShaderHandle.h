@@ -50,14 +50,14 @@ class Shader {
   bool m_initialize = false;
   bool m_fragment_build = false;
   bool m_vertex_build = false;
-  static unsigned int m_shader_count;
-  unsigned int m_shader_num = 0;
+  static Uint m_shader_count;
+  Uint m_shader_num = 0;
 
   String m_VarName;
   String m_Name;
 
-  YEAGER_NODISCARD unsigned int CreateVertexGL(Cchar vertexPath);
-  YEAGER_NODISCARD unsigned int CreateFragmentGL(Cchar fragmentPath);
-  void LinkShaders(unsigned int vertexShader, unsigned int fragmentShader);
+  YEAGER_NODISCARD Uint CreateVertexGL(Cchar vertexPath);
+  YEAGER_NODISCARD Uint CreateFragmentGL(Cchar fragmentPath);
+  void LinkShaders(Uint vertexShader, Uint fragmentShader);
 };
 }  // namespace Yeager

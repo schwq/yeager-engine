@@ -88,13 +88,13 @@ bool RequestHandle::HandleRebuildGLFWWindow()
     Yeager::Window* wnd = m_Application->GetWindow();
     Yeager::WindowInfo* info = wnd->GetWindowInformationPtr();
     bool success = true;
-    if (!wnd->RegenerateMainWindow(info->Size.x, info->Size.y, info->Title, info->CursorFunc))
+    if (!wnd->RegenerateMainWindow(info->EditorSize.x, info->EditorSize.y, info->EditorTitle, info->CursorFunc))
       success = false;
     m_Application->GetInterface()->RequestRestartInterface(wnd);
 
     return success;
   }
-  /* This should not happen, the request is handle after the draw is done, so if it happens, it is some bad code written by me */
+  /* This should not happen, the request is handle after the draw is done, so if it happens, it is some bad code written by the developer */
   return false;
 }
 
@@ -104,6 +104,6 @@ bool RequestHandle::HandleRebuildUIInterface()
     m_Application->GetInterface()->RequestRestartInterface(m_Application->GetWindow());
     return true;
   }
-  /* This should not happen, the request is handle after the draw is done, so if it happens, it is some bad code written by me */
+  /* This should not happen, the request is handle after the draw is done, so if it happens, it is some bad code written by the developer */
   return false;
 }

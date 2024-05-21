@@ -11,6 +11,7 @@ ApplicationCore::ApplicationCore()
 {
   m_Serial = new Serialization(this);
   m_Scene = new Scene(this);
+  m_Window = new Window(this);
   ValidatesExternalEngineFolder();
   m_Serial->ReadLoadedProjectsHandles(m_EngineExternalFolder);
   Setup();
@@ -70,7 +71,9 @@ void ApplicationCore::CreateDirectoriesAndFiles()
 
 LauncherProjectPicker ApplicationCore::RequestLauncher()
 {
-  m_Launcher = new Yeager::Launcher(800, 800, "Yeager Launcher", this);
+  const ImVec2 launcherWindowSize = m_Settings->GetEngineConfiguration()->LauncherWindowSize;
+  m_Window->GetWindowInformationPtr()->LauncherSize = Vector2(launcherWindowSize.x, launcherWindowSize.y);
+  m_Launcher = new Yeager::Launcher(launcherWindowSize.x, launcherWindowSize.y, "Yeager Launcher", this);
   m_Launcher->Render();
 
   if (ShouldRender()) {
@@ -96,17 +99,21 @@ void ApplicationCore::BuildApplicationCoreCompoments()
   m_Settings = new Settings(this);
   m_Request = new RequestHandle(this);
   m_Input = new Input(this);
-  m_Window = new Window(ygWindowWidth, ygWindowHeight, "Yeager Engine", m_Input->MouseCallback);
+
+  m_EngineConfigurationPath = String(m_EngineExternalFolder + YG_PS + "Conf/EngineConfiguration.yml");
+  m_Serial->ReadEngineConfiguration(m_EngineConfigurationPath);
+
+  m_Window->GenerateWindow("Yeager Engine", m_Input->MouseCallback, YEAGER_GENERATE_LAUNCHER_WINDOW);
   m_Input->InitializeCallbacks();
   m_AudioEngine = new AudioEngineHandle();
   m_AudioEngine->InitAudioEngine();
   CheckGLAD();
 
+  m_Defaults = new DefaultValues(this);
   m_Interface = new Interface(m_Window, this);
   SetupCamera();
   m_EditorExplorer = new EditorExplorer(this);
   m_PhysXHandle = new PhysXHandle(this);
-  m_RendererLines = new RendererLines(this);
   if (!m_PhysXHandle->InitPxEngine()) {
     Yeager::Log(ERROR, "PhysX cannot initialize correctly, something must went wrong!");
   }
@@ -128,15 +135,17 @@ void ApplicationCore::UpdateCamera()
 
 void ApplicationCore::Setup()
 {
-  String EditorVariablesPath = GetPath("/Configuration/Editor/editor_variables.yml");
 
   BuildApplicationCoreCompoments();
 
   LauncherProjectPicker project = RequestLauncher();
   if (!project.UserWantToExit) {
-
     m_mode = YgApplicationMode::eAPPLICATION_EDITOR;
-    m_Window->RegenerateMainWindow(1920, 1080, RequestWindowEngineName(project), m_Input->MouseCallback);
+    const ImVec2 editorWindowSize =
+        ImVec2(m_Window->GetWindowInformationPtr()->EditorSize.x, m_Window->GetWindowInformationPtr()->EditorSize.y);
+    m_Window->GetWindowInformationPtr()->EditorSize = Vector2(editorWindowSize.x, editorWindowSize.y);
+    m_Window->RegenerateMainWindow(editorWindowSize.x, editorWindowSize.y, RequestWindowEngineName(project),
+                                   m_Input->MouseCallback);
     m_Interface->RequestRestartInterface(m_Window);
 
     PrepareSceneToLoad(project);
@@ -176,6 +185,7 @@ ApplicationCore::~ApplicationCore()
   YEAGER_DELETE(m_EditorCamera);
   YEAGER_DELETE(m_AudioEngine);
   YEAGER_DELETE(m_Scene);
+  YEAGER_DELETE(m_Defaults)
   YEAGER_DELETE(m_Interface);
   YEAGER_DELETE(m_Input);
   YEAGER_DELETE(m_Window);
@@ -192,8 +202,13 @@ void ApplicationCore::UpdateDeltaTime()
 
 void ApplicationCore::UpdateWorldMatrices()
 {
-  m_WorldMatrices.Projection =
-      glm::perspective(glm::radians(45.0f), (float)ygWindowWidth / (float)ygWindowHeight, 0.1f, 1000.0f);
+  if (m_Settings->GetVideoSettingsStruct().WindowObeysAspectRatio) {
+    const float aspect = AspectRatio::ToValue(m_Settings->GetVideoSettingsStruct().WindowDesireAspectRatio);
+    m_WorldMatrices.Projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 1000.0f);
+  } else {
+    const Vector2 windowSize = m_Window->GetWindowInformationPtr()->EditorSize;
+    m_WorldMatrices.Projection = glm::perspective(glm::radians(45.0f), windowSize.x / windowSize.y, 0.1f, 1000.0f);
+  }
   m_WorldMatrices.View = GetCamera()->ReturnViewMatrix();
   m_WorldMatrices.ViewerPos = GetCamera()->GetPosition();
 }
@@ -210,26 +225,29 @@ void ApplicationCore::Render()
 {
   OpenGLFunc();
 
-  material = std::make_shared<MaterialTexture2D>(this, "test", MaterialTextureType::eDIFFUSE);
-  material->GenerateFromFile("C:\\Users\\schwq\\Downloads\\demo.png");
-  monarch = std::make_shared<MaterialTexture2D>(this, "test", MaterialTextureType::eDIFFUSE);
-  monarch->GenerateFromFile("C:\\Users\\schwq\\Downloads\\mo.jpg", true);
   m_TimeBeforeRender = static_cast<float>(glfwGetTime());
 
-  Skybox skybox("Main", ObjectGeometryType::eCUSTOM, this);
-  skybox.BuildSkyboxFromImport("C:\\Users\\schwq\\Downloads\\sky-pano-monument-valley-lookout\\textures\\skybox.obj",
-                               true);
-
-  SpawnCubeObject(this, "Wall", Vector3(10.0f, 0.0f, 0.0f), Vector3(0.0f), Vector3(10.0f, 10.0f, 1.0f),
-                  Yeager::ObjectPhysicsType::eSTATIC_BODY);
-
-  auto light = std::make_shared<PhysicalLightHandle>("main", this, std::vector<Shader*>{ShaderFromVarName("Simple")},
-                                                     ShaderFromVarName("Light"));
+  auto light = std::make_shared<PhysicalLightHandle>(
+      "main", this, std::vector<Shader*>{ShaderFromVarName("Simple"), ShaderFromVarName("SimpleAnimated")},
+      ShaderFromVarName("Light"));
   light->SetCanBeSerialize(false);
+  light->GetDirectionalLight()->Ambient = Vector3(1);
   m_Scene->GetLightSources()->push_back(light);
 
   BeginEngineTimer();
+
+  auto skybox = std::make_shared<Yeager::Skybox>("Skybox", ObjectGeometryType::eCUSTOM, this);
+  skybox->BuildSkyboxFromImport("/home/schwq/.YeagerEngine/External/Default/Skybox/skybox.obj", false);
+
+  TextRenderer text(this);
+  text.LoadFont(GetPath("/Configuration/firacode.ttf"), 48);
+  Transformation trans;
+  trans.position = Vector3(10);
+
+  Yeager::LogDebug(INFO, "Hello world");
+
   while (ShouldRender()) {
+
     glfwPollEvents();
     OpenGLClear();
 
@@ -240,11 +258,10 @@ void ApplicationCore::Render()
     UpdateWorldMatrices();
     UpdateListenerPosition();
     ManifestAllShaders();
-
     UpdateCamera();
 
-    skybox.Draw(ShaderFromVarName("Skybox"), Matrix3(m_WorldMatrices.View), m_WorldMatrices.Projection);
     m_AudioEngine->Engine->update();
+    skybox->Draw(ShaderFromVarName("Skybox"), Matrix3(m_WorldMatrices.View), m_WorldMatrices.Projection);
 
     m_PhysXHandle->StartSimulation(m_DeltaTime);
     m_PhysXHandle->EndSimulation();
@@ -252,7 +269,17 @@ void ApplicationCore::Render()
     DrawObjects();
     BuildAndDrawLightSources();
 
-    m_RendererLines->Draw(ShaderFromVarName("Line"));
+    if (m_Scene->GetThreadAnimatedImporters()->size() + m_Scene->GetThreadImporters()->size() > 0) {
+      text.RenderText(ShaderFromVarName("Font2D"), "Loading Assets", 0, 100,
+                      m_Settings->GetInterfaceSettingsStruct().GlobalOnScreenTextScale, Vector3(1));
+    }
+
+    if ((unsigned int)GetSecondsElapsedSinceStart() > 0) {
+      String fps = std::to_string(GetFrameCurrentCount() / (unsigned int)GetSecondsElapsedSinceStart());
+      String t = String("FPS: " + fps);
+      text.RenderText(ShaderFromVarName("Font2D"), t, 0, 0,
+                      m_Settings->GetInterfaceSettingsStruct().GlobalOnScreenTextScale, Vector3(1));
+    }
 
     GetInterface()->RenderUI();
     GetScene()->CheckScheduleDeletions();
@@ -272,6 +299,8 @@ void ApplicationCore::TerminatePosRender()
 
   m_AudioEngine->TerminateAudioEngine();
   m_PhysXHandle->TerminateEngine();
+
+  m_Serial->WriteEngineConfiguration(m_EngineConfigurationPath);
 
   YEAGER_DELETE(m_PhysXHandle);
 }
@@ -387,7 +416,7 @@ void ApplicationCore::OpenGLFunc()
 
 void ApplicationCore::OpenGLClear()
 {
-  glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
+  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
@@ -400,7 +429,7 @@ Shader* ApplicationCore::ShaderFromVarName(String var)
       return shader.first.get();
     }
   }
-  /* Developer errors must be (in certain times) handle by asserts, this kind of errors cnanot be release in the engine build !*/
+  /* Developer errors must be (in certain times) handle by asserts, this kind of errors cannot be release in the engine build !*/
   assert("Shader var name cannot been found in the configuration of the application!");
   /* Doesnt trigger warning in gcc anymore, this part of the code wont be reach anyway */
   return YEAGER_NULLPTR;

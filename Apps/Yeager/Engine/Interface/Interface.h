@@ -39,6 +39,8 @@ struct LauncherProjectPicker;
   ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus | \
       ImGuiWindowFlags_NoTitleBar
 
+#define YEAGER_IMGUI_OPENGL_VERSION "#version 330"
+
 /// @brief Struct of the Imgui Colorscheme, the defaults values are for the dark mode,
 /// @brief colorschemes can been readed from the colorscheme configuration folder
 struct ColorschemeConfig {
@@ -87,7 +89,7 @@ struct ColorschemeConfig {
 /// @brief  so it doesnt keep logging the same thing
 struct InterfaceWarningWindow {
   String Warning;
-  unsigned int SizeWidth = 0, SizeHeight = 0;
+  Uint SizeWidth = 0, SizeHeight = 0;
   bool Active = false;
   bool FirstLogWarning = true;
 };
@@ -205,11 +207,11 @@ class Interface {
   /// @brief ImGui have a function that let the user choice the next window position, this function does the same
   /// @param size_x Window width
   /// @param size_y Window height
-  void CenteredWindow(unsigned int size_x, unsigned int size_y);
+  void CenteredWindow(Uint size_x, Uint size_y);
   /// @brief Displays the current warning window stored in the Interface class
   void DisplayWarningWindow();
   /// @brief  Add a warning window to the Interface class, and waits to be display when the DisplayWarningWindow is called
-  void AddWarningWindow(const String& warning, unsigned int size_x = 400, unsigned int size_y = 100);
+  void AddWarningWindow(const String& warning, Uint size_x = 400, Uint size_y = 100);
   /// @brief Self explain, apply the colorscheme given to the interface UI by calling LoadColorscheme
   /// @param colorscheme The colorscheme to be apply
   YEAGER_FORCE_INLINE void ApplyColorscheme(ColorschemeConfig colorscheme)
@@ -249,6 +251,10 @@ class Interface {
   void LightHandleControlWindow();
   void PhysXHandleControlWindow();
 
+  bool GetDebugControlWindowOpen() const { return m_DebugControlWindowOpen; }
+  void SetDebugControlWindowOpen(const bool open) { m_DebugControlWindowOpen = open; }
+  void DebugControlWindow();
+
   /**
      * @brief Return a boolean represeting if in the current time the render frame is being drawn to the screen. 
      * That means that imgui is drawing the ui, and the terminate function have not been called yet!
@@ -258,7 +264,7 @@ class Interface {
 
   static void CenteredText(String text);
   static void AlignForWidth(float width, float alignment = 0.5f);
-  static void CreateSpaceX(unsigned int count);
+  static void CreateSpaceX(Uint count);
 
  private:
   String m_NewProjectCurrentRenderer = "Default";
@@ -284,6 +290,7 @@ class Interface {
   bool m_NewProjectCreateDirectory = false;
   bool m_LauncherSettingsWindowOpen = false;
   bool m_EditorSettingsWindowOpen = false;
+  bool m_DebugControlWindowOpen = false;
 
   InterfaceControl m_Control;
   InterfaceFonts m_Fonts;
@@ -303,7 +310,7 @@ class Interface {
   std::vector<String> m_ProjectsNamesAlreadyTaken;
   std::pair<OpenProjectsDisplay, int> m_ProjectSelectedToDelete;
 
-  static unsigned int m_Frames;
+  static Uint m_Frames;
   int m_ScreenShotPosition[2] = {0};
   int m_ScreenShotSize[2] = {0};
 
@@ -315,10 +322,13 @@ class Interface {
   void NewProjectWindow(Yeager::Launcher* launcher, InterfaceButton& button, Yeager::InterfaceWindow& window);
 
   void LauncherSettingsWindow(InterfaceButton& button, Yeager::InterfaceWindow& window);
+  void InitializeSettingsValues();
   void LauncherSettingsVideoSettings();
+  InterfaceSettings m_InterfaceSettingsValues;
   VideoSettings m_VideoSettingsValues;
   /* Lets abreviate Video Settings to VS for the sake of the name of the variable */
   String m_VSAntiAliasingOptionSelected = YEAGER_NULL_LITERAL;
+  String m_VSAspectRatioOptionSelected = YEAGER_NULL_LITERAL;
 
   void LaunchImGui(Window* window);
   void DrawExplorer();

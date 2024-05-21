@@ -25,6 +25,10 @@
 #include "Common/Utilities.h"
 #include "Engine/Interface/Interface.h"
 #include "Engine/Renderer/Entity.h"
+#include "Engine/Renderer/Window.h"
+
+/// @brief Creates a operator<< function that accepts the glm::vec3(aka Vector3) as input
+extern YAML::Emitter& operator<<(YAML::Emitter& out, const Vector3& vector);
 
 namespace YAML {
 template <>
@@ -74,61 +78,70 @@ struct convert<ImVec4> {
     return true;
   }
 };
-
 }  // namespace YAML
-extern YAML::Emitter& operator<<(YAML::Emitter& out, const Vector3& vector);
 
 namespace Yeager {
 class Scene;
 class ApplicationCore;
 class Settings;
+
 extern std::vector<OpenProjectsDisplay> ReadProjectsToDisplay(String dir, Yeager::ApplicationCore* app);
 
+/***
+ * @brief Serialize and deserialize mostly of the engine required information, like scenes props, configurations files, and more. Every GameEntity is serialize 
+ * with the needed information about itself */
 class Serialization {
  public:
   Serialization(Yeager::ApplicationCore* app);
-  //Serialization() { Yeager::Log(INFO, "Default Serialization constructor was been called"); }
 
   ColorschemeConfig ReadColorschemeConfig();
 
   void ReadSceneShadersConfig(String path);
   void SerializeScene(Yeager::Scene* scene, String path);
   void DeserializeScene(Yeager::Scene* scene, String path);
-  void ReadConf(String path){YEAGER_NOT_IMPLEMENTED("ReadConf")};
-  void SaveConf(){YEAGER_NOT_IMPLEMENTED("SaveConf")};
-  void ReadEditorVariables(Cchar path);
-  void SaveEditorVariables(Cchar path);
+
+  void ReadEngineConfiguration(const String& path);
+  void WriteEngineConfiguration(const String& path);
 
   void WriteLoadedProjectsHandles(String externalFolder);
   void ReadLoadedProjectsHandles(String externalFolder);
 
-  YgTime_t DeserializeProjectTimeOfCreation(YAML::Node& node);
+  YgTime_t DeserializeProjectTimeOfCreation(YAML::Node node);
 
   bool ReadSettingsConfiguration(Yeager::Settings* settings, const String& path);
   void WriteSettingsConfiguration(Yeager::Settings* settings, const String& path);
 
  private:
-  template <typename Type>
-  void SerializeSTDVector(YAML::Emitter& out, std::vector<Type> vec, const char* key);
   Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
 
-  template <typename Type>
-  const void inline CheckAndDeserialize(YAML::Node& node, Type& obj, Cchar key) noexcept;
-  void inline DeserializeEntity(Yeager::Scene* scene, YAML::Node& node, YAML::detail::iterator_value& entity);
-  void inline DeserializeSceneInfo(Yeager::Scene* scene, YAML::Node& node);
-  ObjectGeometryType::Enum inline DeserializeBasicObject(Yeager::Object* BaseClassObj,
-                                                         YAML::detail::iterator_value& entity);
+  void YEAGER_FORCE_INLINE DeserializeEntity(Yeager::Scene* scene, YAML::Node& node,
+                                             YAML::detail::iterator_value& entity);
+  void YEAGER_FORCE_INLINE DeserializeSceneInfo(Yeager::Scene* scene, YAML::Node& node);
+  ObjectGeometryType::Enum YEAGER_FORCE_INLINE DeserializeBasicObject(Yeager::Object* BaseClassObj,
+                                                                      YAML::detail::iterator_value& entity);
 
-  std::vector<Transformation*> inline DeserializeObjectProperties(YAML::detail::iterator_value& entity);
-  void inline SerializeBasicEntity(YAML::Emitter& out, String name, unsigned int id, String type);
-  void inline SerializeObjectTransformation(YAML::Emitter& out, String name, Yeager::Transformation& transf) noexcept;
+  std::vector<Transformation*> YEAGER_FORCE_INLINE DeserializeObjectProperties(YAML::detail::iterator_value& entity);
+  void YEAGER_FORCE_INLINE SerializeBasicEntity(YAML::Emitter& out, String name, Uint id, String type);
+  void YEAGER_FORCE_INLINE SerializeObjectTransformation(YAML::Emitter& out, String name,
+                                                         Yeager::Transformation& transf) noexcept;
 
   template <typename Type>
-  void inline SerializeObject(YAML::Emitter& out, const char* key, Type obj);
-  void inline SerializeBasicObjectType(YAML::Emitter& out, Yeager::Object* obj);
-  void inline SerializeBegin(YAML::Emitter& out, const char* key, YAML::EMITTER_MANIP manip);
-  void inline SerializeSystemInfo(YAML::Emitter& out, Yeager::Scene* scene);
+  void YEAGER_FORCE_INLINE SerializeObject(YAML::Emitter& out, const char* key, Type obj);
+  void YEAGER_FORCE_INLINE SerializeBasicObjectType(YAML::Emitter& out, Yeager::Object* obj);
+  void YEAGER_FORCE_INLINE SerializeBegin(YAML::Emitter& out, const char* key, YAML::EMITTER_MANIP manip);
+  void YEAGER_FORCE_INLINE SerializeSystemInfo(YAML::Emitter& out, Yeager::Scene* scene);
 
   void SerializeProjectTimeOfCreation(YAML::Emitter& out, Yeager::Scene* scene, const char* key);
+
+  void DeserializeAudioHandle(YAML::detail::iterator_value& entity, Yeager::Scene* scene, const String& name,
+                              const String& type, const Uint id);
+  void DeserializeAudio3DHandle(YAML::detail::iterator_value& entity, Yeager::Scene* scene, const String& name,
+                                const String& type, const Uint id);
+  void DeserializeObject(YAML::detail::iterator_value& entity, Yeager::Scene* scene, const String& name,
+                         const String& type, const Uint id);
+  void DeserializeAnimatedObject(YAML::detail::iterator_value& entity, Yeager::Scene* scene, const String& name,
+                                 const String& type, const Uint id);
+  void DeserializeLightSource(YAML::detail::iterator_value& entity, Yeager::Scene* scene, const String& name,
+                              const String& type, const Uint id);
 };
 }  // namespace Yeager

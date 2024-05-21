@@ -72,7 +72,7 @@ struct YgPadding {
   uint8_t Padding[Bytes];
   YgPadding()
   {
-    for (YEAGER_UINT x = 0; x < Bytes; x++) {
+    for (Uint x = 0; x < Bytes; x++) {
       Padding[x] = 0;
     }
   }
@@ -113,18 +113,20 @@ struct MemoryManagement {
   uint32_t GetMemortUsage();
 };
 
+extern bool EvaluateIntToBool(const int i);
+
 struct YgDate_t {
-  unsigned int Month = 0;
-  unsigned int WeekDay = 0;
-  unsigned int Day = 0;
-  unsigned int Year = 0;
+  Uint Month = 0;
+  Uint WeekDay = 0;
+  Uint Day = 0;
+  Uint Year = 0;
 };
 
 struct YgClock_t {
   long long Millis = 0;
-  unsigned int Seconds = 0;
-  unsigned int Minutes = 0;
-  unsigned int Hours = 0;
+  Uint Seconds = 0;
+  Uint Minutes = 0;
+  Uint Hours = 0;
 };
 
 extern String MonthNumberToString(int month);
@@ -135,11 +137,12 @@ struct YgTime_t {
   YgClock_t Time;
 };
 
-extern unsigned int ygWindowWidth;
-extern unsigned int ygWindowHeight;
-extern Cchar kOperatingSystem;
+extern Uint ygWindowWidth;
+extern Uint ygWindowHeight;
+extern Cchar g_OperatingSystemString;
 extern String kDefaultTexturePath;
 extern String GetPath(String path);
+extern String GetPathFromShared(String path);
 extern Cchar GetShaderPath(String shader);
 
 extern String GetExternalFolderPath();
@@ -151,9 +154,9 @@ extern MemoryManagement s_MemoryManagement;
  * @note Thanks to: https://stackoverflow.com/questions/16388510/evaluate-a-string-with-a-switch-in-c
  * @param str The String (Const char* format)
  * @param h Part of the String to start off, leave it blank!
- * @return constexpr unsigned int 
+ * @return constexpr Uint 
  */
-constexpr unsigned int StringToInteger(const char* str, int h = 0)
+constexpr Uint StringToInteger(const char* str, int h = 0)
 {
   return !str[h] ? 5381 : (StringToInteger(str, h + 1) * 33) ^ str[h];
 }

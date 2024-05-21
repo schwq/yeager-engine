@@ -18,7 +18,7 @@ VideoPlayer::VideoPlayer(const
   }
 
   int video_stream_idx = -1;
-  for (unsigned int  x = 0; x < m_format_ctx->nb_streams; x++) {
+  for (Uint  x = 0; x < m_format_ctx->nb_streams; x++) {
     if (m_format_ctx->streams[x]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
       video_stream_idx = x;tion 
       break;

@@ -3,8 +3,18 @@
 #include "../../Scene.h"
 using namespace Yeager;
 
+void Yeager::SwapNodes(Yeager::NodeComponent* node1, Yeager::NodeComponent* node2)
+{
+  Yeager::NodeComponent tmp = *node1;
+  *node1 = *node2;
+  *node2 = tmp;
+}
+
 void Yeager::DeleteChildOf(Yeager::NodeComponent* node)
 {
+  if (!node)
+    return;
+
   for (auto& child : *node->GetChildren()) {
     if (child == YEAGER_NULLPTR)
       continue;
@@ -18,7 +28,6 @@ void Yeager::DeleteChildOf(Yeager::NodeComponent* node)
 
 void Yeager::AddNodeComponentToScene(Yeager::NodeComponent* node, Yeager::Scene* scene)
 {
-  /* For safety measure, almost all vectors of "pointes" in the scene are smart pointers */
   scene->GetNodeHierarchy()->push_back(node);
 }
 
@@ -51,7 +60,7 @@ bool Yeager::MoveNodeChildToNewParent(Yeager::NodeComponent* child, Yeager::Node
 
 bool NodeComponent::RemoveChild(Yeager::NodeComponent* child)
 {
-  for (YEAGER_UINT x = 0; x < m_Children.size(); x++) {
+  for (Uint x = 0; x < m_Children.size(); x++) {
     Yeager::NodeComponent* c = m_Children.at(x);
     if (child == c) {
       m_Children.erase(m_Children.begin() + x);
@@ -59,6 +68,19 @@ bool NodeComponent::RemoveChild(Yeager::NodeComponent* child)
     }
   }
   return false;
+}
+// TODO: review this copy
+Yeager::NodeComponent& NodeComponent::operator=(const Yeager::NodeComponent& other)
+{
+  if (other.IsRoot())
+    this->m_IsRoot = true;
+  this->m_Entity = other.m_Entity;
+  this->m_Parent = other.m_Parent;
+  this->m_RootScene = other.m_RootScene;
+  this->m_Children.clear();
+  this->m_Children.reserve(other.m_Children.size());
+  this->m_Children = other.m_Children;
+  return *this;
 }
 
 bool Yeager::CopyNodeChildToNewParent(Yeager::NodeComponent* child, Yeager::NodeComponent* newParent)

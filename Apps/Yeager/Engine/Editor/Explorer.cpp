@@ -253,6 +253,7 @@ void EditorExplorer::AddImportedObjectWindow()
     Checkbox("Flip texture", &m_ImportedObjectFlipTexture);
     Checkbox("Animated", &m_AddObjectIsAnimated);
     Checkbox("Instanced", &m_AddObjectIsInstanced);
+    Checkbox("Playable", &m_AddObjectIsPlayable);
 
     if (m_AddObjectIsInstanced) {
       InputInt("Grid factor", &m_InstancedGridFactor);
@@ -273,8 +274,8 @@ void EditorExplorer::AddImportedObjectWindow()
 void EditorExplorer::StartFolderSelection(const String& title)
 {
   if (!m_AwaitingUserChoiceFile) {
-    m_Selection = new pfd::open_file(pfd::open_file(
-        "Select 3D model file", m_Application->GetScene()->GetContext()->m_ProjectFolderPath.c_str(), {"*"}, false));
+    m_Selection = new pfd::open_file(
+        pfd::open_file(title, m_Application->GetScene()->GetContext()->m_ProjectFolderPath.c_str(), {"*"}, false));
     m_AwaitingUserChoiceFile = true;
   }
 }
@@ -306,46 +307,81 @@ void EditorExplorer::HandleObjectCreation()
   }
 
   if (m_EverythingFineToCreate) {
-    if (!m_AddObjectIsAnimated) {
-      auto obj = std::make_shared<Yeager::Object>(m_NewObjectName, m_Application);
-      if (obj->ThreadImportObjectFromFile(m_NewObjectPath.c_str(), m_ImportedObjectFlipTexture)) {
-        m_Application->GetScene()->GetObjects()->push_back(obj);
-        CleanupAfterObjectCreation();
-      } else {
-        m_Application->GetInterface()->AddWarningWindow("Error processing the path from the imported model!");
-        m_EverythingFineToCreate = false;
-      }
+    if (!m_AddObjectIsAnimated && !m_AddObjectIsPlayable) {
+      CreateObject();
+    } else if (!m_AddObjectIsPlayable) {
+      CreateAnimatedObject();
     } else {
-      if (m_AddObjectIsInstanced) {
-        auto obj = std::make_shared<Yeager::AnimatedObject>(m_NewObjectName, m_Application, m_InstancedObjectsCount);
-        if (obj->ImportObjectFromFile(m_NewObjectPath.c_str(), m_ImportedObjectFlipTexture)) {
-          std::vector<Transformation*> pos;
-          BuildInstancedObjectTransformation(pos);
-
-          obj->BuildAnimation(m_NewObjectPath);
-          obj->BuildProps(pos, m_Application->ShaderFromVarName("SimpleAnimated"));
-
-          DeleteInstancedObjectTransformation(&pos);  // cleanup raw pointers
-
-          m_Application->GetScene()->GetAnimatedObject()->push_back(obj);
-          CleanupAfterObjectCreation();
-        } else {
-          m_Application->GetInterface()->AddWarningWindow("Error processing the path from the imported model!");
-          m_EverythingFineToCreate = false;
-        }
-      } else {
-        auto obj = std::make_shared<Yeager::AnimatedObject>(m_NewObjectName, m_Application);
-        if (obj->ImportObjectFromFile(m_NewObjectPath.c_str(), m_ImportedObjectFlipTexture)) {
-          obj->BuildAnimation(m_NewObjectPath);
-          CleanupAfterObjectCreation();
-        } else {
-          m_Application->GetInterface()->AddWarningWindow("Error processing the path from the imported model!");
-          m_EverythingFineToCreate = false;
-        }
-      }
+      CreatePlayableObject();
     }
   }
   m_EverythingFineToCreate = true;
+}
+
+void EditorExplorer::CreateObject()
+{
+  auto obj = std::make_shared<Yeager::Object>(m_NewObjectName, m_Application);
+  if (obj->ThreadImportObjectFromFile(m_NewObjectPath.c_str(), m_ImportedObjectFlipTexture)) {
+    m_Application->GetScene()->GetObjects()->push_back(obj);
+    CleanupAfterObjectCreation();
+  } else {
+    m_Application->GetInterface()->AddWarningWindow("Error processing the path from the imported model!");
+    m_EverythingFineToCreate = false;
+  }
+}
+
+void EditorExplorer::CreateAnimatedObject()
+{
+  if (m_AddObjectIsInstanced) {
+    auto obj = std::make_shared<Yeager::AnimatedObject>(m_NewObjectName, m_Application, m_InstancedObjectsCount);
+    if (obj->ImportObjectFromFile(m_NewObjectPath.c_str(), m_ImportedObjectFlipTexture)) {
+      std::vector<Transformation*> pos;
+      BuildInstancedObjectTransformation(pos);
+
+      obj->BuildAnimation(m_NewObjectPath);
+      obj->BuildProps(pos, m_Application->ShaderFromVarName("SimpleAnimated"));
+
+      DeleteInstancedObjectTransformation(&pos);  // cleanup raw pointers
+
+      m_Application->GetScene()->GetAnimatedObject()->push_back(obj);
+      CleanupAfterObjectCreation();
+    } else {
+      m_Application->GetInterface()->AddWarningWindow("Error processing the path from the imported model!");
+      m_EverythingFineToCreate = false;
+    }
+  } else {
+    auto obj = std::make_shared<Yeager::AnimatedObject>(m_NewObjectName, m_Application);
+    if (obj->ThreadImportObjectFromFile(m_NewObjectPath.c_str(), m_ImportedObjectFlipTexture)) {
+      m_Application->GetScene()->GetAnimatedObject()->push_back(obj);
+      CleanupAfterObjectCreation();
+    } else {
+      m_Application->GetInterface()->AddWarningWindow("Error processing the path from the imported model!");
+      m_EverythingFineToCreate = false;
+    }
+  }
+}
+
+void EditorExplorer::CreatePlayableObject()
+{
+  if (!m_AddObjectIsAnimated) {
+    auto obj = std::make_shared<PlayableObject>(m_NewObjectName, m_Application);
+    if (obj->ThreadImportObjectFromFile(m_NewObjectPath.c_str(), m_ImportedObjectFlipTexture)) {
+      m_Application->GetScene()->GetObjects()->push_back(obj);
+      CleanupAfterObjectCreation();
+    } else {
+      m_Application->GetInterface()->AddWarningWindow("Error processing the path from the imported model!");
+      m_EverythingFineToCreate = false;
+    }
+  } else {
+    auto obj = std::make_shared<PlayableAnimatedObject>(m_NewObjectName, m_Application);
+    if (obj->ThreadImportObjectFromFile(m_NewObjectPath.c_str(), m_ImportedObjectFlipTexture)) {
+      m_Application->GetScene()->GetAnimatedObject()->push_back(obj);
+      CleanupAfterObjectCreation();
+    } else {
+      m_Application->GetInterface()->AddWarningWindow("Error processing the path from the imported model!");
+      m_EverythingFineToCreate = false;
+    }
+  }
 }
 
 void EditorExplorer::CleanupAfterObjectCreation()
@@ -376,8 +412,11 @@ String Yeager::GetExplorerSymbolForToolbox(EntityObjectType::Enum type)
     case EntityObjectType::AUDIO_HANDLE:
     case EntityObjectType::AUDIO_3D_HANDLE:
       return String(ICON_FA_MUSIC);
+    case EntityObjectType::OBJECT_PLAYABLE:
+    case EntityObjectType::OBJECT_ANIMATED_PLAYABLE:
+      return String(ICON_FA_CHESS_PAWN);
     default:
-      return String(ICON_FA_QUESTION);
+      return String(ICON_FA_LOCK);
   }
 }
 
@@ -389,7 +428,7 @@ const String EditorExplorer::CreateToolboxLabel(Yeager::ToolboxHandle* obj)
 
 void EditorExplorer::DrawToolboxesList()
 {
-  for (unsigned int x = 0; x < m_Application->GetScene()->GetToolboxs()->size(); x++) {
+  for (Uint x = 0; x < m_Application->GetScene()->GetToolboxs()->size(); x++) {
     Yeager::ToolboxHandle* obj = m_Application->GetScene()->GetToolboxs()->at(x).get();
     if (!obj->IsSeen())
       continue;

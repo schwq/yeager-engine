@@ -60,7 +60,7 @@ class Skybox : public EditorEntity {
 
   std::shared_ptr<MaterialTexture2D> m_Texture = YEAGER_NULLPTR;
 
-  unsigned int m_VerticesIndex = 0;
+  Uint m_VerticesIndex = 0;
   GLuint m_Vao = -1, m_Vbo = -1, m_Ebo = -1;
   String Path = YEAGER_NULL_LITERAL;
 

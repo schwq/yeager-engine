@@ -41,6 +41,7 @@ struct Transformation {
 
 extern Transformation GetDefaultTransformation();
 extern void ApplyTransformation(Transformation* trans);
+extern void LookAt(const Vector3& At, const Vector3& From, Vector3* rVec);
 
 struct EntityObjectType {
   enum Enum {
@@ -48,6 +49,8 @@ struct EntityObjectType {
     OBJECT_ANIMATED,
     OBJECT_INSTANCED,
     OBJECT_INSTANCED_ANIMATED,
+    OBJECT_PLAYABLE,
+    OBJECT_ANIMATED_PLAYABLE,
     AUDIO_HANDLE,
     AUDIO_3D_HANDLE,
     TEXTURE,
@@ -71,7 +74,7 @@ class Entity {
 
   String GetName();
   void SetName(const String& name) { m_Name = name; }
-  unsigned int GetId();
+  Uint GetId();
 
   void SetEntityType(EntityObjectType::Enum type) { m_Type = type; }
   EntityObjectType::Enum GetEntityType() const { return m_Type; }
@@ -82,6 +85,9 @@ class Entity {
   /* User data can be any type of data that a object or class that ihherit the Entity class can link to it, and extract in some point during the process */
   UserDataHandle* GetUserData() { return &m_UserData; }
 
+  /* This can be useful when working with toolboxes or other areas without access to the application core pointer, why tho? i dont know, lazyness*/
+  Yeager::ApplicationCore* GetApplication() { return m_Application; }
+
  protected:
   EntityObjectType::Enum m_Type = EntityObjectType::UNDEFINED;
   Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
@@ -89,8 +95,8 @@ class Entity {
   String m_Name = YEAGER_NULL_LITERAL;
   bool m_Render = true;
   bool m_CanBeSerialize = true;
-  const unsigned int m_EntityID;
-  static unsigned int m_EntityCountID;
+  const Uint m_EntityID;
+  static Uint m_EntityCountID;
 };
 
 /**
@@ -142,9 +148,8 @@ class GameEntity : public EditorEntity {
   Transformation* GetTransformationPtr();
 
   virtual void ApplyTransformation(Shader* Shader);
-  void inline SetTransformation(const Transformation& trans) { m_EntityTransformation = trans; }
-
-  constexpr inline std::vector<MaterialBase*>* GetLoadedTextures() { return &m_EntityLoadedTextures; };
+  YEAGER_FORCE_INLINE void SetTransformation(const Transformation& trans) { m_EntityTransformation = trans; }
+  constexpr YEAGER_FORCE_INLINE std::vector<MaterialBase*>* GetLoadedTextures() { return &m_EntityLoadedTextures; };
 
  protected:
   std::vector<MaterialBase*> m_EntityLoadedTextures;

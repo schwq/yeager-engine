@@ -9,10 +9,28 @@ using namespace physx;
 void Yeager::SpawnCubeObject(Yeager::ApplicationCore* application, const String& name, const Vector3& position,
                              const Vector3& rotation, const Vector3& scale, const ObjectPhysicsType::Enum physics)
 {
-  auto object = std::make_shared<Yeager::Object>(name, application);
+  auto object = std::make_shared<Object>(name, application);
   object->SetCanBeSerialize(false);
-  object->GenerateGeometryTexture(application->monarch.get());
-  object->GenerateObjectGeometry(ObjectGeometryType::eCUBE, ObjectPhysXCreationStatic(position, rotation, scale));
+  object->GenerateGeometryTexture(application->GetDefaults()->GetTexture().get());
+  if (physics == ObjectPhysicsType::eSTATIC_BODY) {
+    object->GenerateObjectGeometry(ObjectGeometryType::eCUBE, ObjectPhysXCreationStatic(position, rotation, scale));
+  } else {
+    object->GenerateObjectGeometry(ObjectGeometryType::eCUBE, ObjectPhysXCreationDynamic(position, rotation, scale));
+  }
+  application->GetScene()->GetObjects()->push_back(object);
+}
+
+void Yeager::SpawnSphereObject(Yeager::ApplicationCore* application, const String& name, const Vector3& position,
+                               const Vector3& rotation, const Vector3& scale, const ObjectPhysicsType::Enum physics)
+{
+  auto object = std::make_shared<Object>(name, application);
+  object->SetCanBeSerialize(false);
+  object->GenerateGeometryTexture(application->GetDefaults()->GetTexture().get());
+  if (physics == ObjectPhysicsType::eSTATIC_BODY) {
+    object->GenerateObjectGeometry(ObjectGeometryType::eSPHERE, ObjectPhysXCreationStatic(position, rotation, scale));
+  } else {
+    object->GenerateObjectGeometry(ObjectGeometryType::eSPHERE, ObjectPhysXCreationDynamic(position, rotation, scale));
+  }
   application->GetScene()->GetObjects()->push_back(object);
 }
 
@@ -90,7 +108,7 @@ void Object::BuildProps(const std::vector<Transformation*>& transformations, Sha
   shader->UseShader();
   /* The number of instances can differ from the actual number of props that exists*/
   if (m_Props.size() == m_InstancedObjs) {
-    for (unsigned int x = 0; x < m_InstancedObjs; x++) {
+    for (Uint x = 0; x < m_InstancedObjs; x++) {
       Yeager::ApplyTransformation(m_Props.at(x));
       shader->SetMat4("matrices[" + std::to_string(x) + "]", m_Props.at(x)->model);
     }
@@ -128,7 +146,6 @@ Object::~Object()
 
 AnimatedObject::~AnimatedObject()
 {
-  YEAGER_DELETE(m_Animation)
   YEAGER_DELETE(m_AnimationEngine)
   YEAGER_DELETE(m_ThreadImporter)
 }
@@ -173,25 +190,29 @@ std::vector<Vector3> Yeager::ExtractVerticesPositionToVector(ObjectModelData* mo
 
 void AnimatedObject::UpdateAnimation(float delta)
 {
-  m_AnimationEngine->UpdateAnimation(delta);
+  if (m_ObjectDataLoaded && m_Render) {
+    m_AnimationEngine->UpdateAnimation(delta);
+  }
 }
 
 void AnimatedObject::BuildAnimationMatrices(Shader* shader)
 {
-  shader->UseShader();
-  auto transform = m_AnimationEngine->GetFinalBoneMatrices();
-  for (int x = 0; x < transform.size(); x++) {
-    shader->SetMat4("finalBonesMatrices[" + std::to_string(x) + "]", transform.at(x));
+  if (m_ObjectDataLoaded && m_Render) {
+    shader->UseShader();
+    auto transform = m_AnimationEngine->GetFinalBoneMatrices();
+    for (int x = 0; x < transform.size(); x++) {
+      shader->SetMat4("finalBonesMatrices[" + std::to_string(x) + "]", transform.at(x));
+    }
   }
 }
 
 void Yeager::DrawSeparateMesh(ObjectMeshData* mesh, Yeager::Shader* shader)
 {
   shader->UseShader();
-  unsigned int diffuseNum = 1;
-  unsigned int specularNum = 1;
+  Uint diffuseNum = 1;
+  Uint specularNum = 1;
 
-  for (unsigned int x = 0; x < mesh->Textures.size(); x++) {
+  for (Uint x = 0; x < mesh->Textures.size(); x++) {
     glActiveTexture(GL_TEXTURE0 + x);
     String number;
     String name = mesh->Textures[x]->GetName();
@@ -215,10 +236,10 @@ void Yeager::DrawSeparateMesh(ObjectMeshData* mesh, Yeager::Shader* shader)
 
 void Yeager::DrawSeparateInstancedMesh(ObjectMeshData* mesh, Yeager::Shader* shader, int amount)
 {
-  unsigned int diffuseNum = 1;
-  unsigned int specularNum = 1;
+  Uint diffuseNum = 1;
+  Uint specularNum = 1;
 
-  for (unsigned int x = 0; x < mesh->Textures.size(); x++) {
+  for (Uint x = 0; x < mesh->Textures.size(); x++) {
     glActiveTexture(GL_TEXTURE0 + x);
     String number;
     String name = mesh->Textures[x]->GetName();
@@ -461,8 +482,36 @@ void Object::DrawModel(Yeager::Shader* shader)
   }
 }
 
+void Object::ProcessOnScreenProprieties()
+{
+  if (!m_OnScreenProprieties.m_CullingEnabled)
+    glDisable(GL_CULL_FACE);
+
+  switch (m_OnScreenProprieties.m_PolygonMode) {
+    case RenderingGLPolygonMode::eLINES:
+      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+      break;
+    case RenderingGLPolygonMode::ePOINTS:
+      glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+      break;
+    case RenderingGLPolygonMode::eFILL:
+    default:
+      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  }
+}
+void Object::PosProcessOnScreenProprieties()
+{
+  if (!m_OnScreenProprieties.m_CullingEnabled)
+    glEnable(GL_CULL_FACE);
+
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
 void Object::Draw(Yeager::Shader* shader, float delta)
 {
+
+  ProcessOnScreenProprieties();
+
   if (m_ObjectDataLoaded && m_Render) {
 
     shader->UseShader();
@@ -480,6 +529,8 @@ void Object::Draw(Yeager::Shader* shader, float delta)
       }
     }
   }
+
+  PosProcessOnScreenProprieties();
 }
 
 void Object::Setup()
@@ -560,8 +611,9 @@ AnimatedObject::AnimatedObject(String name, ApplicationCore* application, GLuint
 
 void AnimatedObject::BuildAnimation(String path)
 {
-  m_Animation = new Animation(path, this);
-  m_AnimationEngine = new AnimationEngine(m_Animation);
+  m_AnimationEngine = new AnimationEngine;
+  m_AnimationEngine->Initialize();
+  m_AnimationEngine->LoadAnimationsFromFile(path, this);
 }
 
 bool AnimatedObject::ImportObjectFromFile(Cchar path, bool flip_image)
@@ -643,23 +695,27 @@ void AnimatedObject::Setup()
 
 void AnimatedObject::Draw(Shader* shader)
 {
+  ProcessOnScreenProprieties();
+
   if (m_ObjectDataLoaded && m_Render) {
     shader->UseShader();
     if (m_InstancedType == ObjectInstancedType::eNON_INSTACED)
       ApplyTransformation(shader);
     DrawMeshes(shader);
   }
+
+  PosProcessOnScreenProprieties();
 }
 
 void AnimatedObject::DrawMeshes(Shader* shader)
 {
   for (auto& mesh : m_ModelData.Meshes) {
-    unsigned int diffuseNum = 1;
-    unsigned int specularNum = 1;
-    unsigned int normalNum = 1;
-    unsigned int heightNum = 1;
+    Uint diffuseNum = 1;
+    Uint specularNum = 1;
+    Uint normalNum = 1;
+    Uint heightNum = 1;
 
-    for (unsigned int x = 0; x < mesh.Textures.size(); x++) {
+    for (Uint x = 0; x < mesh.Textures.size(); x++) {
       glActiveTexture(GL_TEXTURE0 + x);
       String number;
       String name = mesh.Textures[x]->GetName();
@@ -694,35 +750,44 @@ void AnimatedObject::DrawMeshes(Shader* shader)
 std::vector<GLfloat> Yeager::GenerateCubeVertices()
 {
   return std::vector<GLfloat>{
-      -0.5f, -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f, 0.0f, 0.0f, 0.5f,  -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f, 1.0f, 0.0f,
-      0.5f,  0.5f,  -0.5f, 0.0f,  0.0f,  -1.0f, 1.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 0.0f,  0.0f,  -1.0f, 1.0f, 1.0f,
-      -0.5f, 0.5f,  -0.5f, 0.0f,  0.0f,  -1.0f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f, 0.0f, 0.0f,
 
-      -0.5f, -0.5f, 0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 0.0f,
-      0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 1.0f, 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 1.0f,
-      -0.5f, 0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 1.0f, -0.5f, -0.5f, 0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f,  0.0f, 0.0f,  // A 0
+        0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 1.0f, 1.0f, 0.0f,  // B 1
+        0.5f,  0.5f, -0.5f,  0.0f, 0.0f, 1.0f, 1.0f, 1.0f,  // C 2
+        -0.5f,  0.5f, -0.5f, 0.0f, 0.0f, 1.0f,  0.0f, 1.0f,  // D 3
+        -0.5f, -0.5f,  0.5f, 0.0f, 0.0f, -1.0f,  0.0f, 0.0f,  // E 4
+        0.5f, -0.5f,  0.5f,  0.0f, 0.0f, -1.0f, 1.0f, 0.0f,   // F 5
 
-      -0.5f, 0.5f,  0.5f,  -1.0f, 0.0f,  0.0f,  1.0f, 0.0f, -0.5f, 0.5f,  -0.5f, -1.0f, 0.0f,  0.0f,  1.0f, 1.0f,
-      -0.5f, -0.5f, -0.5f, -1.0f, 0.0f,  0.0f,  0.0f, 1.0f, -0.5f, -0.5f, -0.5f, -1.0f, 0.0f,  0.0f,  0.0f, 1.0f,
-      -0.5f, -0.5f, 0.5f,  -1.0f, 0.0f,  0.0f,  0.0f, 0.0f, -0.5f, 0.5f,  0.5f,  -1.0f, 0.0f,  0.0f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  0.0f, 0.0f, -1.0f, 1.0f, 1.0f,   // G 6
+        -0.5f,  0.5f,  0.5f, 0.0f, 0.0f, -1.0f,  0.0f, 1.0f,   // H 7
+        -0.5f,  0.5f, -0.5f, -1.0f, 0.0f, 0.0f,  0.0f, 0.0f,  // D 8
+        -0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f,  1.0f, 0.0f,  // A 9
+        -0.5f, -0.5f,  0.5f, -1.0f, 0.0f, 0.0f,  1.0f, 1.0f,  // E 10
+        -0.5f,  0.5f,  0.5f, -1.0f, 0.0f, 0.0f,  0.0f, 1.0f,  // H 11
 
-      0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.5f,  0.5f,  -0.5f, 1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-      0.5f,  -0.5f, -0.5f, 1.0f,  0.0f,  0.0f,  0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-      0.5f,  -0.5f, 0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+        0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f, 0.0f, 0.0f,   // B 12
+        0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 0.0f, 1.0f, 0.0f,   // C 13
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.0f, 1.0f, 1.0f,   // G 14
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f, 0.0f, 0.0f, 1.0f,   // F 15
+        -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f,  0.0f, 0.0f,  // A 16
+        0.5f, -0.5f, -0.5f,  0.0f, -1.0f, 0.0f, 1.0f, 0.0f,   // B 17
+        
+        0.5f, -0.5f,  0.5f,  0.0f, -1.0f, 0.0f, 1.0f, 1.0f,   // F 18
+        -0.5f, -0.5f,  0.5f, 0.0f, -1.0f, 0.0f,  0.0f, 1.0f,  // E 19
+        0.5f,  0.5f, -0.5f,  0.0f, 1.0f, 0.0f,  0.0f, 0.0f,  // C 20
+        -0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f,  1.0f, 0.0f,  // D 21
+        -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f,  1.0f, 1.0f,  // H 22
+        0.5f,  0.5f,  0.5f,  0.0f, 1.0f, 0.0f,  0.0f, 1.0f };
+}  // clang-format on
 
-      -0.5f, -0.5f, -0.5f, 0.0f,  -1.0f, 0.0f,  0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 0.0f,  -1.0f, 0.0f,  1.0f, 1.0f,
-      0.5f,  -0.5f, 0.5f,  0.0f,  -1.0f, 0.0f,  1.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  0.0f,  -1.0f, 0.0f,  1.0f, 0.0f,
-      -0.5f, -0.5f, 0.5f,  0.0f,  -1.0f, 0.0f,  0.0f, 0.0f, -0.5f, -0.5f, -0.5f, 0.0f,  -1.0f, 0.0f,  0.0f, 1.0f,
-
-      -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
-      0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f, 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-      -0.5f, 0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.0f, 1.0f};
-}
-// clang-format on
 std::vector<GLuint> Yeager::GenerateCubeIndices()
 {
-  return std::vector<GLuint>{0, 1, 3, 3, 1, 2, 1, 5, 2, 2, 5, 6, 5, 4, 6, 6, 4, 7,
-                             4, 0, 7, 7, 0, 3, 3, 2, 7, 7, 2, 6, 4, 5, 0, 0, 5, 1};
+  return std::vector<GLuint>{// front and back
+                             0, 3, 2, 2, 1, 0, 4, 5, 6, 6, 7, 4,
+                             // left and right
+                             11, 8, 9, 9, 10, 11, 12, 13, 14, 14, 15, 12,
+                             // bottom and top
+                             16, 17, 18, 18, 19, 16, 20, 21, 22, 22, 23, 20};
 }
 
 std::vector<GLfloat> Yeager::GenerateSphereVertices(int stackCount, int sectorCount)
@@ -734,12 +799,12 @@ std::vector<GLfloat> Yeager::GenerateSphereVertices(int stackCount, int sectorCo
   float nx, ny, nz, lenghtInv = 1.0f / radius;
   float s, t;
 
-  float sectorStep = 2 * PI / sectorCount;
-  float stackStep = PI / stackCount;
+  float sectorStep = 2 * YEAGER_PI / sectorCount;
+  float stackStep = YEAGER_PI / stackCount;
   float sectorAngle, stackAngle;
 
   for (int i = 0; i <= stackCount; ++i) {
-    stackAngle = PI / 2 - i * stackStep;
+    stackAngle = YEAGER_PI / 2 - i * stackStep;
     xy = radius * cosf(stackAngle);
     z = radius * sinf(stackAngle);
 

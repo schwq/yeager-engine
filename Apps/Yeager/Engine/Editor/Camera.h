@@ -22,6 +22,13 @@
 #include "../Physics/PhysXCharacterController.h"
 #include "../Renderer/Entity.h"
 
+#define YEAGER_CAMERA_ORIENTATION_FRONT Vector3(0.0f, 0.0f, -1.0f)
+#define YEAGER_CAMERA_ORIENTATION_BACK Vector3(0.0f, 0.0f, 1.0f)
+#define YEAGER_CAMERA_ORIENTATION_LEFT Vector3(-1.0f, 0.0f, 0.0f)
+#define YEAGER_CAMERA_ORIENTATION_RIGHT Vector3(1.0f, 0.0f, 0.0f)
+#define YEAGER_CAMERA_ORIENTATION_ABOVE Vector3(0.0f, 1.0f, 0.0f)
+#define YEAGER_CAMERA_ORIENTATION_DOWN Vector3(0.0f, -1.0f, 0.0f)
+
 namespace Yeager {
 class Shader;
 class ApplicationCore;
@@ -33,6 +40,8 @@ struct YgCameraPosition {
 struct YgCameraType {
   enum Enum { eCAMERA_BASE, eCAMERA_EDITOR, eCAMERA_PLAYER };
 };
+
+extern String CameraOrientationToString(const Vector3& orientation);
 
 /**
  * @brief BaseCamera holds all values in common of the types of camera that are created inside the program, like the player`s camera in the user`s game, and the built-in camera 
@@ -57,12 +66,19 @@ class BaseCamera : public EditorEntity {
   YEAGER_FORCE_INLINE bool GetShouldMove() const { return m_CameraShouldMove; }
   YEAGER_FORCE_INLINE const Vector3 GetPosition() const { return m_Position; }
   YEAGER_FORCE_INLINE const Vector3 GetDirection() const { return m_CameraDirection; }
+  YEAGER_FORCE_INLINE Vector3* GetDirectionPtr() { return &m_CameraDirection; }
   YEAGER_FORCE_INLINE void SetShouldMove(bool move) { m_CameraShouldMove = move; }
-  YEAGER_FORCE_INLINE void SetPosition(const Vector3& pos) { m_Position = pos; }
+  virtual void SetPosition(const Vector3& pos) { m_Position = pos; }
   YEAGER_FORCE_INLINE void SetDirection(const Vector3& dir) { m_CameraDirection = dir; }
   YEAGER_FORCE_INLINE Vector3 GetFront() const { return m_CameraFront; }
+  YEAGER_FORCE_INLINE Vector3* GetFrontPtr() { return &m_CameraFront; }
+  YEAGER_FORCE_INLINE void SetFront(const Vector3& front) { m_CameraFront = front; }
 
   YEAGER_FORCE_INLINE YgCameraType::Enum GetCameraType() const { return m_CameraType; }
+
+  /* When attaching and detaching camera in the scene, we dont want the cameras behaving like 2 diferent cameras, so
+  when we call the attach or detach camera, the information (position, direction ect) is pass out to the next camera */
+  void TransferInformation(Yeager::BaseCamera* other);
 
  protected:
   Vector3 m_Position = YEAGER_ZERO_VECTOR3;
@@ -108,6 +124,8 @@ class PlayerCamera : public BaseCamera {
   void ApplyGravity(float delta);
   void AttachCameraPosToCharacterPos();
   void Update(float delta);
+
+  void SetPosition(const Vector3& pos);
 
  protected:
   physx::PxController* m_Controller = YEAGER_NULLPTR;

@@ -152,37 +152,37 @@ void InterfaceWindow::CalcScreenPos()
           m_ScreenPosition = pos;
         } break;
         case WindowRelativePos::ABOVE_MIDDLE: {
-          unsigned int middle_above_x = glfw_window.x / 2;
-          unsigned int window_middle_x = Size.x / 2;
+          Uint middle_above_x = glfw_window.x / 2;
+          Uint window_middle_x = Size.x / 2;
           ImVec2 pos = ImVec2(middle_above_x - window_middle_x, 0);
           pos.y += Yeager::EngineEditorMenuBar.MenuBarSize.y;
           m_ScreenPosition = pos;
         } break;
         case WindowRelativePos::UNDER_MIDDLE: {
-          unsigned int middle_above_x = glfw_window.x / 2;
-          unsigned int window_middle_x = Size.x / 2;
+          Uint middle_above_x = glfw_window.x / 2;
+          Uint window_middle_x = Size.x / 2;
           ImVec2 pos = ImVec2(middle_above_x - window_middle_x, glfw_window.y - Size.y);
           m_ScreenPosition = pos;
         } break;
         case WindowRelativePos::LEFT_MIDDLE: {
-          unsigned int middle_right_y = glfw_window.y / 2;
-          unsigned int window_middle_y = Size.y / 2;
+          Uint middle_right_y = glfw_window.y / 2;
+          Uint window_middle_y = Size.y / 2;
           ImVec2 pos = ImVec2(0, middle_right_y - window_middle_y);
           pos.y += Yeager::EngineEditorMenuBar.MenuBarSize.y;
           m_ScreenPosition = pos;
         } break;
         case WindowRelativePos::MIDDLE: {
-          unsigned int window_middle_x = Size.x / 2;
-          unsigned int window_middle_y = Size.y / 2;
-          unsigned int middle_window_x = glfw_window.x / 2;
-          unsigned int middle_window_y = glfw_window.y / 2;
+          Uint window_middle_x = Size.x / 2;
+          Uint window_middle_y = Size.y / 2;
+          Uint middle_window_x = glfw_window.x / 2;
+          Uint middle_window_y = glfw_window.y / 2;
           ImVec2 pos = ImVec2(middle_window_x - window_middle_x, middle_window_y - window_middle_y);
           pos.y += Yeager::EngineEditorMenuBar.MenuBarSize.y;
           m_ScreenPosition = pos;
         } break;
         case WindowRelativePos::RIGHT_MIDDLE: {
-          unsigned int middle_left_y = glfw_window.y / 2;
-          unsigned int window_middle_y = Size.y / 2;
+          Uint middle_left_y = glfw_window.y / 2;
+          Uint window_middle_y = Size.y / 2;
           ImVec2 pos = ImVec2(glfw_window.x, middle_left_y - window_middle_y);
           pos.y += Yeager::EngineEditorMenuBar.MenuBarSize.y;
           m_ScreenPosition = pos;
@@ -270,7 +270,7 @@ void InterfaceWindow::SetPos(ImVec2 pos)
   m_ScreenPosition = pos;
 }
 
-bool InterfaceWindow::GetCollision(unsigned int x, unsigned int y)
+bool InterfaceWindow::GetCollision(Uint x, Uint y)
 {
   bool collision_x = false;
   bool collision_y = false;

@@ -4,8 +4,8 @@ using namespace Yeager;
 Shader::Shader(Cchar fragmentPath, Cchar vertexPath, String name)
 {
   m_Name = name;
-  unsigned int vt = CreateVertexGL(vertexPath);
-  unsigned int fg = CreateFragmentGL(fragmentPath);
+  Uint vt = CreateVertexGL(vertexPath);
+  Uint fg = CreateFragmentGL(fragmentPath);
   if (m_fragment_build && m_vertex_build) {
     LinkShaders(vt, fg);
     m_initialize = true;
@@ -20,9 +20,9 @@ Shader::~Shader()
   //glDeleteProgram(m_id);
 }
 
-unsigned int Shader::CreateVertexGL(Cchar vertexPath)
+Uint Shader::CreateVertexGL(Cchar vertexPath)
 {
-  unsigned int vertexShaderSource = 0;
+  Uint vertexShaderSource = 0;
   int vertexShaderSuccess = 0;
   char vertexInfoLog[512];
 
@@ -58,9 +58,9 @@ unsigned int Shader::CreateVertexGL(Cchar vertexPath)
   return vertexShaderSource;
 }
 
-unsigned int Shader::CreateFragmentGL(Cchar fragmentPath)
+Uint Shader::CreateFragmentGL(Cchar fragmentPath)
 {
-  unsigned int fragmentShaderSource = 0;
+  Uint fragmentShaderSource = 0;
   int fragmentShaderSuccess = 0;
   char fragmentInfoLog[512];
 
@@ -96,7 +96,7 @@ unsigned int Shader::CreateFragmentGL(Cchar fragmentPath)
   return fragmentShaderSource;
 }
 
-void Shader::LinkShaders(unsigned int vertexShader, unsigned int fragmentShader)
+void Shader::LinkShaders(Uint vertexShader, Uint fragmentShader)
 {
   m_EntityID = glCreateProgram();
   glAttachShader(m_EntityID, vertexShader);

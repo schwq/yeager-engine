@@ -37,15 +37,12 @@ MaterialTexture2D::~MaterialTexture2D()
 GLenum Yeager::ChannelsToFormat(const int channels)
 {
   switch (channels) {
-    case 1: {
+    case 1:
       return GL_RED;
-    } break;
-    case 3: {
+    case 3:
       return GL_RGB;
-    } break;
-    case 4: {
+    case 4:
       return GL_RGBA;
-    } break;
     default:
       return GL_RGB;
   }
@@ -63,6 +60,7 @@ void MaterialTexture2D::GenerateFromData(STBIDataOutput* output, const MateriaTe
   m_TextureHandle.Height = output->Height;
   m_TextureHandle.Width = output->Width;
   m_TextureHandle.Path = output->OriginalPath;
+  m_TextureHandle.Generated = true;
   m_TextureHandle.Format = ChannelsToFormat(output->NrComponents);
 
   glTexImage2D(parameteri.BindTarget, 0, m_TextureHandle.Format, output->Width, output->Height, 0,
@@ -90,6 +88,28 @@ void MaterialTexture2D::GenerateTextureParameter(const MateriaTextureParameterGL
   glTexParameterf(parameter.BindTarget, GL_TEXTURE_BASE_LEVEL, parameter.BASE_LEVEL);
   glTexParameteri(parameter.BindTarget, GL_TEXTURE_MIN_FILTER, parameter.MIN_FILTER);
   glTexParameteri(parameter.BindTarget, GL_TEXTURE_MAG_FILTER, parameter.MAG_FILTER);
+}
+
+bool MaterialTexture2D::RegenerateTextureFlipped(bool flip)
+{
+  if (!m_TextureHandle.Generated) {
+    Yeager::Log(WARNING, "Trying to regenerate a unknown texture handle! Name: [{}] ID: [{}]", m_Name, m_EntityID);
+    return false;
+  }
+
+  m_TextureHandle.Flipped = flip;
+
+  if (m_MaterialType == MaterialType::eTEXTURE2D) {
+    return GenerateFromFile(m_TextureHandle.Path, flip, m_TextureHandle.Parameter);
+  } else if (m_MaterialType == MaterialType::eCUBEMAP) {
+    return GenerateCubeMapFromFile(m_TextureHandle.CubeMapsPaths, flip, m_TextureHandle.Parameter);
+  } else {
+    Yeager::Log(WARNING,
+                "Texture material type does not support regeneration with the texture flipped!, This is bad code "
+                "written! Name: [{}] ID: [{}]",
+                m_Name, m_EntityID);
+    return false;
+  }
 }
 
 bool MaterialTexture2D::GenerateFromFile(const String& path, bool flip, const MateriaTextureParameterGL parameteri)
@@ -149,7 +169,7 @@ bool MaterialTexture2D::GenerateCubeMapFromFile(const std::vector<String>& paths
 
   int channels = 0;
   bool successed = true;
-  for (unsigned int i = 0; i < paths.size(); i++) {
+  for (Uint i = 0; i < paths.size(); i++) {
     unsigned char* data = stbi_load(paths[i].c_str(), &m_TextureHandle.Width, &m_TextureHandle.Height, &channels, 0);
 
     if (data) {

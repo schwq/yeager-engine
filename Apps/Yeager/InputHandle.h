@@ -27,6 +27,8 @@
 #define YEAGER_KEY_RELEASE 2
 #define YEAGER_KEY_PRESS_AND_RELEASE 3
 
+#define YEAGER_ALT_SHIFT(mods) mods& GLFW_MOD_ALT&& mods& GLFW_MOD_SHIFT
+
 namespace Yeager {
 class ApplicationCore;
 
@@ -134,9 +136,10 @@ class Input {
   static float m_LastMouseWidth;
   /// @brief  Used for handling the first time the mouse is called, and the camera makes a quickly weird movement, kinda annoying
   static bool m_FirstMouse;
-  static unsigned int m_FramesCount;
+  static Uint m_FramesCount;
   bool m_CursorCanDisappear = true;
   static bool m_CursorShouldAppear;
+  static bool m_SilentInputHandling;
   int cursor_x = 0, cursor_y = 0;
 };
 }  // namespace Yeager

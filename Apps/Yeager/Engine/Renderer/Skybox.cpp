@@ -25,7 +25,6 @@ bool Skybox::BuildSkyboxFromImport(String path, bool flip)
       return false;
     }
 
-    m_Texture->GetTextureDataHandle()->Texture = m_Model.TexturesLoaded[0]->first.GetTextureID();
     m_Geometry = ObjectGeometryType::eCUSTOM;
     m_Type = SkyboxTextureType::ESampler2D;
     m_SkyboxDataLoaded = true;
@@ -73,7 +72,7 @@ bool Skybox::BuildSkyboxFromCubemap(String directory, Yeager::ImageExtension ext
       return true;
     } else if (NumberOfFilesInDir(directory) == 1) {
       std::vector<String> paths;
-      for (unsigned int x = 0; x < 6; x++) {
+      for (Uint x = 0; x < 6; x++) {
         for (const auto& path : std::filesystem::directory_iterator(directory)) {
           paths.push_back(path.path().string());
         }
@@ -179,6 +178,8 @@ Skybox::~Skybox()
 
 void Skybox::Draw(Yeager::Shader* shader, Matrix4 view, Matrix4 projection)
 {
+  glDisable(GL_CULL_FACE);
+
   if (m_SkyboxDataLoaded && m_Render) {
     glDepthFunc(GL_LEQUAL);
     shader->UseShader();
@@ -187,7 +188,7 @@ void Skybox::Draw(Yeager::Shader* shader, Matrix4 view, Matrix4 projection)
     glBindVertexArray(m_Vao);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(m_Type == SkyboxTextureType::ESampler2D ? GL_TEXTURE_2D : GL_TEXTURE_CUBE_MAP,
-                  m_Texture->GetTextureID());
+                  m_Model.TexturesLoaded[0]->first.GetTextureID());
     if (m_Geometry != ObjectGeometryType::eCUSTOM) {
       glDrawArrays(GL_TRIANGLES, 0, m_VerticesIndex);
     } else {
@@ -195,7 +196,10 @@ void Skybox::Draw(Yeager::Shader* shader, Matrix4 view, Matrix4 projection)
         Yeager::DrawSeparateMesh(&mesh, shader);
       }
     }
+
     glBindVertexArray(0);
     glDepthFunc(GL_LESS);
   }
+
+  glEnable(GL_CULL_FACE);
 }

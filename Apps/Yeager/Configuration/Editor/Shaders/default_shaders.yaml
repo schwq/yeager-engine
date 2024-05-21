@@ -44,4 +44,12 @@ Shaders:
     VarName: Line
     FragmentPath: /Assets/Shaders/lines_fg.glsl
     VertexPath: /Assets/Shaders/lines_vt.glsl
+  - Shader: Font2D Shader
+    VarName: Font2D
+    FragmentPath: /Assets/Shaders/font2D_fg.glsl
+    VertexPath: /Assets/Shaders/font2D_vt.glsl
+  - Shader: Font3D Shader
+    VarName: Font3D
+    FragmentPath: /Assets/Shaders/font3D_fg.glsl
+    VertexPath: /Assets/Shaders/font3D_vt.glsl
   

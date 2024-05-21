@@ -22,6 +22,6 @@
 
 namespace Yeager {
 
-extern YEAGER_UINT GetHardwareThreadCount();
+extern Uint GetHardwareThreadCount();
 
 }  // namespace Yeager

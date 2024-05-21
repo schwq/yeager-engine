@@ -29,7 +29,7 @@ class PhysXHandle;
 #define YEAGER_PHYSX_RIGID_DYNAMIC_BODY 0x03
 #define YEAGER_PHYSX_RIGID_STATIC_BODY 0x04
 
-static YEAGER_NODISCARD std::vector<physx::PxShape*> ExtractShapesFromActor(physx::PxRigidActor* actor);
+YEAGER_NODISCARD static std::vector<physx::PxShape*> ExtractShapesFromActor(physx::PxRigidActor* actor);
 
 struct PhysXTriangleMeshInput {
   std::vector<physx::PxVec3> Vertices;

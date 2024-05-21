@@ -22,6 +22,7 @@
 #include "Common/Common.h"
 #include "Common/LogEngine.h"
 #include "Common/Utilities.h"
+#include "Engine/Renderer/Window.h"
 
 namespace Yeager {
 class ApplicationCore;
@@ -32,8 +33,19 @@ struct AntiAliasingOption {
   static String toString(Enum type);
 };
 
+struct EngineConfigurationHandle {
+  ImVec2 LauncherWindowSize = ImVec2(800, 800);
+  ImVec2 EditorWindowSize = ImVec2(1920, 1080);
+};
+
 struct VideoSettings {
   AntiAliasingOption::Enum AntiAliasingType;
+  bool WindowObeysAspectRatio = true;
+  AspectRatio::Enum WindowDesireAspectRatio = AspectRatio::eASPECT_21_9;
+};
+
+struct InterfaceSettings {
+  float GlobalOnScreenTextScale = 0.5f;
 };
 
 class Settings {
@@ -41,6 +53,10 @@ class Settings {
   Settings(Yeager::ApplicationCore* application);
   ~Settings();
   YEAGER_FORCE_INLINE VideoSettings GetVideoSettingsStruct() const { return m_VideoSettings; }
+  YEAGER_FORCE_INLINE VideoSettings* GetVideoSettingsStructPtr() { return &m_VideoSettings; }
+  YEAGER_FORCE_INLINE InterfaceSettings GetInterfaceSettingsStruct() const { return m_InterfaceSettings; }
+  YEAGER_FORCE_INLINE InterfaceSettings* GetInterfaceSettingsStructPtr() { return &m_InterfaceSettings; }
+  YEAGER_FORCE_INLINE EngineConfigurationHandle* GetEngineConfiguration() { return &m_EngineConfiguration; }
   /* Use this function to change values of the settings, it verify everything to make it happen correctly*/
   bool ChangeVideoSettingsAntiAliasingType(AntiAliasingOption::Enum type);
 
@@ -49,5 +65,7 @@ class Settings {
 
   Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
   VideoSettings m_VideoSettings;
+  InterfaceSettings m_InterfaceSettings;
+  EngineConfigurationHandle m_EngineConfiguration;
 };
 }  // namespace Yeager

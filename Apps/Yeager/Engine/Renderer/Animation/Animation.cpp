@@ -1,16 +1,9 @@
 #include "Animation.h"
 using namespace Yeager;
 
-Animation::Animation(const String& path, AnimatedObject* model)
+Animation::Animation(const String& name, const aiScene* scene, Uint index, AnimatedObject* model) : m_Name(name)
 {
-  Assimp::Importer imp;
-  const aiScene* scene = imp.ReadFile(path, aiProcess_Triangulate);
-
-  if (!scene || !scene->mRootNode) {
-    Yeager::Log(ERROR, "Assimp cannot load animation file! Path {}", path);
-  }
-
-  auto animation = scene->mAnimations[0];
+  auto animation = scene->mAnimations[index];
   m_Duration = animation->mDuration;
   m_TicksPerSecond = animation->mTicksPerSecond;
   aiMatrix4x4 globalTransformation = scene->mRootNode->mTransformation;

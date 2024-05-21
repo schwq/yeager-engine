@@ -107,7 +107,7 @@ class InterfaceWindow {
   /// @param x The x position of the element
   /// @param y The y position
   /// @return True if collision have been detected, false if not
-  bool GetCollision(unsigned int x, unsigned int y);
+  bool GetCollision(Uint x, Uint y);
   InterfaceWindow* GetParent();
   ImVec2 GetParentRelativePos();
   WindowRelativePos GetRelativePos();

@@ -62,6 +62,10 @@ class EditorExplorer {
   void BuildInstancedObjectTransformation(std::vector<Transformation*>& pos);
   void DeleteInstancedObjectTransformation(std::vector<Transformation*>* pos);
 
+  void CreateObject();
+  void CreateAnimatedObject();
+  void CreatePlayableObject();
+
   Yeager::ToolboxHandle* m_ToolboxSelected = YEAGER_NULLPTR;
   Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
   bool m_FirstTimeToolbox = true;
@@ -75,6 +79,7 @@ class EditorExplorer {
   bool m_LoopedAudio = false;
   bool m_AddAudioIs3D = false;
   bool m_AddObjectIsAnimated = false;
+  bool m_AddObjectIsPlayable = false;
   bool m_AddObjectIsInstanced = false;
   int m_InstancedGridFactor = 1;
   int m_InstancedObjectsCount = 1;

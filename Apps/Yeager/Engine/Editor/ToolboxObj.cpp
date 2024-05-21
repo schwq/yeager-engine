@@ -1,6 +1,7 @@
 #include "ToolboxObj.h"
 #include "../Interface/IconsFontAwesome6.h"
 #include "../Interface/Interface.h"
+#include "../Renderer/Animation/AnimationEngine.h"
 #include "../Renderer/Entity.h"
 #include "../Renderer/Object.h"
 #include "../Renderer/Skybox.h"
@@ -34,6 +35,12 @@ void ToolboxHandle::DrawObject()
     case EntityObjectType::SKYBOX:
       DrawToolboxSkybox();
       break;
+    case EntityObjectType::OBJECT_PLAYABLE:
+      DrawToolboxObjectPlayable();
+      break;
+    case EntityObjectType::OBJECT_ANIMATED_PLAYABLE:
+      DrawToolboxObjectAnimatedPlayable();
+      break;
     default:
       Yeager::Log(ERROR, "No type was declated for this entity!");
       assert(0);
@@ -61,6 +68,8 @@ bool Yeager::EntityToolboxIsSeen(EntityObjectType::Enum type)
     case EntityObjectType::OBJECT_ANIMATED:
     case EntityObjectType::OBJECT_INSTANCED:
     case EntityObjectType::OBJECT_INSTANCED_ANIMATED:
+    case EntityObjectType::OBJECT_ANIMATED_PLAYABLE:
+    case EntityObjectType::OBJECT_PLAYABLE:
     case EntityObjectType::SKYBOX:
       return true;
     default:
@@ -77,6 +86,40 @@ void ToolboxHandle::DrawToolboxObjectType()
 
     Transformation* trans = obj->GetTransformationPtr();
 
+    if (Button("Rename")) {
+      m_RenameWindowOpen = true;
+    }
+    if (m_RenameWindowOpen) {
+
+      Yeager::ApplicationCore* application = obj->GetApplication();
+      const auto windowSize = ImGui::GetWindowSize();
+      const auto windowPos = ImGui::GetWindowPos();
+
+      application->GetInput()->SetCameraCursorToWindowState(true);
+
+      SetNextWindowSize(ImVec2(windowSize.x, 50));
+      SetNextWindowPos(windowPos);
+
+      Begin("Rename Object");
+
+      if (m_NewName == YEAGER_NULL_LITERAL)
+        m_NewName = obj->GetName();
+      (InputText("New name", &m_NewName));
+      SameLine();
+      if (Button("Apply")) {
+        if (!(m_NewName.size() <= 0)) {
+          obj->SetName(m_NewName);
+          m_RenameWindowOpen = false;
+          m_NewName = YEAGER_NULL_LITERAL;
+          application->GetInput()->SetCameraCursorToWindowState(false);
+        }
+      }
+
+      End();
+    }
+
+    SameLine();
+
     if (Button("Delete")) {
       obj->SetScheduleDeletion(true);
     }
@@ -85,6 +128,33 @@ void ToolboxHandle::DrawToolboxObjectType()
     InputVector3("Position", &trans->position);
     if (Button("Reset Position")) {
       trans->position = Vector3(0.0f);
+    }
+    SameLine();
+    if (Button("Reset Scale")) {
+      trans->scale = Vector3(1.0f);
+    }
+    SameLine();
+    if (Button("Reset Rotation")) {
+      trans->rotation = Vector3(0.0f);
+    }
+
+    if (obj->GetGeometry() == ObjectGeometryType::eCUSTOM) {
+      if (Button("Regenerate Textures and flip")) {
+        m_FlipEveryTexture = !m_FlipEveryTexture;
+        if (m_EntityPtr->GetEntityType() == EntityObjectType::OBJECT) {
+          for (const auto& p : obj->GetModelData()->TexturesLoaded) {
+            Yeager::MaterialTexture2D* texture = &p->first;
+            texture->RegenerateTextureFlipped(m_FlipEveryTexture);
+          }
+
+        } else if (m_EntityPtr->GetEntityType() == EntityObjectType::OBJECT_ANIMATED) {
+          Yeager::AnimatedObject* animated = static_cast<Yeager::AnimatedObject*>(obj);
+          for (const auto& p : animated->GetModelData()->TexturesLoaded) {
+            Yeager::MaterialTexture2D* texture = &p->first;
+            texture->RegenerateTextureFlipped(m_FlipEveryTexture);
+          }
+        }
+      }
     }
 
     Text("Rotation");
@@ -99,12 +169,41 @@ void ToolboxHandle::DrawToolboxObjectType()
     }
     InputVector3("Rotation", &trans->rotation);
     InputVector3("Scale", &trans->scale);
+
+    Checkbox("Culling Enabled", &obj->GetOnScreenProprieties()->m_CullingEnabled);
+
+    if (Button("PolygonMode: FILL")) {
+      obj->GetOnScreenProprieties()->m_PolygonMode = RenderingGLPolygonMode::eFILL;
+    }
+
+    SameLine();
+
+    if (Button("PolygonMode: LINE")) {
+      obj->GetOnScreenProprieties()->m_PolygonMode = RenderingGLPolygonMode::eLINES;
+    }
+
+    SameLine();
+
+    if (Button("PolygonMode: POINT")) {
+      obj->GetOnScreenProprieties()->m_PolygonMode = RenderingGLPolygonMode::ePOINTS;
+    }
   }
 }
 
 void ToolboxHandle::DrawToolboxObjectAnimated()
 {
   DrawToolboxObjectType();
+  Yeager::AnimatedObject* obj = static_cast<Yeager::AnimatedObject*>(m_EntityPtr);
+  if (obj->IsLoaded()) {
+    for (auto& animation : *obj->GetAnimationEngine()->GetAnimations()) {
+      Text("Name: %s", animation.GetName().c_str());
+      Text("Duration: %f", animation.GetDuration());
+      if (Button("Play")) {
+        Uint index = animation.GetIndex();
+        obj->GetAnimationEngine()->PlayAnimation(index);
+      }
+    }
+  }
 }
 
 void ToolboxHandle::DrawToolboxAudio()
@@ -139,17 +238,13 @@ void ToolboxHandle::DrawToolboxAudio()
   SliderFloat(ICON_FA_VOLUME_HIGH " Volume", &m_Options.m_AudioVolume, 0.0f, 1.0f);
   m_audio->SetVolume(m_Options.m_AudioVolume);
 
-  unsigned int time_reimander = (m_audio->GetLenght() - m_audio->GetSoundPos()) / 1000;
-  unsigned int seconds = time_reimander % 60;
-  unsigned int minutes = time_reimander / 60;
+  Uint time_reimander = (m_audio->GetLenght() - m_audio->GetSoundPos()) / 1000;
+  Uint seconds = time_reimander % 60;
+  Uint minutes = time_reimander / 60;
   if (seconds < 10) {
     Text("Time reimander: %u:0%u", minutes, seconds);
   } else {
     Text("Time reimander: %u:%u", minutes, seconds);
-  }
-
-  if (Button("Add Waves")) {
-    m_audio->EnableSoundEffect(Yeager::WavesReverb);
   }
 }
 
@@ -167,4 +262,45 @@ void ToolboxHandle::DrawToolboxSkybox()
 {
   Yeager::Skybox* skybox = (Yeager::Skybox*)m_EntityPtr;
   const ObjectGeometryType::Enum type = skybox->GetGeometry();
+}
+
+void ToolboxHandle::DrawToolboxObjectPlayable()
+{
+  DrawToolboxObjectType();
+  Yeager::PlayableObject* playable = static_cast<PlayableObject*>(m_EntityPtr);
+  Yeager::PlayableSetOfRules* rules = playable->GetSetOfRules();
+
+  Checkbox("Follow Player Position", &rules->FollowPlayerPosition);
+  Checkbox("Follow Player Rotation", &rules->FollowPlayerRotation);
+  Checkbox("Follow Player Scale", &rules->FollowPlayerScale);
+  Checkbox("Look At Position", &rules->LookAtPosition);
+
+  Separator();
+
+  InputVector3("Look At", &rules->PositionToLookAt);
+  InputVector3("Look At Offset", &rules->PositonToLookAtOffset);
+  InputVector3("Follow Player Position", &rules->PositionOffset);
+  InputVector3("Follow Player Rotation", &rules->RotationOffset);
+  InputVector3("Follow Player Scale", &rules->ScaleOffset);
+}
+
+void ToolboxHandle::DrawToolboxObjectAnimatedPlayable()
+{
+  DrawToolboxObjectAnimated();
+
+  Yeager::PlayableAnimatedObject* playable = static_cast<PlayableAnimatedObject*>(m_EntityPtr);
+  Yeager::PlayableSetOfRules* rules = playable->GetSetOfRules();
+
+  Checkbox("Follow Player Position", &rules->FollowPlayerPosition);
+  Checkbox("Follow Player Rotation", &rules->FollowPlayerRotation);
+  Checkbox("Follow Player Scale", &rules->FollowPlayerScale);
+  Checkbox("Look At Position", &rules->LookAtPosition);
+
+  Separator();
+
+  InputVector3("Look At", &rules->PositionToLookAt);
+  InputVector3("Look At Offset", &rules->PositonToLookAtOffset);
+  InputVector3("Follow Player Position", &rules->PositionOffset);
+  InputVector3("Follow Player Rotation", &rules->RotationOffset);
+  InputVector3("Follow Player Scale", &rules->ScaleOffset);
 }

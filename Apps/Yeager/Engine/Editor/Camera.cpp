@@ -3,9 +3,36 @@
 #include <glm/geometric.hpp>
 #include "../../Application.h"
 using namespace Yeager;
+
+String Yeager::CameraOrientationToString(const Vector3& orientation)
+{
+  if (orientation == YEAGER_CAMERA_ORIENTATION_ABOVE)
+    return "Above";
+  if (orientation == YEAGER_CAMERA_ORIENTATION_DOWN)
+    return "Down";
+  if (orientation == YEAGER_CAMERA_ORIENTATION_LEFT)
+    return "Left";
+  if (orientation == YEAGER_CAMERA_ORIENTATION_RIGHT)
+    return "Right";
+  if (orientation == YEAGER_CAMERA_ORIENTATION_FRONT)
+    return "Front";
+  if (orientation == YEAGER_CAMERA_ORIENTATION_BACK)
+    return "Back";
+  return YEAGER_NULL_LITERAL;
+}
+
 void EditorCamera::RayCasting(int mouse_x, int mouse_y, Matrix4 projection, Matrix4 view)
 {
   YEAGER_NOT_IMPLEMENTED("RayCasting");
+}
+
+void BaseCamera::TransferInformation(Yeager::BaseCamera* other)
+{
+  this->m_Position = other->m_Position;
+  this->m_CameraDirection = other->m_CameraDirection;
+  this->m_CameraPitch = other->m_CameraPitch;
+  this->m_CameraYaw = other->m_CameraYaw;
+  this->m_CameraFront = other->m_CameraFront;
 }
 
 BaseCamera::BaseCamera(Yeager::ApplicationCore* app, Vector3 cameraPosition, Vector3 cameraFront, Vector3 cameraUp)
@@ -166,6 +193,12 @@ void PlayerCamera::ApplyGravity(float delta)
       m_CollisionFloor = false;
     }
   }
+}
+
+void PlayerCamera::SetPosition(const Vector3& pos)
+{
+  m_Position = pos;
+  Teleport(pos);  // Must teleport to the position
 }
 
 void PlayerCamera::AttachCameraPosToCharacterPos()

@@ -3,7 +3,7 @@
 #include "../Editor/NodeHierarchy.h"
 using namespace Yeager;
 
-unsigned int Entity::m_EntityCountID = 0;
+Uint Entity::m_EntityCountID = 0;
 
 String EntityObjectType::ToString(EntityObjectType::Enum type)
 {
@@ -69,6 +69,11 @@ EditorEntity::~EditorEntity()
   YEAGER_DELETE(m_Node);
 }
 
+void Yeager::LookAt(const Vector3& At, const Vector3& From, Vector3* rVec)
+{
+  const Vector3 look = glm::normalize(At - From);
+}
+
 void Yeager::ApplyTransformation(Transformation* trans)
 {
   trans->model = Matrix4(1.0f);
@@ -94,7 +99,7 @@ String Entity::GetName()
 {
   return m_Name;
 }
-unsigned int Entity::GetId()
+Uint Entity::GetId()
 {
   return m_EntityID;
 }

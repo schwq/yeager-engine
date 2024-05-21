@@ -21,11 +21,32 @@
 #include "LogEngine.h"
 #include "Utilities.h"
 
+/* This approximation of PI must be precise, the sphere  */
+#define YEAGER_PI 3.14159265358979323f
+
 namespace Yeager {
+namespace Math {
+
+/* Predefined planes in mathematics locks one of the coordinates of the 3d world to 0, 
+and is used to draw 2d figures in the tridimensional space on the engine  */
+struct PredefinedPlanes {
+  enum Enum { XY_PLANE, XZ_PLANE, YZ_PLANE };
+};
+
+extern std::vector<float> GenerateCircleVertices(float cx, float cy, float r, int segments,
+                                                 PredefinedPlanes::Enum plane = PredefinedPlanes::XY_PLANE);
 
 extern int CalculateNextPowerOfTwo(int x);
 extern float RandomFloat();
 extern float RandomFloatRange(float Start, float End);
+
+template <typename Type, typename = typename std::enable_if<std::is_arithmetic<Type>::value, Type>::type>
+Type SafeDivide(Type n1, Type n2)
+{
+  if (n2 == 0)
+    return 0;
+  return n1 / n2;
+}
 
 /* This template only accepts arithmetics values as type (float, int, double.. ) */
 template <typename Type, typename = typename std::enable_if<std::is_arithmetic<Type>::value, Type>::type>
@@ -40,6 +61,75 @@ Type ArithmeticMean(const std::vector<Type>& sequence)
     sum += v;
 
   return sum / sequence.size();
+}
+
+template <typename Type, typename = typename std::enable_if<std::is_arithmetic<Type>::value, Type>::type>
+std::pair<Type, Type> MaxMin(const std::vector<Type>& list)
+{
+  if (list.empty())
+    return std::pair<Type, Type>(0, 0);
+
+  if (list.size() == 1)
+    return std::pair<Type, Type>(list.at(0), list.at(0));
+
+  Type maxValue = 0;
+  Type minValue = list.at(0);
+  for (const auto& v : list) {
+    if (v < minValue)
+      minValue = v;
+    if (v > maxValue)
+      maxValue = v;
+  }
+  return std::pair<Type, Type>(maxValue, minValue);
+}
+
+template <typename Type, typename = typename std::enable_if<std::is_integral<Type>::value, Type>::type>
+Type GreatestCommonDivisor(const std::vector<Type>& list)
+{
+  if (list.empty())
+    return 0;
+
+  std::pair<Type, Type> maxMin = MaxMin(list);
+  Type divisor = 1;
+  for (unsigned int x = 2; x <= maxMin.second; x++) {
+    bool ok = true;
+    for (const auto& v : list) {
+      if (v % x != 0) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok)
+      divisor = x;
+  }
+  return divisor;
+}
+
+template <typename Type, typename = typename std::enable_if<std::is_integral<Type>::value, Type>::type>
+Type LeastCommonMultiple(const std::vector<Type>& list)
+{
+  if (list.empty())
+    return 0;
+
+  std::pair<Type, Type> maxMin = MaxMin(list);
+  Type multipler = 0;
+  Type maxValue = 1;
+
+  for (const auto& v : list)
+    maxValue *= v;
+
+  for (unsigned int x = maxMin.first; x <= maxValue; x++) {
+    bool ok = true;
+    for (const auto& v : list) {
+      if (x % v != 0) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok)
+      return x;
+  }
+  return maxValue;
 }
 
 template <typename Type>
@@ -140,4 +230,5 @@ class Array2D {
   int m_Rows = 0;
   Type* m_Pointer = YEAGER_NULLPTR;
 };
+}  // namespace Math
 }  // namespace Yeager

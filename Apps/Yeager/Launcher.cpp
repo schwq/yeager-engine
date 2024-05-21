@@ -3,7 +3,7 @@
 using namespace Yeager;
 using namespace ImGui;
 
-Launcher::Launcher(unsigned int width, unsigned int height, String title, ApplicationCore* app)
+Launcher::Launcher(Uint width, Uint height, String title, ApplicationCore* app)
     : m_Application(app), m_WindowTitle(title)
 {
   Yeager::Log(INFO, "Launching the Engine Launcher");

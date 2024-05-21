@@ -8,7 +8,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(PHYSX_BUILD_TYPE "The build type of PhysX, i.e., one of {debug, checked, profile, release}" "checked")
 
-include_directories(Include/Physx/include Include/Physx/pvdruntime/include Include/imgui Include/fmt Include/STB_Image/ Include/PFD Include/Loguru)
+include_directories(Include/Physx/include Include/Physx/pvdruntime/include Include/imgui Include/fmt Include/STB_Image/ Include/PFD Include/Loguru Include/UUID)
 
 if(CMAKE_BUILD_TYPE AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     message("Building YeagerEngine in debug configuration")
@@ -45,32 +45,41 @@ set(SOURCEFILES
     Apps/Yeager/main.cpp  
     Apps/Yeager/Scene.cpp 
     Apps/Yeager/Launcher.cpp
+    Apps/Yeager/DefaultValues.cpp
+    Apps/Yeager/DefaultValues.h
     Apps/Yeager/Engine/Interface/Interface.cpp
     Apps/Yeager/Engine/Interface/UIManagement.cpp 
     Apps/Yeager/Application.cpp 
     Apps/Yeager/InputHandle.cpp 
     Apps/Yeager/Serialization.cpp
+    Apps/Yeager/Settings.cpp 
+    Apps/Yeager/Request.cpp 
     Apps/Yeager/Common/Utilities.cpp 
     Apps/Yeager/Engine/Renderer/ShaderHandle.cpp
     Apps/Yeager/Engine/Media/AudioHandle.cpp 
     Apps/Yeager/Engine/Renderer/Entity.cpp
     Apps/Yeager/Engine/Renderer/Object.cpp
-    Apps/Yeager/Engine/Renderer/AABBCollision.cpp
     Apps/Yeager/Engine/Renderer/Importer.cpp
     Apps/Yeager/Engine/Renderer/TextureHandle.cpp 
     Apps/Yeager/Engine/Renderer/ImageUtilities.cpp 
     Apps/Yeager/Engine/Renderer/Window.cpp 
-    Apps/Yeager/Engine/Renderer/Skybox.cpp 
+    Apps/Yeager/Engine/Renderer/Skybox.cpp
+    Apps/Yeager/Engine/Renderer/Player/PlayableObject.cpp
+    Apps/Yeager/Engine/Renderer/Player/PlayableObject.h 
     Apps/Yeager/Engine/Renderer/Animation/Animation.cpp 
     Apps/Yeager/Engine/Renderer/Animation/AnimationEngine.cpp 
     Apps/Yeager/Engine/Renderer/Animation/Bone.cpp 
+    Apps/Yeager/Engine/Renderer/Text/TextRendering.cpp
+    Apps/Yeager/Engine/Renderer/Text/TextRendering.h
     Apps/Yeager/Engine/Editor/Camera.cpp 
     Apps/Yeager/Engine/Editor/Explorer.cpp
     Apps/Yeager/Engine/Editor/ToolboxObj.cpp
-    Apps/Yeager/Engine/Physics/PhysicsHandle.cpp
+    Apps/Yeager/Engine/Editor/NodeHierarchy.cpp
     Apps/Yeager/Engine/Physics/PhysXHandle.cpp
     Apps/Yeager/Engine/Physics/PhysXGeometryHandle.cpp
     Apps/Yeager/Engine/Physics/PhysXGeometryHandle.h
+    Apps/Yeager/Engine/Physics/PhysXCharacterController.cpp 
+    Apps/Yeager/Engine/Physics/PhysXActor.cpp
     Apps/Yeager/Common/LogEngine.cpp
     Apps/Yeager/Engine/Lighting/LightHandle.h
     Apps/Yeager/Engine/Lighting/LightHandle.cpp
@@ -84,6 +93,7 @@ set(SOURCEFILES
     Apps/Yeager/Kernel/HardwareInfo.cpp
     Apps/Yeager/Kernel/NvidiaCuda.h 
     Apps/Yeager/Kernel/NvidiaCuda.cpp
+    
 )
 
 add_executable(${projectName} ${SOURCEFILES})
@@ -94,8 +104,10 @@ PhysXPvdSDK_static_64
 PhysXCommon_static_64
 PhysXFoundation_static_64
 PhysXCooking_static_64
+PhysXCharacterKinematic_static_64
 PVDRuntime_64
 pthread
+freetype
 dl)
 
-add_definitions(-w)
+add_definitions(-w) 

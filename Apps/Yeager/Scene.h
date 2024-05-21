@@ -117,8 +117,8 @@ class Scene {
 
     /* Find duplicates, the right most element of the vector is the choosen one to delete */
     int index_cmp = 1;
-    for (unsigned int x = 0; x < vec->size(); x++) {
-      for (unsigned int y = index_cmp; y < vec->size(); y++) {
+    for (Uint x = 0; x < vec->size(); x++) {
+      for (Uint y = index_cmp; y < vec->size(); y++) {
         Type* obj1 = vec->at(x).get();
         Type* obj2 = vec->at(y).get();
         if (obj1 == obj2)

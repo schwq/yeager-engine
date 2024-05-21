@@ -44,7 +44,7 @@ struct LauncherProjectPicker {
 
 class Launcher {
  public:
-  Launcher(unsigned int width, unsigned int height, String title, ApplicationCore* app);
+  Launcher(Uint width, Uint height, String title, ApplicationCore* app);
 
   void Render();
   LauncherProjectPicker GetSelectedProject() noexcept { return m_ProjectCurrentSelected; }

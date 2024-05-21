@@ -22,20 +22,38 @@
 #include "../../Common/LogEngine.h"
 #include "../../Common/Utilities.h"
 
+#define YEAGER_EDITOR_DEFAULT_TITLE "Yeager Editor"
+#define YEAGER_LAUNCHER_DEFAULT_TITLE "Yeager Launcher"
+#define YEAGER_GENERATE_LAUNCHER_WINDOW 0x01
+#define YEAGER_GENERATE_EDITOR_WINDOW 0x02
+
 namespace Yeager {
 
+class ApplicationCore;
+
+struct AspectRatio {
+  enum Enum { eASPECT_21_9, eASPECT_4_3 };
+  static String ToString(Enum type);
+  static Enum ToEnum(const String& str);
+  static float ToValue(Enum type);
+};
+
 struct WindowInfo {
-  Vector2 Size = Vector2(0.0f, 0.0f);
-  String Title = YEAGER_NULL_LITERAL;
+  Vector2 EditorSize = Vector2(0.0f, 0.0f);
+  Vector2 LauncherSize = Vector2(0.0f, 0.0f);
+  Vector2 FrameBufferSize = Vector2(0.0f, 0.0f);
+  Vector2 FrameBufferPosition = Vector2(0.0f, 0.0f);
+  String EditorTitle = YEAGER_EDITOR_DEFAULT_TITLE;
+  String LauncherTitle = YEAGER_LAUNCHER_DEFAULT_TITLE;
   GLFWcursorposfun CursorFunc;
 };
 
 /* Used when we want to regenerate the window with different hints, we change this struct and the window is created based on it*/
 struct WindowCreationHints {
-  unsigned int ContextVersionMajor = 3;
-  unsigned int ContextVersionMinor = 3;
+  Uint ContextVersionMajor = 3;
+  Uint ContextVersionMinor = 3;
   uint32_t OpenGLProfile = GLFW_OPENGL_CORE_PROFILE;
-  unsigned int AntiAliasingSamples = 4;
+  Uint AntiAliasingSamples = 4;
 #ifdef YEAGER_SYSTEM_MACOS
   bool OpenGLForwandCompat = GL_TRUE;
 #endif
@@ -43,17 +61,23 @@ struct WindowCreationHints {
 
 class Window {
  public:
-  Window(unsigned int window_x, unsigned int window_y, String title, GLFWcursorposfun cursor);
+  Window(Yeager::ApplicationCore* application);
   ~Window();
+
+  void GenerateWindow(String title, GLFWcursorposfun cursor, DFlags wndType);
 
   YEAGER_NODISCARD GLFWwindow* getWindow() { return m_WindowHandle; }
   static void FramebufferSizeCallback(GLFWwindow* window, int width, int height);
   static void HandleError(int code, Cchar description);
   void GetWindowSize(int* width, int* height);
-  bool GenerateWindow(unsigned window_x, unsigned int window_y, String title);
-  bool RegenerateMainWindow(unsigned int window_x, unsigned int window_y, String title,
-                            GLFWcursorposfun cursor) noexcept;
+  Vector2 GetWindowSize() const;
+  bool GenerateWindow(unsigned window_x, Uint window_y, String title);
+  bool RegenerateMainWindow(Uint window_x, Uint window_y, String title, GLFWcursorposfun cursor) noexcept;
+
+  /* Glfw3 Callbacks  */
   static void ResizeCallback(GLFWwindow* window, int width, int height);
+  static void WindowMaximizeCallback(GLFWwindow* window, int maximized);
+
   bool CheckIfOpenGLContext();
   /**
    * @brief Regenerates the main window with the new given number of samples for the anti aliasing (ps: glfw needs to recreate the window to function)
@@ -74,9 +98,11 @@ class Window {
   void BuildWindowHints();
 
  private:
-  WindowInfo m_WindowInformation;
+  static WindowInfo m_WindowInformation;
   WindowCreationHints m_WindowHints;
   GLFWwindow* m_WindowHandle = YEAGER_NULLPTR;
   unsigned char* m_IconImageData = YEAGER_NULLPTR;
+  Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
+  bool m_Maximized = false, m_FullScreen = false;
 };
 }  // namespace Yeager

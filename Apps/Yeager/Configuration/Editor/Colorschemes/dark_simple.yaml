@@ -23,7 +23,7 @@ Colors[ImGuiCol_ComboBg]               : { x: 0.10, y: 0.10, z: 0.10, w: 0.99}
 Colors[ImGuiCol_CheckMark]             : { x: 0.90, y: 0.90, z: 0.90, w: 0.83}
 Colors[ImGuiCol_SliderGrab]            : { x: 0.70, y: 0.70, z: 0.70, w: 0.62}
 Colors[ImGuiCol_SliderGrabActive]      : { x: 0.30, y: 0.30, z: 0.30, w: 0.84}
-Colors[ImGuiCol_Button]                : { x: 0.48, y: 0.72, z: 0.89, w: 0.49}
+Colors[ImGuiCol_Button]                : { x: 0.72, y: 0.72, z: 0.89, w: 0.49}
 Colors[ImGuiCol_ButtonHovered]         : { x: 0.50, y: 0.69, z: 0.99, w: 0.68}
 Colors[ImGuiCol_ButtonActive]          : { x: 0.80, y: 0.50, z: 0.50, w: 1.00}
 Colors[ImGuiCol_Header]                : { x: 0.30, y: 0.69, z: 1.00, w: 0.53}

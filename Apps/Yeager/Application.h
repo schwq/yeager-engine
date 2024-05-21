@@ -22,11 +22,13 @@
 #include "Common/Common.h"
 #include "Common/LogEngine.h"
 #include "Common/Utilities.h"
+#include "DefaultValues.h"
 #include "Engine/Editor/Camera.h"
 #include "Engine/Editor/Explorer.h"
 #include "Engine/Interface/Interface.h"
 #include "Engine/Physics/PhysXHandle.h"
-#include "Engine/Renderer/RendererLines.h"
+#include "Engine/Renderer/Player/PlayableObject.h"
+#include "Engine/Renderer/Text/TextRendering.h"
 #include "Engine/Renderer/Window.h"
 #include "InputHandle.h"
 #include "Launcher.h"
@@ -96,9 +98,6 @@ class ApplicationCore {
   void SetState(YgApplicationState::Enum state) noexcept;
   void CheckGLAD();
 
-  std::shared_ptr<MaterialTexture2D> monarch = YEAGER_NULLPTR;
-  std::shared_ptr<MaterialTexture2D> material = YEAGER_NULLPTR;
-
   /** Returns external folder location {Path to engine external folder location}/{Engine folder name}/External.
   On Unix systems the engine external folder location is the $HOME variable, and in windows system, %appdata% location 
   The engine folder name in Unix system is .YeagerEngine to hide it, in windows system, the folder is just YeagerEngine, without the point */
@@ -113,6 +112,7 @@ class ApplicationCore {
   YEAGER_FORCE_INLINE Serialization* GetSerial() { return m_Serial; }
   YEAGER_FORCE_INLINE Settings* GetSettings() { return m_Settings; }
   YEAGER_FORCE_INLINE RequestHandle* GetRequestHandle() { return m_Request; }
+  YEAGER_FORCE_INLINE DefaultValues* GetDefaults() { return m_Defaults; }
   PhysXHandle* GetPhysXHandle() { return m_PhysXHandle; }
   YEAGER_FORCE_INLINE AudioEngineHandle* GetAudioEngine() { return m_AudioEngine; }
   YEAGER_FORCE_INLINE std::vector<std::pair<std::shared_ptr<Shader>, String>>* GetConfigShaders()
@@ -124,13 +124,19 @@ class ApplicationCore {
 
   void AddConfigShader(std::shared_ptr<Yeager::Shader> shader, const String& var) noexcept;
   Shader* ShaderFromVarName(String var);
-
   physx::PxController* m_Controller = YEAGER_NULLPTR;
 
-  YEAGER_FORCE_INLINE Yeager::RendererLines* GetRendererLines() { return m_RendererLines; }
+  YEAGER_FORCE_INLINE void AttachPlayerCamera(PlayerCamera* camera)
+  {
+    camera->TransferInformation(m_BaseCamera);
+    m_BaseCamera = static_cast<BaseCamera*>(camera);
+  }
 
-  YEAGER_FORCE_INLINE void AttachPlayerCamera(PlayerCamera* camera) { m_BaseCamera = static_cast<BaseCamera*>(camera); }
-  YEAGER_FORCE_INLINE void DetachPlayerCamera() { m_BaseCamera = static_cast<BaseCamera*>(m_EditorCamera); }
+  YEAGER_FORCE_INLINE void DetachPlayerCamera()
+  {
+    m_EditorCamera->TransferInformation(m_BaseCamera);
+    m_BaseCamera = static_cast<BaseCamera*>(m_EditorCamera);
+  }
 
   void BeginEngineTimer()
   {
@@ -154,6 +160,7 @@ class ApplicationCore {
 
   String GetExternalFolderLocation();
   String m_EngineExternalFolder = YEAGER_NULL_LITERAL;
+  String m_EngineConfigurationPath = YEAGER_NULL_LITERAL;
   String RequestWindowEngineName(const LauncherProjectPicker& project);
 
   void ValidatesExternalEngineFolder();
@@ -193,12 +200,12 @@ class ApplicationCore {
   BaseCamera* m_BaseCamera = YEAGER_NULLPTR;
   EditorCamera* m_EditorCamera = YEAGER_NULLPTR;
   RequestHandle* m_Request = YEAGER_NULLPTR;
+  DefaultValues* m_Defaults = YEAGER_NULLPTR;
 
   AudioEngineHandle* m_AudioEngine = YEAGER_NULLPTR;
   Scene* m_Scene = YEAGER_NULLPTR;
   Launcher* m_Launcher = YEAGER_NULLPTR;
   PhysXHandle* m_PhysXHandle = YEAGER_NULLPTR;
-  RendererLines* m_RendererLines = YEAGER_NULLPTR;
   Settings* m_Settings = YEAGER_NULLPTR;
 
   YgApplicationState::Enum m_state = YgApplicationState::eAPPLICATION_RUNNING;

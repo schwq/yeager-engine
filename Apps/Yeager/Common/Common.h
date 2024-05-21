@@ -106,7 +106,6 @@
 #define YEAGER_NULLPTR nullptr
 #define YEAGER_NULLPTR_T nullptr_t
 #define YEAGER_FORCE_INLINE inline
-#define YEAGER_UINT unsigned int
 
 #include <math.h>
 #include <string.h>
@@ -158,6 +157,10 @@ typedef glm::mat3 Matrix3;
 typedef glm::vec2 Vector2;
 typedef glm::vec3 Vector3;
 typedef glm::vec4 Vector4;
+typedef glm::ivec2 IVector2;
+typedef glm::ivec3 IVector3;
+typedef unsigned int Uint;
+typedef uint64_t DFlags; // defined flags with the #define YEAGER_
 
 #define YEAGER_IDENTITY_MATRIX4x4 Matrix4(1.0f)
 #define YEAGER_ZERO_VECTOR3 Vector3(0.0f)
@@ -180,5 +183,7 @@ typedef glm::vec4 Vector4;
 #define IMGUI_RED_ERROR_COLOR ImVec4(1.0f, 0.0f, 0.0f, 1.0f)
 #define IMGUI_YELLOW_WARNING_COLOR ImVec4(1.0f, 1.0f, 0.0f, 1.0f)
 #define IMGUI_WHITE_COMMON_COLOR ImVec4(1.0f, 1.0f, 1.0f, 1.0f)
+
+#define STATIC_ENUM_TO_STRING(name) static String ToString(Enum type);
 
 // clang-format on

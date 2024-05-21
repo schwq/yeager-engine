@@ -20,6 +20,7 @@
 
 #include "../../Common/Common.h"
 #include "../../Common/LogEngine.h"
+#include "../../Common/Mathematics.h"
 #include "../../Common/Utilities.h"
 #include "../../Kernel/HardwareInfo.h"
 

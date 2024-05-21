@@ -19,7 +19,7 @@ ProceduralTerrain::ProceduralTerrain(std::vector<String> TexturesPaths, int Terr
     m_TextureData.m_TexturesLoaded[x].GenerateFromFile(TexturesPaths[x], false);
   }
 
-  m_MetricData.m_HeightMap = new Array2D<float>(m_MetricData.m_Width, m_MetricData.m_Height);
+  m_MetricData.m_HeightMap = new Yeager::Math::Array2D<float>(m_MetricData.m_Width, m_MetricData.m_Height);
   m_Perlin.GeneratePerlin(m_MetricData.m_HeightMap, 5, 1, m_MetricData.m_Width, m_MetricData.m_Height,
                           m_MetricData.m_MaxHeight);
   Setup();
@@ -85,10 +85,10 @@ void ProceduralTerrain::Setup()
 
   for (int z = 0; z < m_MetricData.m_Height - 1; z++) {
     for (int x = 0; x < m_MetricData.m_Width - 1; x++) {
-      unsigned int IndexBottomLeft = z * m_MetricData.m_Width + x;
-      unsigned int IndexTopLeft = (z + 1) * m_MetricData.m_Width + x;
-      unsigned int IndexTopRight = (z + 1) * m_MetricData.m_Width + x + 1;
-      unsigned int IndexBottomRight = z * m_MetricData.m_Width + x + 1;
+      Uint IndexBottomLeft = z * m_MetricData.m_Width + x;
+      Uint IndexTopLeft = (z + 1) * m_MetricData.m_Width + x;
+      Uint IndexTopRight = (z + 1) * m_MetricData.m_Width + x + 1;
+      Uint IndexBottomRight = z * m_MetricData.m_Width + x + 1;
       m_DrawData.Indices.push_back(IndexBottomLeft);
       m_DrawData.Indices.push_back(IndexTopLeft);
       m_DrawData.Indices.push_back(IndexTopRight);
@@ -98,11 +98,11 @@ void ProceduralTerrain::Setup()
     }
   }
 
-  unsigned int n_index = 0;
-  for (unsigned int x = 0; x < m_DrawData.Indices.size(); x += 3) {
-    unsigned int Index0 = m_DrawData.Indices[x];
-    unsigned int Index1 = m_DrawData.Indices[x + 1];
-    unsigned int Index2 = m_DrawData.Indices[x + 2];
+  Uint n_index = 0;
+  for (Uint x = 0; x < m_DrawData.Indices.size(); x += 3) {
+    Uint Index0 = m_DrawData.Indices[x];
+    Uint Index1 = m_DrawData.Indices[x + 1];
+    Uint Index2 = m_DrawData.Indices[x + 2];
     Vector3 v1 = m_DrawData.Vertices[Index1].Position - m_DrawData.Vertices[Index0].Position;
     Vector3 v2 = m_DrawData.Vertices[Index2].Position - m_DrawData.Vertices[Index0].Position;
     Vector3 Normal = glm::cross(v1, v2);
@@ -112,7 +112,7 @@ void ProceduralTerrain::Setup()
     m_DrawData.Vertices[Index2].Normals += Normal;
   }
 
-  for (unsigned int x = 0; x < m_DrawData.Vertices.size(); x++) {
+  for (Uint x = 0; x < m_DrawData.Vertices.size(); x++) {
     m_DrawData.Vertices[x].Normals = glm::normalize(m_DrawData.Vertices[x].Normals);
   }
 
@@ -159,8 +159,8 @@ std::vector<Vector3> ProceduralTerrain::GetRandomPointsInTerrain(int amount) noe
   vector.reserve(amount);
 
   for (int x = 0; x < amount; x++) {
-    int vx = (int)RandomFloatRange(0, 256);
-    int vz = (int)RandomFloatRange(0, 256);
+    int vx = (int)Yeager::Math::RandomFloatRange(0, 256);
+    int vz = (int)Yeager::Math::RandomFloatRange(0, 256);
     int vy = 0;
     if (m_MetricData.m_HeightMap) {
       vy = GetHeightMapValue(vx, vz) - m_MetricData.m_MaxHeight;
@@ -180,7 +180,7 @@ void FaultFormationTerrain::CreateFaultFormationTerrain(Shader* shader, int Terr
   shader->SetFloat("MaxHeight", MaxHeight);
   shader->SetFloat("MinHeight", MinHeight);
 
-  m_MetricData.m_HeightMap = new Array2D<float>(m_MetricData.m_Width, m_MetricData.m_Height);
+  m_MetricData.m_HeightMap = new Yeager::Math::Array2D<float>(m_MetricData.m_Width, m_MetricData.m_Height);
   m_Perlin.RegenerateSeed();
   m_Perlin.GeneratePerlin(m_MetricData.m_HeightMap, octaves, bias, m_MetricData.m_Width, m_MetricData.m_Height,
                           m_MetricData.m_MaxHeight);
@@ -283,7 +283,7 @@ void MidPointDisplacementTerrain::CreateMidPointDisplacement(Shader* shader, int
   shader->SetFloat("MinHeight", MinHeight);
   shader->SetFloat("MaxHeight", MaxHeight);
 
-  m_MetricData.m_HeightMap = new Array2D<float>(m_MetricData.m_Width, m_MetricData.m_Height);
+  m_MetricData.m_HeightMap = new Yeager::Math::Array2D<float>(m_MetricData.m_Width, m_MetricData.m_Height);
   m_Perlin.RegenerateSeed();
   m_Perlin.GeneratePerlin(m_MetricData.m_HeightMap, octaves, bias, m_MetricData.m_Width, m_MetricData.m_Height,
                           m_MetricData.m_MaxHeight);
@@ -295,7 +295,7 @@ void MidPointDisplacementTerrain::CreateMidPointDisplacement(Shader* shader, int
 
 void MidPointDisplacementTerrain::CreateMidPointDisplacementF32(float Roughness)
 {
-  int RectSize = CalculateNextPowerOfTwo(m_MetricData.m_TerrainSize);
+  int RectSize = Yeager::Math::CalculateNextPowerOfTwo(m_MetricData.m_TerrainSize);
   float CurHeight = (float)RectSize / 2.0f;
   float HeightReduce = pow(2.0f, -Roughness);
 
@@ -333,7 +333,7 @@ void MidPointDisplacementTerrain::DiamondStep(int RectSize, float CurHeight)
       int mid_x = (x + HalfRectSize) % m_MetricData.m_TerrainSize;
       int mid_y = (y + HalfRectSize) % m_MetricData.m_TerrainSize;
 
-      float RandValue = RandomFloatRange(CurHeight, -CurHeight);
+      float RandValue = Yeager::Math::RandomFloatRange(CurHeight, -CurHeight);
       float MidPoint = (TopLeft + TopRight + BottomLeft + BottomRight) / 4.0f;
       m_MetricData.m_HeightMap->Set(mid_x, mid_y, MidPoint + RandValue);
     }
@@ -370,10 +370,10 @@ void MidPointDisplacementTerrain::SquareStep(int RectSize, float CurHeight)
       float CurBotLeft = m_MetricData.m_HeightMap->Get(x, next_y);
       float PrevXCenter = m_MetricData.m_HeightMap->Get(prev_mid_x, mid_y);
 
-      float CurLeftMid =
-          (CurTopLeft + CurCenter + CurBotLeft + PrevXCenter) / 4.0f + RandomFloatRange(-CurHeight, CurHeight);
-      float CurTopMid =
-          (CurTopLeft + CurCenter + CurTopRight + PrevYCenter) / 4.0f + RandomFloatRange(-CurHeight, CurHeight);
+      float CurLeftMid = (CurTopLeft + CurCenter + CurBotLeft + PrevXCenter) / 4.0f +
+                         Yeager::Math::RandomFloatRange(-CurHeight, CurHeight);
+      float CurTopMid = (CurTopLeft + CurCenter + CurTopRight + PrevYCenter) / 4.0f +
+                        Yeager::Math::RandomFloatRange(-CurHeight, CurHeight);
 
       m_MetricData.m_HeightMap->Set(mid_x, y, CurTopMid);
       m_MetricData.m_HeightMap->Set(x, mid_y, CurLeftMid);

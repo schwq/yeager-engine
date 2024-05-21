@@ -56,8 +56,7 @@ extern bool MakeScreenShotMiddle(Cchar output) noexcept
   delete pixels;
   return true;
 }
-extern bool MakeScreenShotInPosition(Cchar output, unsigned int pos_x, unsigned int pos_y, unsigned int size_x,
-                                     unsigned int size_y)
+extern bool MakeScreenShotInPosition(Cchar output, Uint pos_x, Uint pos_y, Uint size_x, Uint size_y)
 {
   if (size_x == 0 || size_x > ygWindowWidth || size_y == 0 || size_y > ygWindowHeight) {
     Yeager::Log(WARNING, "Trying to make a screenshot with invalid size!");

@@ -135,9 +135,9 @@ String Yeager::RemovePreffixUntilCharacter(String expression, char characterToSt
 String kPath = std::filesystem::current_path().string();
 
 #ifdef YEAGER_SYSTEM_WINDOWS_x64
-Cchar Yeager::kOperatingSystem = "WIN32";
+Cchar Yeager::g_OperatingSystemString = "WIN32";
 #elif defined(YEAGER_SYSTEM_LINUX)
-YgCchar Yeager::kOperatingSystem = "LINUX";
+Cchar Yeager::g_OperatingSystemString = "LINUX";
 #endif
 
 Cchar Yeager::GetShaderPath(String shader)
@@ -169,13 +169,20 @@ uint32_t Yeager::MemoryManagement::GetMemortUsage()
 
 String Yeager::GetPath(String path)
 {
-  if (kOperatingSystem == "LINUX") {
-    Yeager::ValidatesPath(kPath + "/Apps/Yeager" + path);
+  if (g_OperatingSystemString == "LINUX") {
+
+    if (!Yeager::ValidatesPath(kPath + "/Apps/Yeager" + path))
+      return GetPathFromShared(path);  // The engine is installed, and the assets must be retrieve from the correct dir
+
     return kPath + "/Apps/Yeager" + path;
-  } else if (kOperatingSystem == "WIN32") {
+  } else if (g_OperatingSystemString == "WIN32") {
+
     std::replace(kPath.begin(), kPath.end(), '/', '\\');
     std::replace(path.begin(), path.end(), '/', '\\');
-    Yeager::ValidatesPath(kPath + "\\apps\\Yeager" + path);
+
+    if (!Yeager::ValidatesPath(kPath + "\\apps\\Yeager" + path))
+      return GetPathFromShared(path);  // The engine is installed, and the assets must be retrieve from the correct dir
+
     return kPath + "\\apps\\Yeager" + path;
   } else {
     String respond = kPath + path;
@@ -188,10 +195,23 @@ String Yeager::GetPath(String path)
   }
 };
 
+String Yeager::GetPathFromShared(String path)
+{
+  if (g_OperatingSystemString == "LINUX") {
+    const String respond = "/usr/share/Yeager" + path;
+    Yeager::ValidatesPath(respond);
+    return String(respond);
+  }
+
+  if (g_OperatingSystemString == "WIN32") {
+    // TODO: make this
+  }
+}
+
 String Yeager::kDefaultTexturePath = Yeager::GetPath("/Assets/textures/default.jpg");
 
-unsigned int Yeager::ygWindowWidth = 1300;
-unsigned int Yeager::ygWindowHeight = 720;
+Uint Yeager::ygWindowWidth = 1300;
+Uint Yeager::ygWindowHeight = 720;
 
 extern String Yeager::CurrentTimeFormatToString()
 {
@@ -275,16 +295,20 @@ extern Yeager::YgTime_t Yeager::CurrentTimeToTimeType()
   return time;
 }
 
+bool Yeager::EvaluateIntToBool(const int i)
+{
+  return i == 0 ? false : true;
+}
+
 bool Yeager::ValidatesPath(const std::filesystem::path& p, bool declare, std::filesystem::file_status s)
 {
-  String status = (std::filesystem::status_known(s) ? std::filesystem::exists(s) : std::filesystem::exists(p))
-                      ? "Validated!"
-                      : "Not Validated!";
+  bool known = std::filesystem::status_known(s) ? std::filesystem::exists(s) : std::filesystem::exists(p);
+  String status = known ? "Validated!" : "Not Validated!";
 #ifdef YEAGER_DEBUG
   if (declare)
   //Yeager::Log((status == "Validated!" ? INFO : ERROR), "File validation: Path: {}, Status [{}]", p.c_str(), status);
 #endif
-    return (status == "Validated!");
+    return EvaluateIntToBool(known);
 }
 
 String Yeager::ReadSuffixUntilCharacter(String expression, char characterToStop)
@@ -308,10 +332,10 @@ String Yeager::GetExternalFolderPath()
   /* The $HOME env varaible does not exist */
   if ((homeDir = getenv("HOME")) == NULL) {
     homeDir = getpwuid(getuid())->pw_dir;
-    return YgString(homeDir);
+    return String(homeDir);
   } else {
     /* The $HOME env variable exists!*/
-    return YgString(getenv("HOME"));
+    return String(getenv("HOME"));
   }
 #elif defined(YEAGER_SYSTEM_WINDOWS_x64)
 

@@ -58,5 +58,4 @@ struct ImagePixel {
 
 extern bool MakeScreenShot(Cchar output) noexcept;
 extern bool MakeScreenShotMiddle(Cchar output) noexcept;
-extern bool MakeScreenShotInPosition(Cchar output, unsigned int pos_x, unsigned int pos_y, unsigned int size_x,
-                                     unsigned int size_y);
+extern bool MakeScreenShotInPosition(Cchar output, Uint pos_x, Uint pos_y, Uint size_x, Uint size_y);
