@@ -662,8 +662,9 @@ void Serialization::DeserializeObject(YAML::detail::iterator_value& entity, Yeag
 
   if (geometry == ObjectGeometryType::eCUSTOM) {
     // Import Custom model object
-    if (!obj->ThreadImportObjectFromFile(entity["Path"].as<String>().c_str(), flip)) {
-      Yeager::Log(WARNING, "Error importing object from file during deserialization!");
+    if (!Yeager::ValidatesPath(entity["Path"].as<String>().c_str(), false) ||
+        !obj->ThreadImportObjectFromFile(entity["Path"].as<String>().c_str(), flip)) {
+      Yeager::Log(ERROR, "Error importing object from file during deserialization!");
       succceded = false;
     }
 
@@ -672,7 +673,7 @@ void Serialization::DeserializeObject(YAML::detail::iterator_value& entity, Yeag
     if (!obj->GenerateObjectGeometry(geometry, ObjectPhysXCreationStatic(obj->GetTransformationPtr()->position,
                                                                          obj->GetTransformationPtr()->rotation,
                                                                          obj->GetTransformationPtr()->scale))) {
-      Yeager::Log(WARNING, "Error generating object geometry during deserialization!");
+      Yeager::Log(ERROR, "Error generating object geometry during deserialization!");
       succceded = false;
     }
   }
@@ -699,15 +700,16 @@ void Serialization::DeserializeAnimatedObject(YAML::detail::iterator_value& enti
   bool succceded = true;
 
   if (geometry == ObjectGeometryType::eCUSTOM) {
-    if (!obj->ThreadImportObjectFromFile(entity["Path"].as<String>().c_str(), false)) {
-      Yeager::Log(WARNING, "Error importing animated object from file during deserialization!");
+    if (!Yeager::ValidatesPath(entity["Path"].as<String>().c_str(), false) ||
+        !obj->ThreadImportObjectFromFile(entity["Path"].as<String>().c_str(), false)) {
+      Yeager::Log(ERROR, "Error importing animated object from file during deserialization!");
       succceded = false;
     }
   } else {
     if (!obj->GenerateObjectGeometry(geometry, ObjectPhysXCreationStatic(obj->GetTransformationPtr()->position,
                                                                          obj->GetTransformationPtr()->rotation,
                                                                          obj->GetTransformationPtr()->scale))) {
-      Yeager::Log(WARNING, "Error generating animated object geometry during deserialization!");
+      Yeager::Log(ERROR, "Error generating animated object geometry during deserialization!");
       succceded = false;
     }
   }

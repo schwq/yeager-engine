@@ -3,3 +3,4 @@ Name=Yeager Engine
 Exec=/usr/bin/YeagerEngine 
 Type=Application
 Terminal=true 
+Icon=YeagerEngine.png
