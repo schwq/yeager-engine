@@ -198,7 +198,7 @@ String Yeager::GetPath(String path)
 String Yeager::GetPathFromShared(String path)
 {
   if (g_OperatingSystemString == "LINUX") {
-    const String respond = "/usr/share/Yeager" + path;
+    const String respond = "/usr/share/yeager" + path;
     Yeager::ValidatesPath(respond);
     return String(respond);
   }

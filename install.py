@@ -1,4 +1,5 @@
-import shutil, os, sys, subprocess, pwd
+#!/usr/bin/env python3
+import shutil, os, sys, subprocess, pwd, getpass
 import pathlib
 import platform
 from enum import Enum
@@ -19,20 +20,25 @@ class OperatingSystem(Enum):
 
 
 # follows the enumation of OperatingSystem, so it can be called like binaries_paths_os[OperatingSystem.value - 1]
-binaries_paths_os = ["undefined", "/usr/bin", "undefined", "undefined"]
-share_data = ["undefined", "/usr/share", "undefined", "undefined"]
-config_data = ["undefined", "/.config/YeagerEngine", "undefined", "undefined"]
+binaries_paths = ["undefined", "/usr/bin", "undefined", "undefined"]
+shared_data_paths = ["undefined", "/usr/share/yeager", "undefined", "undefined"]
+config_data_paths = ["undefined", "/.config/YeagerEngine", "undefined", "undefined"]
 currentOperatingSystem = OperatingSystem.UNDEFINED
 scriptMode = ModeRequested.UNDEFINED
 # the script was involked with the --rootless option on, and a user name was given
 rootless = False
-unix_user = None
+system_user = None
+password = None
+upgrade_shared = False
+forced_compilation = False
 
 
+# for files
 def _verify_if_exits(path) -> bool:
     return os.path.isfile(str(path))
 
 
+# for directories
 def _verify_if_dir_exists(dir) -> bool:
     return os.path.isdir(str(dir))
 
@@ -40,6 +46,13 @@ def _verify_if_dir_exists(dir) -> bool:
 def _remove_file(path) -> bool:
     if _verify_if_exits(path):
         os.remove(path)
+        return True
+    return False
+
+
+def _remove_dir(dir) -> bool:
+    if _verify_if_dir_exists(dir):
+        shutil.rmtree(dir, ignore_errors=True)
         return True
     return False
 
@@ -54,6 +67,23 @@ def _path_compatible(path) -> str:
         path = str(path).replace("/", "\\")
         return path
     return path
+
+
+def get_sudo_password() -> str:
+    password = getpass.getpass(prompt="Enter sudo password: ")
+    process = subprocess.Popen(
+        ["sudo", "-S", "ls"],
+        stderr=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stdin=subprocess.PIPE,
+    )
+    try:
+        out, err = process.communicate(input=(password + "\n").encode(), timeout=5)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        print("[ERROR] Timeout awaiting the password!")
+        sys.exit(0)
+    return password
 
 
 def _print_help():
@@ -99,21 +129,23 @@ def _iterate_args(arg, n) -> int:
     elif arg == "-rootless":
         user = _safe_from_argv(n + 1)
         _check_if_user_exists(user)
-        global unix_user
-        unix_user = user
+        global system_user
+        system_user = user
         global rootless
         rootless = True
         return 2
+    elif arg == "-upgrade_shared":
+        global upgrade_shared
+        upgrade_shared = True
+    elif arg == "-compile_forced":
+        global forced_compilation
+        forced_compilation = True
     else:
         print("[IGNORE] Argument invalid " + arg)
     return 1
 
 
 def _process_args():
-
-    if not _is_root():
-        print("[ERROR] This script need administrator privileges to run properly")
-        sys.exit(0)
 
     if len(sys.argv) > 1:
         if str(_safe_from_argv(1)) == "help":
@@ -142,7 +174,7 @@ def _build_user_local_shared_dir(user):
 
 def _local_install_user(user):
     _check_if_user_exists(user)
-    shared = _build_user_local_shared_dir(unix_user)
+    shared = _build_user_local_shared_dir(system_user)
     shutil.copy("Utils/YeagerEngine.desktop", shared)
     print("[INFO] Moved Utils/YeagerEngine.desktop -> " + shared)
 
@@ -162,13 +194,19 @@ def _check_if_cmake_installed() -> bool:
 def _public_permissions(file: str) -> bool:
     return (
         subprocess.call(
-            ["sudo", "chmod", "666", file],
+            ["sudo", "chmod", "777", file],
             shell=False,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.STDOUT,
         )
         == 0
     )
+
+
+def _compile_engine():
+    home = os.getcwd()
+    cmd = str("cmake --build " + home + "/build --config Debug --target all --")
+    os.system(cmd)
 
 
 def _check_if_engine_compiled():
@@ -180,22 +218,43 @@ def _check_if_engine_compiled():
 
     if not os.path.isfile("YeagerEngine"):
         print("[INFO] Yeager Engine is not compiled! Compiling...")
-        home = os.getcwd()
-        cmd = str("cmake --build " + home + "/build --config Debug --target all --")
-        os.system(cmd)
+        _compile_engine()
+
+
+def _sudo_command(command: str) -> int:
+    global password
+    command = "echo %s|sudo -S %s" % (password, command)
+    if password is not None:
+        return os.system(command)
+    return -1
+
+
+def _validade_command(command: str) -> tuple[bool, str]:
+    n, msg = subprocess.getstatusoutput(command)
+    return n == 0, msg
+
+
+# dont use the fucking mv command, or the directories and the files will dissapear from the engine source code
+def _cp_sudo_command(src: str, dst: str, is_dir=False) -> int:
+    command = "cp {} {}".format(src, dst)
+    if is_dir:
+        command = "cp -r {} {}".format(src, dst)
+    _sudo_command(command)
 
 
 def _mv_binaries_global():
-    dir_global = binaries_paths_os[currentOperatingSystem.value - 1]
-    shutil.copy("YeagerEngine", dir_global)
-    print("[INFO] Moved YeagerEngine -> " + dir_global)
+    dir_global = binaries_paths[currentOperatingSystem.value - 1]
+    _cp_sudo_command("YeagerEngine", "/usr/bin")
+    print("[INFO] Copied YeagerEngine -> " + dir_global)
 
 
 def _compartible_icon_dir(home) -> str:
     if currentOperatingSystem == OperatingSystem.LINUX:
-        icon_dir = home + ".local/share/icons/hicolor/256x256/apps"
-        if rootless and unix_user is not None:
-            icon_dir = "/home/" + unix_user + "/.local/share/icons/hicolor/256x256/apps"
+        icon_dir = home + "/.local/share/icons/hicolor/256x256/apps"
+        if rootless and system_user is not None:
+            icon_dir = (
+                "/home/" + system_user + "/.local/share/icons/hicolor/256x256/apps"
+            )
         return icon_dir
     elif currentOperatingSystem == OperatingSystem.WINDOWS_32:
         return str("undefined")
@@ -205,43 +264,65 @@ def _solve_icon_dir(home):
     icon_dir = _compartible_icon_dir(home)
     if _verify_if_dir_exists(icon_dir):
         shutil.copy(_path_compatible("Utils/YeagerEngine.png"), icon_dir)
-        print("[INFO] Moved Utils/YeagerEngine.png -> ", icon_dir)
+        print("[INFO] Copied Utils/YeagerEngine.png -> ", icon_dir)
         if not _public_permissions(icon_dir):
             print("[ERROR] cannot change permissions on ", icon_dir)
     else:
-        print("[ERROR] Cannot moved YeagerEngine.png to ", icon_dir)
+        print("[ERROR] Cannot copy YeagerEngine.png to ", icon_dir)
 
 
-def _install_engine():
-    home = str(pathlib.Path.home())
-    _mv_binaries_global()
-    if rootless and unix_user is not None:
-        _local_install_user(unix_user)
+def _mv_desktop_info(home):
+    if rootless and system_user is not None:
+        _local_install_user(system_user)
     else:
         shutil.copy(
             "Utils/YeagerEngine.desktop", str(home + "/.local/share/applications")
         )
         print(
-            "[INFO] Moved Utils/YeagerEngine.desktop -> "
+            "[INFO] Copied Utils/YeagerEngine.desktop -> "
             + str(home + "/.local/share/applications")
         )
 
+
+def _copy_tree(src, dst):
+    try:
+        shutil.copytree(src=src, dst=dst, dirs_exist_ok=True)
+    except PermissionError:
+        print("[ERROR] Permissions error on {} to {}".format(src, dst))
+        sys.exit(0)
+
+
+def _mv_shared_data():
     assets = _path_compatible("Apps/Yeager/Assets/")
     configuration = _path_compatible("Apps/Yeager/Configuration/")
-
+    shared = shared_data_paths[currentOperatingSystem.value - 1]
     try:
-        shutil.copytree(src=assets, dst="/usr/share/Yeager/Assets", dirs_exist_ok=True)
-        shutil.copytree(
-            src=configuration, dst="/usr/share/Yeager/Configuration", dirs_exist_ok=True
-        )
+        if upgrade_shared:
+            _sudo_command("rm -r {}".format(shared))
+            print("[INFO] Removed -> {} for upgrade!".format(shared))
+
+        _sudo_command("mkdir {}".format(shared))
+        print("[INFO] Created directory -> {}".format(shared))
+        _cp_sudo_command(src=assets, dst=shared, is_dir=True)
+        _cp_sudo_command(src=configuration, dst=shared, is_dir=True)
+        print("[INFO] Copied {} -> {}".format(assets, shared))
+        print("[INFO] Copied {} -> {}".format(configuration, shared))
     except FileExistsError:
         print("[ERROR] Files exists, this error should not be raised!")
 
+
+def _install_engine():
+    home = str(pathlib.Path.home())
+    if forced_compilation:
+        _compile_engine()
+    _mv_binaries_global()
+    _mv_desktop_info(home)
+    _mv_shared_data()
     _solve_icon_dir(home)
 
 
 def _rm_binaries_global():
-    removed = binaries_paths_os[currentOperatingSystem.value - 1]
+    removed = binaries_paths[currentOperatingSystem.value - 1]
     if not _remove_file(removed + "/YeagerEngine"):
         print("[ERROR] Cannot remove binarie from ", removed + "/YeagerEngine")
     else:
@@ -260,12 +341,9 @@ def _local_uninstall_user(user):
         sys.exit(0)
 
 
-def _uninstall_engine():
-    home = str(pathlib.Path.home())
-    _rm_binaries_global()
-
-    if rootless and unix_user is not None:
-        _local_uninstall_user(unix_user)
+def _rm_desktop_info(home):
+    if rootless and system_user is not None:
+        _local_uninstall_user(system_user)
     else:
         application = str(home + "/.local/share/applications/YeagerEngine.desktop")
         if not _verify_if_exits(application):
@@ -276,15 +354,24 @@ def _uninstall_engine():
             _remove_file(application)
             print("[INFO] Removed -> ", application)
 
-    shared = share_data[currentOperatingSystem.value - 1] + _path_compatible("/Yeager")
+
+def _rm_shared_data():
+    shared = shared_data_paths[currentOperatingSystem.value - 1]
     if not _verify_if_dir_exists(shared):
         print(
             "[ERROR] Shared data directory does not exists, cannot be removed! ",
             shared,
         )
     else:
-        shutil.rmtree(shared, ignore_errors=True)
+        _remove_dir(shared)
         print("[INFO] Removed -> ", shared)
+
+
+def _uninstall_engine():
+    home = str(pathlib.Path.home())
+    _rm_binaries_global()
+    _rm_desktop_info(home)
+    _rm_shared_data()
 
 
 def _execute_instructions():
@@ -299,6 +386,7 @@ def _execute_instructions():
         sys.exit(0)
 
 
+password = get_sudo_password()
 _check_platform()
 _process_args()
 _check_if_engine_compiled()

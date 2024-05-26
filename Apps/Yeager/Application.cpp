@@ -240,11 +240,9 @@ void ApplicationCore::Render()
   skybox->BuildSkyboxFromImport("/home/schwq/.YeagerEngine/External/Default/Skybox/skybox.obj", false);
 
   TextRenderer text(this);
-  text.LoadFont(GetPath("/Configuration/firacode.ttf"), 48);
+  text.LoadFont(GetPath("/Assets/Fonts/firacode.ttf"), 48);
   Transformation trans;
   trans.position = Vector3(10);
-
-  Yeager::LogDebug(INFO, "Hello world");
 
   while (ShouldRender()) {
 
