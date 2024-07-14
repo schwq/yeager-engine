@@ -74,6 +74,7 @@ class Scene {
   void Save();
   void Load(String path);
   void LoadEditorColorscheme(Interface* intr);
+  void Terminate();
 
   SceneContext* GetContext() { return &m_Context; }
   void SetContextType(SceneType type);
@@ -103,16 +104,16 @@ class Scene {
 
   /* Check for duplicate elements in the vector and returns the positions of the duplicates */
   template <typename Type>
-  std::vector<size_t> CheckDuplicatesEntities(VecSharedPtr<Type>* vec)
+  std::optional<std::vector<size_t>> CheckDuplicatesEntities(VecSharedPtr<Type>* vec)
   {
     if (vec->empty() || vec->size() == 1)
-      return std::vector<size_t>();
+      return std::nullopt;
     /* Check if the template type have a operator== declared */
     if (!Yeager::CHECK::EqualExists<Type>::value) {
-      Yeager::Log(WARNING, "Check for Duplicates Entities, class type does not have equal operator!");
-      return std::vector<size_t>();
+      Yeager::LogDebug(WARNING, "Check for Duplicates Entities, class type does not have equal operator!");
+      return std::nullopt;
     }
-    Yeager::Log(INFO, "Check for Duplicates Entities, class type have a equal operator!");
+    Yeager::LogDebug(INFO, "Check for Duplicates Entities, class type have a equal operator!");
     std::vector<size_t> QueueToDeletion;
 
     /* Find duplicates, the right most element of the vector is the choosen one to delete */
@@ -151,20 +152,22 @@ class Scene {
   /* Will try to search for folders and model files inside of it on the /Assets/ImportedModels folder of the project, and return a pair of the file name and complete path */
   VecPair<String, String> VerifyImportedModelsOptionsInAssetsFolder();
 
-  YEAGER_FORCE_INLINE Yeager::PlayerCamera* GetPlayerCamera() { return m_PlayerCamera; }
+  std::shared_ptr<PlayerCamera> GetPlayerCamera() { return m_PlayerCamera; }
 
-  std::vector<Yeager::NodeComponent*>* GetNodeHierarchy() { return &m_NodeHierarchy; }
+  std::vector<std::shared_ptr<NodeComponent>>* GetNodeHierarchy() { return &m_NodeHierarchy; }
 
   YEAGER_FORCE_INLINE constexpr bool SceneContainsRootNode() const { return m_SceneContainsRootNode; }
-  constexpr Yeager::NodeComponent* GetRootNode() { return m_RootNodeOfScene; }
+  std::shared_ptr<NodeComponent> GetRootNode() { return m_RootNodeOfScene; }
 
   /* I dont think about a scenario where is going to be possible to just dont have a root node
   but will leave it this way, for now. */
-  void SetSceneContainsRootNode(bool contains, Yeager::NodeComponent* root)
+  void SetSceneContainsRootNode(bool contains, std::shared_ptr<NodeComponent> root)
   {
     m_SceneContainsRootNode = contains;
     m_RootNodeOfScene = root;
   }
+
+  String GetTextureCacheFolderPath() const;
 
  private:
   // The toolbox destroryed can be the selected one, if its stays selected after deletion, it will cause a read to nullptr!
@@ -173,15 +176,18 @@ class Scene {
   void ValidatesCommonFolders();
   void RemoveDuplicatesEntities();
   void VerifyAssetsSubFolders();
+  void VerifyCacheSubFolders();
   void InitializeRootNode();
+
   String GetConfigurationFilePath(String path) const;
 
   SceneContext m_Context;
   bool m_SceneContainsRootNode = false;
+  bool m_SceneWasTerminated = false;
   String m_AssetsFolderPath = YEAGER_NULL_LITERAL;
-  Yeager::PlayerCamera* m_PlayerCamera = YEAGER_NULLPTR;
+  std::shared_ptr<PlayerCamera> m_PlayerCamera = YEAGER_NULLPTR;
+  std::shared_ptr<NodeComponent> m_RootNodeOfScene = YEAGER_NULLPTR;
   Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
-  Yeager::NodeComponent* m_RootNodeOfScene = YEAGER_NULLPTR;
 
   VecPair<ImporterThreaded*, Yeager::Object*> m_ThreadImporters;
   VecPair<ImporterThreadedAnimated*, Yeager::AnimatedObject*> m_ThreadAnimatedImporters;
@@ -193,6 +199,6 @@ class Scene {
   VecSharedPtr<Yeager::ToolboxHandle> m_Toolboxes;
   VecSharedPtr<Yeager::PhysicalLightHandle> m_LightSources;
 
-  std::vector<Yeager::NodeComponent*> m_NodeHierarchy;
+  std::vector<std::shared_ptr<NodeComponent>> m_NodeHierarchy;
 };
 }  // namespace Yeager

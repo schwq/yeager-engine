@@ -24,6 +24,7 @@
 #include "../../../Common/LogEngine.h"
 #include "../../../Common/Utilities.h"
 #include "../Entity.h"
+#include "../OpenGLRender.h"
 
 namespace Yeager {
 
@@ -49,6 +50,7 @@ struct Text2D {
 
 class TextRenderer {
  public:
+  TextRenderer() = default;
   TextRenderer(Yeager::ApplicationCore* application);
 
   void Initialize();
@@ -59,7 +61,7 @@ class TextRenderer {
   void BuildBuffers();
 
   void RenderText(Yeager::Shader* shader, const String& text, float x, float y, float scale, const Vector3& color);
-  void RenderText(Yeager::Shader* shader, Transformation& transformation, const String& text, float x, float y,
+  void RenderText(Yeager::Shader* shader, Transformation3D& transformation, const String& text, float x, float y,
                   float scale, const Vector3& color);
   std::pair<Uint, Text2D> AddText(Text2D& text);
 
@@ -70,7 +72,7 @@ class TextRenderer {
   FT_Library m_FTLibrary;
   FT_Face m_FTFace;
   Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
-  GLuint m_Vao, m_Vbo;
+  SimpleRenderer m_Renderer;
 };
 
 }  // namespace Yeager

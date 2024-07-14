@@ -20,6 +20,11 @@
 #include "Common.h"
 #include "Utilities.h"
 
+#define YEAGER_LINUX_RED_TERMINAL_COLOR "\033[31;1m"
+#define YEAGER_LINUX_YELLOW_TERMINAL_COLOR "\033[33;1m"
+#define YEAGER_LINUX_GREEN_TERMINAL_COLOR "\033[32;1m"
+#define YEAGER_LINUX_DEFAULT_TERMINAL_COLOR "\033[0;1m"
+
 struct MessageTypeVerbosity {
   enum Enum { Error_Message, Warning_Message, Info_Message };
   static Enum VerbosityToEnum(int verb)
@@ -61,71 +66,48 @@ extern EditorConsole gGlobalConsole;
 
 namespace Yeager {
 
+static String FormatTimeString(const YgTime_t& time)
+{
+  return String("[ " + std::to_string(time.Time.Hours) + ":" + std::to_string(time.Time.Minutes) + ":" +
+                std::to_string(time.Time.Seconds) + " ]");
+}
+
+/// TODO: Make the windows version of this
+static void AttributeLogCompoments(int verbosity, String* symbol, String* verbose, String* color)
+{
+  if (verbosity == INFO) {
+    *symbol = "(-) ";
+    *verbose = "[INFO] ";
+    *color = YEAGER_LINUX_GREEN_TERMINAL_COLOR;
+  } else if (verbosity == WARNING) {
+    *symbol = "(??) ";
+    *verbose = "[WARN] ";
+    *color = YEAGER_LINUX_YELLOW_TERMINAL_COLOR;
+  } else {
+    *symbol = "(!!) ";
+    *verbose = "[ERROR] ";
+    *color = YEAGER_LINUX_RED_TERMINAL_COLOR;
+  }
+}
+
 template <typename... T>
 void Log(int verbosity, fmt::format_string<T...> fmt, T&&... args)
 {
-  auto str = fmt::format(fmt, std::forward<T>(args)...);
-  String log(str);
-
-  ConsoleLogSender console_message;
-  console_message.text_color = VerbosityToColor(verbosity);
-  console_message.verbosity = verbosity;
-  console_message.message = log;
-  console_message.type = MessageTypeVerbosity::VerbosityToEnum(verbosity);
-
-  String terminal_prefix;
-  String console_verbose;
-  if (verbosity == INFO) {
-    terminal_prefix = "(-) ";
-    console_verbose = "[INFO] ";
-  } else if (verbosity == WARNING) {
-    terminal_prefix = "(??) ";
-    console_verbose = "[WARN] ";
-  } else {
-    terminal_prefix = "(!!) ";
-    console_verbose = "[ERROR] ";
-  }
-  console_message.message = String(console_verbose + console_message.message);
-  gGlobalConsole.SetLogString(console_message);
-
-  YgTime_t time = CurrentTimeToTimeType();
-  String time_str = "[ " + std::to_string(time.Time.Hours) + ":" + std::to_string(time.Time.Minutes) + ":" +
-                    std::to_string(time.Time.Seconds) + " ]";
-  std::cout << time_str << terminal_prefix << log << std::endl;
+  String str(fmt::format(fmt, std::forward<T>(args)...));
+  ConsoleLogSender message = {str, MessageTypeVerbosity::VerbosityToEnum(verbosity), verbosity,
+                              VerbosityToColor(verbosity)};
+  String symbol, verbose, color;
+  AttributeLogCompoments(verbosity, &symbol, &verbose, &color);
+  message.message = String(verbose + message.message);
+  gGlobalConsole.SetLogString(message);
+  std::cout << color << FormatTimeString(CurrentTimeToTimeType()) << symbol << str << std::endl;
 }
 
 template <typename... T>
 void LogDebug(int verbosity, fmt::format_string<T...> fmt, T&&... args)
 {
 #ifdef YEAGER_DEBUG
-  auto str = fmt::format(fmt, std::forward<T>(args)...);
-  String log(str);
-
-  ConsoleLogSender console_message;
-  console_message.text_color = VerbosityToColor(verbosity);
-  console_message.verbosity = verbosity;
-  console_message.message = log;
-  console_message.type = MessageTypeVerbosity::VerbosityToEnum(verbosity);
-
-  String terminal_prefix;
-  String console_verbose;
-  if (verbosity == INFO) {
-    terminal_prefix = "(-) ";
-    console_verbose = "[INFO] ";
-  } else if (verbosity == WARNING) {
-    terminal_prefix = "(??) ";
-    console_verbose = "[WARN] ";
-  } else {
-    terminal_prefix = "(!!) ";
-    console_verbose = "[ERROR] ";
-  }
-  console_message.message = String(console_verbose + console_message.message);
-  gGlobalConsole.SetLogString(console_message);
-
-  YgTime_t time = CurrentTimeToTimeType();
-  String time_str = "[ " + std::to_string(time.Time.Hours) + ":" + std::to_string(time.Time.Minutes) + ":" +
-                    std::to_string(time.Time.Seconds) + " ]";
-  std::cout << time_str << terminal_prefix << log << std::endl;
+  Yeager::Log(verbosity, fmt, std::forward<T>(args)...);
 #endif
 }
 

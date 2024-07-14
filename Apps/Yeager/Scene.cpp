@@ -55,7 +55,7 @@ SceneType Yeager::StringToSceneType(String str)
 
 void Scene::InitializeRootNode()
 {
-  m_RootNodeOfScene = new NodeComponent((ApplicationCore*)m_Application, (Scene*)this);
+  m_RootNodeOfScene = std::make_shared<NodeComponent>((ApplicationCore*)m_Application, (Scene*)this);
   m_SceneContainsRootNode = true;
 }
 
@@ -81,7 +81,7 @@ void Scene::BuildScene(String name, String Author, SceneType type, String folder
   m_Context.m_ProjectSavePath = GetConfigurationFilePath(m_Context.m_ProjectFolderPath);
   ValidatesCommonFolders();
   m_AssetsFolderPath = m_Context.m_ProjectFolderPath + YG_PS + "Assets";
-  m_PlayerCamera = new PlayerCamera(m_Application);
+  m_PlayerCamera = std::make_shared<PlayerCamera>(m_Application);
   m_Application->AttachPlayerCamera(m_PlayerCamera);
 
   Log(INFO, "Created Scene name {}", m_Context.m_name);
@@ -184,18 +184,20 @@ std::vector<std::pair<String, String>> Scene::VerifySoundsOptionsInAssetFolder()
 
 void Scene::CheckDuplicatesLightSources()
 {
-  std::vector<size_t> pos = CheckDuplicatesEntities<PhysicalLightHandle>(&m_LightSources);
-  for (const auto& index : pos) {
-    PhysicalLightHandle* light = m_LightSources.at(index).get();
+  auto pos = CheckDuplicatesEntities<PhysicalLightHandle>(&m_LightSources);
+  if (!pos.has_value())
+    return;
+  for (const auto& index : pos.value()) {
+    auto light = m_LightSources.at(index).get();
 
     light->ScheduleDeletionOfPointLights();
     m_LightSources.erase(m_LightSources.begin() + index);
-    for (auto& indexMinus : pos) {
+    for (auto& indexMinus : pos.value()) {
       indexMinus--;
     }
   }
 
-  Yeager::LogDebug(INFO, "Removed {} Duplicates Light Sources", pos.size());
+  Yeager::LogDebug(INFO, "Removed {} Duplicates Light Sources", pos.value().size());
 }
 
 void Scene::CheckScheduleDeletions()
@@ -246,28 +248,51 @@ void Scene::CheckToolboxIsSelectedAndDisable(Yeager::ToolboxHandle* toolbox)
 
 void Scene::ValidatesCommonFolders()
 {
-  if (!Yeager::ValidatesPath(m_Context.m_ProjectFolderPath + YG_PS + "Assets")) {
-    Yeager::CreateDirectoryAndValidate(m_Context.m_ProjectFolderPath + YG_PS + "Assets");
+  const String projectPath = m_Context.m_ProjectFolderPath + YG_PS;
 
+  if (!Yeager::ValidatesAndCreateDirectory(projectPath + "Assets")) {
     VerifyAssetsSubFolders();
   }
-  if (!Yeager::ValidatesPath(m_Context.m_ProjectFolderPath + YG_PS + "Configuration")) {
-    Yeager::CreateDirectoryAndValidate(m_Context.m_ProjectFolderPath + YG_PS + "Configuration");
+
+  Yeager::ValidatesAndCreateDirectory(projectPath + "Configuration");
+  Yeager::ValidatesAndCreateDirectory(projectPath + "Packages");
+  Yeager::ValidatesAndCreateDirectory(projectPath + "Main");
+
+  if (!Yeager::ValidatesAndCreateDirectory(projectPath + "Cache")) {
+    VerifyCacheSubFolders();
   }
-  if (!Yeager::ValidatesPath(m_Context.m_ProjectFolderPath + YG_PS + "Packages")) {
-    Yeager::CreateDirectoryAndValidate(m_Context.m_ProjectFolderPath + YG_PS + "Packages");
+}
+
+void Scene::VerifyCacheSubFolders()
+{
+  const String cacheFolder = String(m_Context.m_ProjectFolderPath + YG_PS + "Cache");
+  if (!Yeager::ValidatesPath(cacheFolder + YG_PS + "Texture")) {
+    Yeager::CreateDirectoryAndValidate(cacheFolder + YG_PS + "Texture");
   }
-  if (!Yeager::ValidatesPath(m_Context.m_ProjectFolderPath + YG_PS + "Main")) {
-    Yeager::CreateDirectoryAndValidate(m_Context.m_ProjectFolderPath + YG_PS + "Main");
+  if (!Yeager::ValidatesPath(cacheFolder + YG_PS + "Object")) {
+    Yeager::CreateDirectoryAndValidate(cacheFolder + YG_PS + "Object");
   }
+}
+
+String Scene::GetTextureCacheFolderPath() const
+{
+  return String(m_Context.m_ProjectFolderPath + YG_PS + "Cache" + YG_PS + "Texture");
 }
 
 Scene::~Scene()
 {
+  if (!m_SceneWasTerminated) {
+    Terminate();
+  }
+}
+
+void Scene::Terminate()
+{
   DeleteChildOf(m_RootNodeOfScene);
-  YEAGER_DELETE(m_PlayerCamera);
-  YEAGER_DELETE(m_RootNodeOfScene);
+  m_PlayerCamera.reset();
+  m_RootNodeOfScene.reset();
   Yeager::Log(INFO, "Destroring Scene name {}", m_Context.m_name);
+  m_SceneWasTerminated = true;
 }
 
 std::vector<std::pair<ImporterThreaded*, Yeager::Object*>>* Scene::GetThreadImporters()

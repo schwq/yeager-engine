@@ -6,8 +6,6 @@
 using namespace ImGui;
 using namespace Yeager;
 
-bool EditorExplorer::m_AwaitingUserChoiceFile = false;
-
 void EditorExplorer::DrawExplorer()
 {
   AddImportedObjectWindow();
@@ -30,13 +28,49 @@ EditorExplorer::EditorExplorer(Yeager::ApplicationCore* app) : m_Application(app
 
 EditorExplorer::~EditorExplorer()
 {
-  YEAGER_DELETE(m_Selection);
+  m_FileSelection.reset();
+  m_FolderSelection.reset();
+}
+
+void EditorExplorer::AsynchronousAwaitUserTextureFolder()
+{
+  if (m_FolderSelection->ready(2)) {
+
+    if (m_FolderSelection->result().empty()) {  // If the user clicks in cancel
+      Yeager::LogDebug(INFO, "User cancelled the folder selection operation");
+      m_FolderSelection.reset();
+      m_AwaintingUserChoiceFolder = false;
+      return;
+    }
+
+    const String path = m_FolderSelection->result();
+
+    if (!std::filesystem::is_directory(path)) {
+      Yeager::LogDebug(ERROR, "Selected path is not a folder for textures! {}", path);
+      m_CreationConfiguration.TextureFolder.Valid = false;
+    } else {
+      m_CreationConfiguration.TextureFolder.Valid = true;
+      m_CreationConfiguration.TextureFolder.path = path;
+    }
+
+    m_AwaintingUserChoiceFolder = false;
+    m_FolderSelection.reset();
+  }
 }
 
 void EditorExplorer::AsynchronousAwaitUserFolder(FileExtensionType type)
 {
-  if (m_Selection->ready(2) && !m_Selection->result().empty()) {
-    const String path = m_Selection->result()[0].c_str();
+  if (m_FileSelection->ready(2)) {
+
+    if (m_FileSelection->result().empty()) {  // If the user clicks in cancel
+      Yeager::LogDebug(INFO, "User cancelled the file selection operation");
+      m_FileSelection.reset();
+      m_AwaitingUserChoiceFile = false;
+      return;
+    }
+
+    const String path = m_FileSelection->result()[0];
+
     const std::pair<bool, FileType> result = CheckFileExtensionType(path, type);
     bool success = true;
 
@@ -54,7 +88,7 @@ void EditorExplorer::AsynchronousAwaitUserFolder(FileExtensionType type)
       m_NewObjectPath = path;
 
     m_AwaitingUserChoiceFile = false;
-    YEAGER_DELETE(m_Selection)
+    m_FileSelection.reset();
   }
 }
 
@@ -114,8 +148,7 @@ void EditorExplorer::HandleAudioCleanup()
   m_Application->GetInput()->SetCameraCursorToWindowState(false);
   m_AwaitingUserChoiceFile = false;
   m_SelectableOptions.clear();
-  if (m_Selection)
-    YEAGER_DELETE(m_Selection)
+  m_FileSelection.reset();
 }
 
 void EditorExplorer::HandleAudioCreation()
@@ -127,15 +160,15 @@ void EditorExplorer::HandleAudioCreation()
 
   if (m_EverythingFineToCreate) {
     if (m_AddAudioIs3D) {
-      auto audio =
-          std::make_shared<Yeager::Audio3DHandle>(m_NewObjectPath, m_NewObjectName, m_Application->GetAudioEngine(),
-                                                  m_LoopedAudio, irrklang::vec3df(0.0f, 0.0f, 0.0f), m_Application);
+      auto audio = std::make_shared<Yeager::Audio3DHandle>(m_NewObjectPath, m_NewObjectName,
+                                                           m_Application->GetAudioEngineHandle(), m_LoopedAudio,
+                                                           irrklang::vec3df(0.0f, 0.0f, 0.0f), m_Application);
 
       m_Application->GetScene()->GetAudios3D()->push_back(audio);
 
     } else {
-      auto audio = std::make_shared<Yeager::AudioHandle>(m_NewObjectPath, m_NewObjectName,
-                                                         m_Application->GetAudioEngine(), m_LoopedAudio, m_Application);
+      auto audio = std::make_shared<Yeager::AudioHandle>(
+          m_NewObjectPath, m_NewObjectName, m_Application->GetAudioEngineHandle(), m_LoopedAudio, m_Application);
 
       m_Application->GetScene()->GetAudios()->push_back(audio);
     }
@@ -234,14 +267,27 @@ void EditorExplorer::AddImportedObjectWindow()
     m_Application->GetInterface()->CenteredWindow(600, 300);
 
     Begin("Add Imported Object", NULL, YEAGER_WINDOW_STATIC);
+    PushID("Hrllo wlrd");
     InputText("Object's name", &m_NewObjectName, YEAGER_EXPLORER_MAX_STRING_INPUT);
 
     if (Button("Select Imported Object file")) {
       StartFolderSelection("Select 3D model file");
     }
 
+    if (Button(ICON_FA_FILE " Select Custom Texture Folder")) {
+      StartFolderSelectionFromTexture("Select texture folder");
+    }
+
     if (m_AwaitingUserChoiceFile) {  // asynchronous file select
       AsynchronousAwaitUserFolder(EExtensitonType3DModel);
+    }
+
+    if (m_AwaintingUserChoiceFolder) {
+      AsynchronousAwaitUserTextureFolder();
+    }
+
+    if (m_CreationConfiguration.TextureFolder.Valid) {
+      Text("Custom texture folder: %s", m_CreationConfiguration.TextureFolder.path.c_str());
     }
 
     Text("Path: %s", m_NewObjectPath.c_str());
@@ -267,34 +313,41 @@ void EditorExplorer::AddImportedObjectWindow()
     if (Button("Cancel")) {
       CleanupAfterObjectCreation();
     }
+    PopID();
     End();
+  }
+}
+
+void EditorExplorer::StartFolderSelectionFromTexture(const String& title)
+{
+  if (!m_AwaitingUserChoiceFile && !m_AwaitingUserChoiceFile) {
+    m_FolderSelection = std::make_shared<pfd::select_folder>(
+        title, m_Application->GetScene()->GetContext()->m_ProjectFolderPath.c_str());
+    m_AwaintingUserChoiceFolder = true;
   }
 }
 
 void EditorExplorer::StartFolderSelection(const String& title)
 {
-  if (!m_AwaitingUserChoiceFile) {
-    m_Selection = new pfd::open_file(
-        pfd::open_file(title, m_Application->GetScene()->GetContext()->m_ProjectFolderPath.c_str(), {"*"}, false));
+  if (!m_AwaitingUserChoiceFile && !m_AwaintingUserChoiceFolder) {
+    const String path = m_Application->GetScene()->GetContext()->m_ProjectFolderPath;
+    m_FileSelection = std::make_shared<pfd::open_file>(title, path);
     m_AwaitingUserChoiceFile = true;
   }
 }
 
-void EditorExplorer::BuildInstancedObjectTransformation(std::vector<Transformation*>& pos)
+void EditorExplorer::BuildInstancedObjectTransformation(std::vector<std::shared_ptr<Transformation3D>>& pos)
 {
   for (int x = 0; x < m_InstancedObjectsCount; x++) {
-    Transformation* vec = new Transformation;
-    vec->position = Vector3(1 * x * m_InstancedGridFactor, 0, 0);
-    vec->rotation = Vector3(0);
-    vec->scale = Vector3(1);
+    auto vec = std::make_shared<Transformation3D>(Vector3(1 * x * m_InstancedGridFactor, 0, 0), Vector3(0), Vector3(1));
     pos.push_back(vec);
   }
 }
 
-void EditorExplorer::DeleteInstancedObjectTransformation(std::vector<Transformation*>* pos)
+void EditorExplorer::DeleteInstancedObjectTransformation(std::vector<std::shared_ptr<Transformation3D>>& pos)
 {
-  for (auto& t : *pos) {
-    YEAGER_DELETE(t)
+  for (auto& t : pos) {
+    t.reset();
   }
 }
 
@@ -321,7 +374,8 @@ void EditorExplorer::HandleObjectCreation()
 void EditorExplorer::CreateObject()
 {
   auto obj = std::make_shared<Yeager::Object>(m_NewObjectName, m_Application);
-  if (obj->ThreadImportObjectFromFile(m_NewObjectPath.c_str(), m_ImportedObjectFlipTexture)) {
+  if (obj->ThreadImportObjectFromFile(m_NewObjectPath.c_str(), m_CreationConfiguration, m_ImportedObjectFlipTexture)) {
+
     m_Application->GetScene()->GetObjects()->push_back(obj);
     CleanupAfterObjectCreation();
   } else {
@@ -334,14 +388,14 @@ void EditorExplorer::CreateAnimatedObject()
 {
   if (m_AddObjectIsInstanced) {
     auto obj = std::make_shared<Yeager::AnimatedObject>(m_NewObjectName, m_Application, m_InstancedObjectsCount);
-    if (obj->ImportObjectFromFile(m_NewObjectPath.c_str(), m_ImportedObjectFlipTexture)) {
-      std::vector<Transformation*> pos;
+    if (obj->ImportObjectFromFile(m_NewObjectPath.c_str(), m_CreationConfiguration, m_ImportedObjectFlipTexture)) {
+      std::vector<std::shared_ptr<Transformation3D>> pos;
       BuildInstancedObjectTransformation(pos);
 
       obj->BuildAnimation(m_NewObjectPath);
       obj->BuildProps(pos, m_Application->ShaderFromVarName("SimpleAnimated"));
 
-      DeleteInstancedObjectTransformation(&pos);  // cleanup raw pointers
+      DeleteInstancedObjectTransformation(pos);  // cleanup smart pointers
 
       m_Application->GetScene()->GetAnimatedObject()->push_back(obj);
       CleanupAfterObjectCreation();
@@ -351,7 +405,8 @@ void EditorExplorer::CreateAnimatedObject()
     }
   } else {
     auto obj = std::make_shared<Yeager::AnimatedObject>(m_NewObjectName, m_Application);
-    if (obj->ThreadImportObjectFromFile(m_NewObjectPath.c_str(), m_ImportedObjectFlipTexture)) {
+    if (obj->ThreadImportObjectFromFile(m_NewObjectPath.c_str(), m_CreationConfiguration,
+                                        m_ImportedObjectFlipTexture)) {
       m_Application->GetScene()->GetAnimatedObject()->push_back(obj);
       CleanupAfterObjectCreation();
     } else {
@@ -365,7 +420,8 @@ void EditorExplorer::CreatePlayableObject()
 {
   if (!m_AddObjectIsAnimated) {
     auto obj = std::make_shared<PlayableObject>(m_NewObjectName, m_Application);
-    if (obj->ThreadImportObjectFromFile(m_NewObjectPath.c_str(), m_ImportedObjectFlipTexture)) {
+    if (obj->ThreadImportObjectFromFile(m_NewObjectPath.c_str(), m_CreationConfiguration,
+                                        m_ImportedObjectFlipTexture)) {
       m_Application->GetScene()->GetObjects()->push_back(obj);
       CleanupAfterObjectCreation();
     } else {
@@ -374,7 +430,8 @@ void EditorExplorer::CreatePlayableObject()
     }
   } else {
     auto obj = std::make_shared<PlayableAnimatedObject>(m_NewObjectName, m_Application);
-    if (obj->ThreadImportObjectFromFile(m_NewObjectPath.c_str(), m_ImportedObjectFlipTexture)) {
+    if (obj->ThreadImportObjectFromFile(m_NewObjectPath.c_str(), m_CreationConfiguration,
+                                        m_ImportedObjectFlipTexture)) {
       m_Application->GetScene()->GetAnimatedObject()->push_back(obj);
       CleanupAfterObjectCreation();
     } else {
@@ -386,6 +443,7 @@ void EditorExplorer::CreatePlayableObject()
 
 void EditorExplorer::CleanupAfterObjectCreation()
 {
+  m_CreationConfiguration.ResetValues();
   m_NewObjectName.clear();
   m_NewObjectPath.clear();
   m_SelectableOptions.clear();
@@ -395,10 +453,10 @@ void EditorExplorer::CleanupAfterObjectCreation()
   m_Application->GetInput()->SetCursorCanDisappear(true);
   m_Application->GetInput()->SetCameraCursorToWindowState(false);
   m_AwaitingUserChoiceFile = false;
-  YEAGER_DELETE(m_Selection)
+  m_FileSelection.reset();
 }
 
-String Yeager::GetExplorerSymbolForToolbox(EntityObjectType::Enum type)
+const String Yeager::GetExplorerSymbolForToolbox(EntityObjectType::Enum type)
 {
   switch (type) {
     case EntityObjectType::OBJECT:
@@ -420,7 +478,7 @@ String Yeager::GetExplorerSymbolForToolbox(EntityObjectType::Enum type)
   }
 }
 
-const String EditorExplorer::CreateToolboxLabel(Yeager::ToolboxHandle* obj)
+const String Yeager::CreateToolboxLabel(Yeager::ToolboxHandle* obj)
 {
   return GetExplorerSymbolForToolbox(obj->GetEntity()->GetEntityType()) + " [" +
          EntityObjectType::ToString(obj->GetEntity()->GetEntityType()) + "] " + obj->GetEntity()->GetName() + "##";

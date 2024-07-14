@@ -6,12 +6,12 @@ using namespace physx;
 PhysXActor::PhysXActor(Yeager::ApplicationCore* application, Yeager::Object* object)
     : m_Application(application), m_Object(object)
 {
-  Yeager::LogDebug(INFO, "Created physx actor for object: {} ID {}", object->GetName(), object->GetId());
+  Yeager::LogDebug(INFO, "Created physx actor for object: {} ID {}", object->GetName(), object->GetEntityID());
 }
 
 PhysXActor::~PhysXActor()
 {
-  Yeager::LogDebug(INFO, "Destroryed physx actor for object {} ID {}", m_Object->GetName(), m_Object->GetId());
+  Yeager::LogDebug(INFO, "Destroryed physx actor for object {} ID {}", m_Object->GetName(), m_Object->GetEntityID());
 }
 
 void PhysXActor::BuildActor(const ObjectPhysXCreationBase& creation)
@@ -21,7 +21,7 @@ void PhysXActor::BuildActor(const ObjectPhysXCreationBase& creation)
                                                                                : YEAGER_PHYSX_RIGID_STATIC_BODY;
   const Vector3 vec =
       m_Application->GetCamera()->GetPosition() + glm::normalize(m_Application->GetCamera()->GetDirection());
-  ApplyTransformation(m_Object->GetTransformationPtr());
+  Transformation3D::Apply(m_Object->GetTransformationPtr());
 
   if (creation.Type == ObjectPhysicsType::eUNDEFINED)
     return;  // No physics linked to the object

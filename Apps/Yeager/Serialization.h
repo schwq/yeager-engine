@@ -106,6 +106,8 @@ class Serialization {
   void WriteLoadedProjectsHandles(String externalFolder);
   void ReadLoadedProjectsHandles(String externalFolder);
 
+  bool ReadEditorSoundsConfiguration(const String& path);
+
   YgTime_t DeserializeProjectTimeOfCreation(YAML::Node node);
 
   bool ReadSettingsConfiguration(Yeager::Settings* settings, const String& path);
@@ -120,10 +122,11 @@ class Serialization {
   ObjectGeometryType::Enum YEAGER_FORCE_INLINE DeserializeBasicObject(Yeager::Object* BaseClassObj,
                                                                       YAML::detail::iterator_value& entity);
 
-  std::vector<Transformation*> YEAGER_FORCE_INLINE DeserializeObjectProperties(YAML::detail::iterator_value& entity);
+  YEAGER_FORCE_INLINE std::vector<std::shared_ptr<Transformation3D>> DeserializeObjectProperties(
+      YAML::detail::iterator_value& entity);
   void YEAGER_FORCE_INLINE SerializeBasicEntity(YAML::Emitter& out, String name, Uint id, String type);
   void YEAGER_FORCE_INLINE SerializeObjectTransformation(YAML::Emitter& out, String name,
-                                                         Yeager::Transformation& transf) noexcept;
+                                                         Yeager::Transformation3D& transf) noexcept;
 
   template <typename Type>
   void YEAGER_FORCE_INLINE SerializeObject(YAML::Emitter& out, const char* key, Type obj);

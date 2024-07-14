@@ -16,6 +16,8 @@
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+#pragma once
+
 #include "../Common/Common.h"
 #include "../Common/LogEngine.h"
 #include "../Common/Utilities.h"
@@ -52,6 +54,7 @@ struct UserDataHandle {
   }
 };
 
+template <typename T>
 class Allocator {
  public:
   Allocator();

@@ -31,6 +31,17 @@ namespace Yeager {
 class ApplicationCore;
 
 struct LauncherProjectPicker {
+  LauncherProjectPicker() {}
+  LauncherProjectPicker(const OpenProjectsDisplay& other)
+  {
+    m_Name = other.Name;
+    m_AuthorName = other.Author;
+    m_ProjectFolderPath = other.FolderPath;
+    m_ProjectConfigurationPath = other.Path;
+    m_ProjectDateOfCreation = other.TimeOfCreation;
+    m_SceneType = StringToSceneType(other.SceneType);
+    m_SceneRenderer = StringToSceneRenderer(other.RendererType);
+  }
   String m_Name = "Default";
   String m_AuthorName = "Default";
   String m_ProjectFolderPath = "Default";
@@ -47,25 +58,25 @@ class Launcher {
   Launcher(Uint width, Uint height, String title, ApplicationCore* app);
 
   void Render();
-  LauncherProjectPicker GetSelectedProject() noexcept { return m_ProjectCurrentSelected; }
-  constexpr LauncherProjectPicker* GetSelectedProjectPtr() noexcept { return &m_ProjectCurrentSelected; }
-
-  constexpr inline bool UserHasSelect() noexcept { return m_UserDoneSelecting; }
-  constexpr inline void SetUserHasSelect(bool selected) noexcept { m_UserDoneSelecting = selected; }
-  LauncherProjectPicker* GetCurrentProjectPicked() noexcept { return &m_ProjectCurrentSelected; }
-  Yeager::Scene* GetNewProjectScenePtr() noexcept { return m_NewProjectScene; }
-  constexpr inline void SetNewProjectLoaded(bool loaded) noexcept { m_IsNewProjectLoaded = loaded; }
-  constexpr inline bool GetNewProjectLaoded() noexcept { return m_IsNewProjectLoaded; }
-
   void BuildNewProject(const Yeager::LauncherProjectPicker& project);
 
+  LauncherProjectPicker GetSelectedProject() noexcept { return m_ProjectCurrentSelected; }
+  LauncherProjectPicker* GetCurrentProjectPicked() noexcept { return &m_ProjectCurrentSelected; }
+  Yeager::Scene* GetNewProjectScenePtr() noexcept { return m_NewProjectScene; }
+
+  YEAGER_CONSTEXPR LauncherProjectPicker* GetSelectedProjectPtr() noexcept { return &m_ProjectCurrentSelected; }
+  YEAGER_CONSTEXPR YEAGER_FORCE_INLINE bool UserHasSelect() noexcept { return m_UserDoneSelecting; }
+  YEAGER_CONSTEXPR YEAGER_FORCE_INLINE bool GetNewProjectLaoded() noexcept { return m_IsNewProjectLoaded; }
+  YEAGER_CONSTEXPR YEAGER_FORCE_INLINE void SetUserHasSelect(bool selected) noexcept { m_UserDoneSelecting = selected; }
+  YEAGER_CONSTEXPR YEAGER_FORCE_INLINE void SetNewProjectLoaded(bool loaded) noexcept { m_IsNewProjectLoaded = loaded; }
+
  private:
+  bool m_UserDoneSelecting = false;
+  bool m_IsNewProjectLoaded = false;
   String m_WindowTitle;
   std::vector<LauncherProjectPicker> m_ProjectsInLauncher;
   LauncherProjectPicker m_ProjectCurrentSelected;
-  bool m_IsNewProjectLoaded = false;
   Yeager::Scene* m_NewProjectScene = YEAGER_NULLPTR;
-  ApplicationCore* m_Application;
-  bool m_UserDoneSelecting = false;
+  ApplicationCore* m_Application = YEAGER_NULLPTR;
 };
 }  // namespace Yeager

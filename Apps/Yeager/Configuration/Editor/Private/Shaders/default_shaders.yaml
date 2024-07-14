@@ -1,0 +1,51 @@
+SceneShader: Default 
+Shaders: 
+  - Shader: Skybox Shader
+    VarName: Skybox 
+    FragmentPath: /Assets/Shaders/skybox_fg.glsl
+    VertexPath: /Assets/Shaders/skybox_vt.glsl
+  - Shader: Common Shader
+    VarName: Common 
+    FragmentPath: /Assets/Shaders/common_fg.glsl
+    VertexPath: /Assets/Shaders/common_vt.glsl
+  - Shader: Light Shader
+    VarName: Light 
+    FragmentPath: /Assets/Shaders/lighting_fg.glsl
+    VertexPath: /Assets/Shaders/lighting_vt.glsl
+  - Shader: Simple Shader
+    VarName: Simple 
+    FragmentPath: /Assets/Shaders/simple_fg.glsl
+    VertexPath: /Assets/Shaders/simple_vt.glsl
+  - Shader: SkyboxCubeMap Shader
+    VarName: SkyboxCubeMap 
+    FragmentPath: /Assets/Shaders/skybox_cube_map_fg.glsl
+    VertexPath: /Assets/Shaders/skybox_cube_map_vt.glsl
+  - Shader: TerrainGeneration Shader
+    VarName: TerrainGeneration
+    FragmentPath: /Assets/Shaders/terrain_fg.glsl
+    VertexPath:  /Assets/Shaders/terrain_vt.glsl
+  - Shader: Simple Animated Shader
+    VarName: SimpleAnimated 
+    FragmentPath: /Assets/Shaders/simple_animated_fg.glsl
+    VertexPath: /Assets/Shaders/simple_animated_vt.glsl
+  - Shader: Collision Shader
+    VarName: Collision
+    FragmentPath: /Assets/Shaders/collision_fg.glsl
+    VertexPath: /Assets/Shaders/collision_vt.glsl
+  - Shader: Simple Instanced Shader
+    VarName: SimpleInstanced
+    FragmentPath: /Assets/Shaders/simple_instanced_fg.glsl
+    VertexPath: /Assets/Shaders/simple_instanced_vt.glsl
+  - Shader: Simple Instanced Animated Shader
+    VarName: SimpleInstancedAnimated
+    FragmentPath: /Assets/Shaders/simple_instanced_animated_fg.glsl
+    VertexPath: /Assets/Shaders/simple_instanced_animated_vt.glsl
+  - Shader: Font2D Shader
+    VarName: Font2D
+    FragmentPath: /Assets/Shaders/font2D_fg.glsl
+    VertexPath: /Assets/Shaders/font2D_vt.glsl
+  - Shader: Font3D Shader
+    VarName: Font3D
+    FragmentPath: /Assets/Shaders/font3D_fg.glsl
+    VertexPath: /Assets/Shaders/font3D_vt.glsl
+  

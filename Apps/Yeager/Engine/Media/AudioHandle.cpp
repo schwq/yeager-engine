@@ -19,10 +19,71 @@ bool AudioEngineHandle::InitAudioEngine()
   }
 }
 
+AudioEngine::AudioEngine(Yeager::ApplicationCore* application, AudioEngineHandle* engine)
+    : m_Application(application), m_SoundEngine(engine)
+{}
+
+bool EngineSoundHandle::Initialize(AudioEngineHandle* engine)
+{
+
+  if (!Generated) {
+    SoundSource = engine->Engine->addSoundSourceFromFile(Path.c_str(), irrklang::ESM_AUTO_DETECT, true);
+    if (!SoundSource) {
+      Yeager::LogDebug(ERROR, "Cannot add sound source to the engine sound handle! File: {}", Path);
+      Generated = false;
+      return false;
+    }
+    Yeager::LogDebug(INFO, "Added the source source to the engine! File {}", Path);
+    Generated = true;
+    return true;
+  }
+  return false;
+}
+
+void EngineSoundHandle::Terminate()
+{
+  if (Generated)
+    SoundSource->drop();
+
+  Generated = false;
+}
+
+AudioEngine::~AudioEngine() {}
+
+bool AudioEngine::AddSound(EngineSoundHandle& handle)
+{
+  for (const auto& sound : m_Sounds) {
+    if (sound.Name == handle.Name) {
+      Yeager::LogDebug(WARNING, "Trying to add a sound name that already exists! Existing file is Name {}, Path {}",
+                       sound.Name, sound.Path);
+      return false;
+    }
+  }
+
+  if (handle.Initialize(m_SoundEngine)) {
+    m_Sounds.push_back(handle);
+    return true;
+  }
+  return false;
+}
+
+bool AudioEngine::PlaySound(const String& name)
+{
+  for (auto& sound : m_Sounds) {
+    if (sound.Name == name) {
+      if (!sound.Generated)
+        return false;
+
+      sound.Sound = m_SoundEngine->Engine->play2D(sound.SoundSource);
+      return true;
+    }
+  }
+  return false;
+}
+
 void AudioEngineHandle::TerminateAudioEngine()
 {
   if (Engine) {
-
     Engine->drop();
   }
 }
@@ -185,7 +246,7 @@ bool AudioHandle::IsSoundEffectEnable(AudioHandleSoundEffects effect)
 
 bool Yeager::AudioHandle::CheckIfSoundEffectIsSupported()
 {
-  // TODO
+  // TODO:
   return false;
 }
 

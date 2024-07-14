@@ -50,6 +50,36 @@ enum AudioHandleSoundEffects {
   WavesReverb
 };
 
+struct EngineSoundHandle {
+  EngineSoundHandle(const String& name, const String& path) : Path(path), Name(name) {}
+  String Path = YEAGER_NULL_LITERAL;
+  String Name = YEAGER_NULL_LITERAL;
+  irrklang::ISound* Sound = YEAGER_NULLPTR;
+  irrklang::ISoundSource* SoundSource = YEAGER_NULLPTR;
+  bool Generated = false;
+
+  bool Initialize(AudioEngineHandle* engine);
+  void Terminate();
+};
+
+/** Plays the audio of the engine, like effects, warnings, and more */
+class AudioEngine {
+ public:
+  AudioEngine(Yeager::ApplicationCore* application, AudioEngineHandle* engine);
+  ~AudioEngine();
+
+  bool AddSound(EngineSoundHandle& handle);
+
+  bool PlaySound(const String& name);
+
+  std::vector<EngineSoundHandle>* GetSounds() { return &m_Sounds; }
+
+ private:
+  std::vector<EngineSoundHandle> m_Sounds;
+  AudioEngineHandle* m_SoundEngine = YEAGER_NULLPTR;
+  Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
+};
+
 class AudioHandle : public GameEntity {
  public:
   AudioHandle(String path, String name, AudioEngineHandle* handle, bool looped,

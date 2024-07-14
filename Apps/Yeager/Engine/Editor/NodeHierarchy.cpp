@@ -3,14 +3,14 @@
 #include "../../Scene.h"
 using namespace Yeager;
 
-void Yeager::SwapNodes(Yeager::NodeComponent* node1, Yeager::NodeComponent* node2)
+void Yeager::SwapNodes(std::shared_ptr<NodeComponent> node1, std::shared_ptr<NodeComponent> node2)
 {
   Yeager::NodeComponent tmp = *node1;
   *node1 = *node2;
   *node2 = tmp;
 }
 
-void Yeager::DeleteChildOf(Yeager::NodeComponent* node)
+void Yeager::DeleteChildOf(std::shared_ptr<NodeComponent> node)
 {
   if (!node)
     return;
@@ -21,17 +21,17 @@ void Yeager::DeleteChildOf(Yeager::NodeComponent* node)
     if (IsNodeParent(child)) {
       DeleteChildOf(child);
     }
-    YEAGER_DELETE(child);
+    child.reset();
   }
   node->GetChildren()->clear();
 }
 
-void Yeager::AddNodeComponentToScene(Yeager::NodeComponent* node, Yeager::Scene* scene)
+void Yeager::AddNodeComponentToScene(std::shared_ptr<NodeComponent> node, Yeager::Scene* scene)
 {
   scene->GetNodeHierarchy()->push_back(node);
 }
 
-bool Yeager::IsNodeChildOf(Yeager::NodeComponent* isChild, Yeager::NodeComponent* ofParent)
+bool Yeager::IsNodeChildOf(std::shared_ptr<NodeComponent> isChild, std::shared_ptr<NodeComponent> ofParent)
 {
   if (!IsNodeParent(ofParent))
     return false;
@@ -42,12 +42,12 @@ bool Yeager::IsNodeChildOf(Yeager::NodeComponent* isChild, Yeager::NodeComponent
   return false;
 }
 
-bool Yeager::MoveNodeChildToNewParent(Yeager::NodeComponent* child, Yeager::NodeComponent* newParent)
+bool Yeager::MoveNodeChildToNewParent(std::shared_ptr<NodeComponent> child, std::shared_ptr<NodeComponent> newParent)
 {
   if (IsNodeChildOf(child, newParent))
     return true;
 
-  Yeager::NodeComponent* oldParent = child->GetParent();
+  std::shared_ptr<NodeComponent> oldParent = child->GetParent();
 
   if (!newParent->AddChild(child))
     return false;
@@ -58,10 +58,10 @@ bool Yeager::MoveNodeChildToNewParent(Yeager::NodeComponent* child, Yeager::Node
   return true;
 }
 
-bool NodeComponent::RemoveChild(Yeager::NodeComponent* child)
+bool NodeComponent::RemoveChild(std::shared_ptr<NodeComponent> child)
 {
   for (Uint x = 0; x < m_Children.size(); x++) {
-    Yeager::NodeComponent* c = m_Children.at(x);
+    std::shared_ptr<NodeComponent> c = m_Children.at(x);
     if (child == c) {
       m_Children.erase(m_Children.begin() + x);
       return true;
@@ -83,7 +83,7 @@ Yeager::NodeComponent& NodeComponent::operator=(const Yeager::NodeComponent& oth
   return *this;
 }
 
-bool Yeager::CopyNodeChildToNewParent(Yeager::NodeComponent* child, Yeager::NodeComponent* newParent)
+bool Yeager::CopyNodeChildToNewParent(std::shared_ptr<NodeComponent> child, std::shared_ptr<NodeComponent> newParent)
 {
   if (IsNodeChildOf(child, newParent))
     return true;
@@ -94,7 +94,7 @@ bool Yeager::CopyNodeChildToNewParent(Yeager::NodeComponent* child, Yeager::Node
   return true;
 }
 
-bool Yeager::IsNodeParent(Yeager::NodeComponent* isParent)
+bool Yeager::IsNodeParent(std::shared_ptr<NodeComponent> isParent)
 {
   return (isParent->GetChildren()->size() > 0);
 }
@@ -102,15 +102,16 @@ bool Yeager::IsNodeParent(Yeager::NodeComponent* isParent)
 NodeComponent::NodeComponent(Yeager::ApplicationCore* application, Yeager::Scene* scene)
     : m_Application(application), m_RootScene(scene)
 {
+  std::shared_ptr<NodeComponent> instance = std::make_shared<NodeComponent>(*this);
   if (!m_Application->GetScene()->SceneContainsRootNode()) {
-    m_Application->GetScene()->SetSceneContainsRootNode(true, this);
-    m_Parent = this;
+    m_Application->GetScene()->SetSceneContainsRootNode(true, instance);
+    m_Parent = instance;
     m_IsRoot = true;
   } else {
     m_Parent = m_Application->GetScene()->GetRootNode();
-    m_Application->GetScene()->GetRootNode()->AddChild(this);
+    m_Application->GetScene()->GetRootNode()->AddChild(instance);
   }
-  AddNodeComponentToScene(this, m_Application->GetScene());
+  AddNodeComponentToScene(instance, m_Application->GetScene());
 }
 
 EditorEntity* NodeComponent::GetEntity()
@@ -121,12 +122,13 @@ EditorEntity* NodeComponent::GetEntity()
 }
 
 NodeComponent::NodeComponent(Yeager::ApplicationCore* application, Yeager::EditorEntity* entity,
-                             Yeager::NodeComponent* parent)
+                             std::shared_ptr<NodeComponent> parent)
     : m_Application(application), m_Entity(entity), m_Parent(parent)
 {
-  m_Parent->GetChildren()->push_back(this);
+  std::shared_ptr<NodeComponent> instance = std::make_shared<NodeComponent>(*this);
+  m_Parent->GetChildren()->push_back(instance);
   m_RootScene = m_Application->GetScene();
-  AddNodeComponentToScene(this, m_Application->GetScene());
+  AddNodeComponentToScene(instance, m_Application->GetScene());
 }
 
 Scene* NodeComponent::GetRootScene()
@@ -137,20 +139,22 @@ Scene* NodeComponent::GetRootScene()
   return m_Application->GetScene()->GetRootNode()->GetRootScene();
 }
 
-bool NodeComponent::AddChild(Yeager::NodeComponent* child)
+bool NodeComponent::AddChild(std::shared_ptr<NodeComponent> child)
 {
+  std::shared_ptr<NodeComponent> instance = std::make_shared<NodeComponent>(*this);
   if (child != YEAGER_NULLPTR) {
     m_Children.push_back(child);
-    child->LinkToParent(this);
+    child->LinkToParent(instance);
     return true;
   }
   return false;
 }
 
-bool NodeComponent::AddChild(const std::vector<Yeager::NodeComponent*>& child)
+bool NodeComponent::AddChild(const std::vector<std::shared_ptr<NodeComponent>>& child)
 {
+  std::shared_ptr<NodeComponent> instance = std::make_shared<NodeComponent>(*this);
   for (const auto& c : child) {
-    c->LinkToParent(this);
+    c->LinkToParent(instance);
   }
 
   m_Children.reserve(m_Children.size() + child.size());
@@ -161,22 +165,23 @@ bool NodeComponent::AddChild(const std::vector<Yeager::NodeComponent*>& child)
 
 bool NodeComponent::AddChild(Yeager::NodeComponent&& child)
 {
-  Yeager::NodeComponent* c = new NodeComponent(std::move(child));
+  std::shared_ptr<NodeComponent> c = std::make_shared<NodeComponent>(std::move(child));
   m_Children.push_back(c);
   return true;
 }
 
 bool NodeComponent::AddChild(Yeager::EditorEntity* entity)
 {
+  std::shared_ptr<NodeComponent> instance = std::make_shared<NodeComponent>(*this);
   if (entity->GetNodeComponent() != YEAGER_NULLPTR) {
     m_Children.push_back(entity->GetNodeComponent());
-    entity->GetNodeComponent()->LinkToParent(this);
+    entity->GetNodeComponent()->LinkToParent(instance);
     return true;
   }
   return false;
 }
 
-bool NodeComponent::LinkToParent(Yeager::NodeComponent* parent)
+bool NodeComponent::LinkToParent(std::shared_ptr<NodeComponent> parent)
 {
   m_Parent = parent;
   return true;

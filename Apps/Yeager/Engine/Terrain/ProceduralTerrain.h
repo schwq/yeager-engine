@@ -22,6 +22,7 @@
 #include "../../Common/LogEngine.h"
 #include "../../Common/Mathematics.h"
 #include "../../Common/Utilities.h"
+#include "../Renderer/OpenGLRender.h"
 #include "../Renderer/ShaderHandle.h"
 #include "../Renderer/TextureHandle.h"
 #include "PerlinNoise.h"
@@ -85,12 +86,12 @@ struct MultiTextureHeight {
 struct TerrainDrawData {
   std::vector<TerrainVertex> Vertices;
   std::vector<GLuint> Indices;
-  GLuint m_Vao, m_Vbo, m_Ebo;
+  ElementBufferRenderer Renderer;
 };
 
 /// @brief Metric data holds the values for positioning the terrain in the space, like width, lenght, height, world scale, ect...
 struct TerrainMetricData {
-  Yeager::Math::Array2D<float>* m_HeightMap = YEAGER_NULLPTR;
+  std::shared_ptr<Yeager::Math::Array2D<float>> m_HeightMap = YEAGER_NULLPTR;
   float m_MinHeight = 0.0f;
   float m_MaxHeight = 256.0f;
   int m_TerrainSize = 256;

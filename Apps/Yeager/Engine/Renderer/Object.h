@@ -26,6 +26,7 @@
 #include "../Physics/PhysXHandle.h"
 #include "Animation/Bone.h"
 #include "Entity.h"
+#include "OpenGLRender.h"
 
 namespace Yeager {
 class ApplicationCore;
@@ -34,6 +35,22 @@ class AnimationEngine;
 class Importer;
 class ImporterThreaded;
 class ImporterThreadedAnimated;
+
+struct CustomTextureFolder {
+  CustomTextureFolder() {}
+  String path = YEAGER_NULL_LITERAL;
+  bool Valid = false;
+};
+
+struct ObjectCreationConfiguration {
+  ObjectCreationConfiguration() {}
+  void ResetValues()
+  {
+    TextureFolder.path = YEAGER_NULL_LITERAL;
+    TextureFolder.Valid = false;
+  }
+  CustomTextureFolder TextureFolder;
+};
 
 struct BoneInfo {
   int ID = -1;
@@ -63,7 +80,7 @@ struct CommonMeshData {
     Textures = textures;
     Indices = indices;
   }
-  GLuint m_Vao = -1, m_Vbo = -1, m_Ebo = -1;
+  ElementBufferRenderer Renderer;
 };
 
 struct ObjectMeshData : public CommonMeshData {
@@ -112,7 +129,7 @@ struct ObjectGeometryData {
   std::vector<GLuint> Indices;
   std::vector<GLfloat> Vertices;
   MaterialTexture2D* Texture = YEAGER_NULLPTR;
-  GLuint m_Vao, m_Vbo, m_Ebo;
+  ElementBufferRenderer Renderer;
 };
 
 struct ObjectGeometryType {
@@ -160,8 +177,12 @@ class Object : public GameEntity {
   Object(String name, ApplicationCore* application, GLuint amount);
   ~Object();
 
-  virtual bool ImportObjectFromFile(Cchar path, bool flip_image = false);
-  virtual bool ThreadImportObjectFromFile(Cchar path, bool flip_image = false);
+  virtual bool ImportObjectFromFile(Cchar path,
+                                    const ObjectCreationConfiguration configuration = ObjectCreationConfiguration(),
+                                    bool flip_image = false);
+  virtual bool ThreadImportObjectFromFile(
+      Cchar path, const ObjectCreationConfiguration configuration = ObjectCreationConfiguration(),
+      bool flip_image = false);
   virtual void ThreadSetup();
   bool GenerateObjectGeometry(ObjectGeometryType::Enum geometry, const ObjectPhysXCreationBase& physics);
   virtual void Draw(Yeager::Shader* shader, float delta);
@@ -173,11 +194,11 @@ class Object : public GameEntity {
   YEAGER_FORCE_INLINE String GetPath() { return Path; }
   constexpr inline bool IsLoaded() const { return m_ObjectDataLoaded; }
 
-  virtual void BuildProps(const std::vector<Transformation*>& transformations, Shader* shader);
+  virtual void BuildProps(const std::vector<std::shared_ptr<Transformation3D>>& transformations, Shader* shader);
 
   void GenerateGeometryTexture(MaterialTexture2D* texture);
 
-  YEAGER_FORCE_INLINE PhysXActor* GetPhysXActor() { return m_Actor; }
+  std::shared_ptr<PhysXActor> GetPhysXActor() { return m_Actor; }
 
   YEAGER_FORCE_INLINE ObjectPhysicsType::Enum GetObjectPhysicsType() { return m_PhysicsType; }
 
@@ -190,7 +211,7 @@ class Object : public GameEntity {
     return 1;
   }
 
-  YEAGER_NODISCARD YEAGER_FORCE_INLINE std::vector<Transformation*>* GetInstancedProps()
+  YEAGER_NODISCARD YEAGER_FORCE_INLINE std::vector<std::shared_ptr<Transformation3D>>* GetInstancedProps()
   {
     if (m_InstancedType == ObjectInstancedType::eINSTANCED) {
       return &m_Props;
@@ -220,15 +241,16 @@ class Object : public GameEntity {
   virtual void ProcessOnScreenProprieties();     // Before calling the drawing openGL
   virtual void PosProcessOnScreenProprieties();  // After calling the drawing openGL to sets everything to the default
 
+  std::shared_ptr<Yeager::PhysXActor> m_Actor = YEAGER_NULLPTR;
+  ObjectPhysicsType::Enum m_PhysicsType = ObjectPhysicsType::eUNDEFINED;
+
   ObjectModelData m_ModelData;
   ObjectGeometryData m_GeometryData;
   ObjectGeometryType::Enum m_GeometryType;
-  ObjectPhysicsType::Enum m_PhysicsType = ObjectPhysicsType::eUNDEFINED;
   ObjectInstancedType::Enum m_InstancedType = ObjectInstancedType::eNON_INSTACED;
-  ImporterThreaded* m_ThreadImporter = YEAGER_NULLPTR;
-  Yeager::PhysXActor* m_Actor = YEAGER_NULLPTR;
+  std::shared_ptr<ImporterThreaded> m_ThreadImporter = YEAGER_NULLPTR;
   GLuint m_InstancedObjs = 1;
-  std::vector<Transformation*> m_Props;
+  std::vector<std::shared_ptr<Transformation3D>> m_Props;
 };
 
 class AnimatedObject : public Object {
@@ -236,13 +258,16 @@ class AnimatedObject : public Object {
   AnimatedObject(String name, ApplicationCore* application);
   AnimatedObject(String name, ApplicationCore* application, GLuint amount);
   ~AnimatedObject();
-  bool ImportObjectFromFile(Cchar path, bool flip_image = false);
+  bool ImportObjectFromFile(Cchar path, const ObjectCreationConfiguration configuration = ObjectCreationConfiguration(),
+                            bool flip_image = false);
   virtual void Draw(Shader* shader);
-  bool ThreadImportObjectFromFile(Cchar path, bool flip_image = false);
+  bool ThreadImportObjectFromFile(Cchar path,
+                                  const ObjectCreationConfiguration configuration = ObjectCreationConfiguration(),
+                                  bool flip_image = false);
   virtual void ThreadSetup();
   AnimatedObjectModelData* GetModelData() { return &m_ModelData; }
 
-  AnimationEngine* GetAnimationEngine() { return m_AnimationEngine; }
+  std::shared_ptr<AnimationEngine> GetAnimationEngine() { return m_AnimationEngine; }
 
   void UpdateAnimation(float delta);
   void BuildAnimationMatrices(Shader* shader);
@@ -253,8 +278,8 @@ class AnimatedObject : public Object {
   void Setup();
   void DrawMeshes(Shader* shader);
   AnimatedObjectModelData m_ModelData;
-  AnimationEngine* m_AnimationEngine = YEAGER_NULLPTR;
-  ImporterThreadedAnimated* m_ThreadImporter = YEAGER_NULLPTR;
+  std::shared_ptr<AnimationEngine> m_AnimationEngine = YEAGER_NULLPTR;
+  std::shared_ptr<ImporterThreadedAnimated> m_ThreadImporter = YEAGER_NULLPTR;
 };
 
 }  // namespace Yeager

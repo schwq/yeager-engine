@@ -26,10 +26,49 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-extern void* operator new(size_t s);
-extern void operator delete(void* ptr, size_t s);
+namespace std {
+template <typename T>
+T* begin(T* arr, size_t N)
+{
+  return arr;
+}
+
+template <typename T>
+const T* cbegin(const T* arr, size_t N)
+{
+  return arr;
+}
+
+template <typename T>
+T* end(T* arr, size_t N)
+{
+  return arr + N;
+}
+
+template <typename T>
+const T* cend(const T* arr, size_t N)
+{
+  return arr + N;
+}
+}  // namespace std
 
 namespace Yeager {
+
+template <typename... T>
+void LogDebug(int verbosity, fmt::format_string<T...> fmt, T&&... args);
+
+// clang-format off
+#define YEAGER_ENUM_TO_STRING(struct) static String ToString(struct::Enum type);
+#define YEAGER_STRING_TO_ENUM(struct) static struct::Enum ToEnum(const String& str);
+#define YEAGER_USING_SHARED_PTR template <class U>  using SharedPtr = std::shared_ptr<U>;
+
+// clang-format on
+
+#define BYTE(n) n * sizeof(uint8_t)
+#define KB(n) BYTE(1024 * n)
+#define MB(n) KB(1024 * n)
+#define GB(n) MB(1024 * n)
+#define TB(n) GB(1024 * n)
 
 #define YEAGER_DELETE(ptr) \
   if (ptr) {               \
@@ -49,14 +88,8 @@ namespace Yeager {
     ptr = NULL;          \
   }
 
-#define YEAGER_DELETE_SMARTPTR(ptr) \
-  if (ptr) {                        \
-    ptr.reset();                    \
-    delete ptr;                     \
-    ptr = NULL;                     \
-  }
-
 namespace CHECK {
+
 struct No {};
 template <typename T, typename Arg>
 No operator==(const T&, const Arg&);
@@ -105,14 +138,6 @@ std::pair<bool, FileType> CheckFileExtensionType(String path, FileExtensionType 
 extern std::map<String, FileType> ExtensionTypesToRawExtensions;
 extern String ExtractExtensionTypenameFromPath(String filename);
 
-struct MemoryManagement {
-  uint32_t m_MemoryAllocatedSize = 0;
-  uint32_t m_MemoryFreedSize = 0;
-  unsigned long long m_NumberNewCalls = 0;
-  unsigned long long m_NumberDeleteCalls = 0;
-  uint32_t GetMemortUsage();
-};
-
 extern bool EvaluateIntToBool(const int i);
 
 struct YgDate_t {
@@ -137,17 +162,12 @@ struct YgTime_t {
   YgClock_t Time;
 };
 
-extern Uint ygWindowWidth;
-extern Uint ygWindowHeight;
 extern Cchar g_OperatingSystemString;
-extern String kDefaultTexturePath;
 extern String GetPath(String path);
 extern String GetPathFromShared(String path);
 extern Cchar GetShaderPath(String shader);
 
 extern String GetExternalFolderPath();
-
-extern MemoryManagement s_MemoryManagement;
 
 /**
  * @brief Used in switch statements with String
@@ -172,10 +192,16 @@ constexpr inline glm::quat GetGLMQuat(const aiQuaternion& qa)
   return glm::quat(qa.w, qa.x, qa.y, qa.z);
 }
 
+/** Checks if the directory already exists, if not, it creates it */
+extern bool ValidatesAndCreateDirectory(const std::filesystem::path& p);
+/** Creates a directory and thrown an error if cannot creates it */
 extern bool CreateDirectoryAndValidate(const std::filesystem::path& p);
 
 extern bool ValidatesPath(const std::filesystem::path& p, bool declare = true,
                           std::filesystem::file_status s = std::filesystem::file_status());
+
+/** Given a path, it convert all the text (content) inside the file to a string */
+extern String FileContentToString(const std::filesystem::path& p);
 
 extern String RemoveSuffixUntilCharacter(String expression, char characterToStop);
 extern String RemovePreffixUntilCharacter(String expression, char characterToStop);
@@ -184,6 +210,22 @@ extern size_t NumberOfFilesInDir(String path);
 
 extern String RemoveExtensionFromFilename(String filename);
 extern String ExtractExtensionFromFilename(String filename);
+
+/** Used in the quick serialization of files, creates a file, writes the data and closes it. Returns a boolean represeting the success of the operation */
+template <typename Type>
+bool CreateFileAndWrites(const String& path, const Type& data)
+{
+  std::ofstream file(path);
+
+  if (!file.is_open()) {
+    Yeager::LogDebug(ERROR, "Cannot opens file for writing: {}", path);
+    return false;
+  }
+
+  file << data;
+  file.close();
+  return true;
+}
 
 extern String CurrentTimeFormatToString();
 extern YgTime_t CurrentTimeToTimeType();

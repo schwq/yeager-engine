@@ -2,16 +2,14 @@
 #include "../../../Application.h"
 using namespace Yeager;
 
-TextRenderer::TextRenderer(Yeager::ApplicationCore* application) : m_Application(application)
-{
-  Initialize();
-}
+TextRenderer::TextRenderer(Yeager::ApplicationCore* application) : m_Application(application) {}
 
 void TextRenderer::Initialize()
 {
   if (FT_Init_FreeType(&m_FTLibrary)) {
     Yeager::Log(ERROR, "FreeType library cannot initialize!");
   }
+  BuildBuffers();
 }
 
 void TextRenderer::LoadFont(const String& path, Uint size)
@@ -49,20 +47,15 @@ void TextRenderer::LoadFont(const String& path, Uint size)
 
   FT_Done_Face(m_FTFace);
   FT_Done_FreeType(m_FTLibrary);
-  BuildBuffers();
 }
 
 void TextRenderer::BuildBuffers()
 {
-  glGenVertexArrays(1, &m_Vao);
-  glGenBuffers(1, &m_Vbo);
-  glBindVertexArray(m_Vao);
-  glBindBuffer(GL_ARRAY_BUFFER, m_Vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);
+  m_Renderer.GenBuffers();
+  m_Renderer.BindBuffers();
+  m_Renderer.BufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+  m_Renderer.VertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+  m_Renderer.UnbindBuffers();
 }
 
 std::pair<Uint, Text2D> TextRenderer::AddText(Text2D& text)
@@ -73,17 +66,16 @@ std::pair<Uint, Text2D> TextRenderer::AddText(Text2D& text)
   return result;
 }
 
-void TextRenderer::RenderText(Yeager::Shader* shader, Transformation& transformation, const String& text, float x,
+void TextRenderer::RenderText(Yeager::Shader* shader, Transformation3D& transformation, const String& text, float x,
                               float y, float scale, const Vector3& color)
 {
   shader->UseShader();
   shader->SetVec3("textColor", color);
 
-  ApplyTransformation(&transformation);
-  shader->SetMat4("model", transformation.model);
+  Transformation3D::Apply(&transformation, shader);
 
   glActiveTexture(GL_TEXTURE0);
-  glBindVertexArray(m_Vao);
+  m_Renderer.BindBuffers();
 
   String::const_iterator c;
   for (c = text.begin(); c != text.end(); c++) {
@@ -99,16 +91,12 @@ void TextRenderer::RenderText(Yeager::Shader* shader, Transformation& transforma
 
         {xpos, ypos + h, 0.0f, 0.0f}, {xpos + w, ypos, 1.0f, 1.0f}, {xpos + w, ypos + h, 1.0f, 0.0f}};
     glBindTexture(GL_TEXTURE_2D, ch.TextureID);
-    glBindBuffer(GL_ARRAY_BUFFER, m_Vbo);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    m_Renderer.SubBufferData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+    m_Renderer.Draw(GL_TRIANGLES, 0, 6);
     x += (ch.Advance >> 6) * scale;
   }
-
-  glBindVertexArray(0);
-  glBindTexture(GL_TEXTURE_2D, 0);
+  m_Renderer.UnbindBuffers();
 }
 
 void TextRenderer::RenderText(Yeager::Shader* shader, const String& text, float x, float y, float scale,
@@ -123,7 +111,7 @@ void TextRenderer::RenderText(Yeager::Shader* shader, const String& text, float 
   shader->SetMat4("projection", proj);
 
   glActiveTexture(GL_TEXTURE0);
-  glBindVertexArray(m_Vao);
+  m_Renderer.BindBuffers();
 
   String::const_iterator c;
   for (c = text.begin(); c != text.end(); c++) {
@@ -139,16 +127,15 @@ void TextRenderer::RenderText(Yeager::Shader* shader, const String& text, float 
 
         {xpos, ypos + h, 0.0f, 0.0f}, {xpos + w, ypos, 1.0f, 1.0f}, {xpos + w, ypos + h, 1.0f, 0.0f}};
     glBindTexture(GL_TEXTURE_2D, ch.TextureID);
-    glBindBuffer(GL_ARRAY_BUFFER, m_Vbo);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    m_Renderer.SubBufferData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+    m_Renderer.Draw(GL_TRIANGLES, 0, 6);
     x += (ch.Advance >> 6) * scale;
   }
-
-  glBindVertexArray(0);
-  glBindTexture(GL_TEXTURE_2D, 0);
+  m_Renderer.UnbindBuffers();
 }
 
-TextRenderer::~TextRenderer() {}
+TextRenderer::~TextRenderer()
+{
+  m_Renderer.DeleteBuffers();
+}

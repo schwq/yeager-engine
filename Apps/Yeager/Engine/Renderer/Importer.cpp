@@ -1,5 +1,6 @@
 #include "Importer.h"
 #include "../../Application.h"
+#include "../Editor/Explorer.h"
 #include "TextureHandle.h"
 
 #include "stb_image.h"
@@ -49,9 +50,10 @@ Importer::~Importer()
 {
   Yeager::Log(INFO, "Destrorying Importer from {}", m_Source.c_str());
 }
-ObjectModelData Importer::Import(Cchar path, bool flip_image, Uint assimp_flags)
+ObjectModelData Importer::Import(Cchar path, const ObjectCreationConfiguration configuration, bool flip_image,
+                                 Uint assimp_flags)
 {
-
+  m_CreationConfiguration = configuration;
   m_ImageFlip = flip_image;
   ObjectModelData data;
   Assimp::Importer imp;
@@ -248,15 +250,28 @@ std::vector<MaterialTexture2D*> Importer::LoadMaterialTexture(aiMaterial* materi
     aiString str;
     material->GetTexture(type, x, &str);
     String textureString = String(str.C_Str());
-    String comparePath = RemoveSuffixUntilCharacter(m_FullPath, YG_PS);
+    String comparePath;
 
-    if (g_OperatingSystemString == "WIN32")  // Sometimes the textureString in the MTL file is from a windows computer
+    if (g_OperatingSystemString == "WIN32") {  // Sometimes the textureString in the MTL file is from a windows computer
       std::replace(textureString.begin(), textureString.end(), '/', '\\');
+    } else {
+      std::replace(textureString.begin(), textureString.end(), '\\', '/');
+    }
 
-    // Texture path in the mtl file is a complete path, we just assign the complete path to the compare_path without adding to it
-    Yeager::ValidatesPath(comparePath + textureString) ? comparePath += textureString : comparePath = textureString;
+    if (m_CreationConfiguration.TextureFolder.Valid &&
+        std::filesystem::is_directory(m_CreationConfiguration.TextureFolder.path)) {
+      comparePath = ReadSuffixUntilCharacter(textureString, YG_PS);
+      comparePath = m_CreationConfiguration.TextureFolder.path + comparePath;
+      Yeager::ValidatesPath(comparePath);
 
-    // Checks if the texture is already loaded to the model, if so, it skips the loading, saving a lot of time
+    } else {
+      comparePath = RemoveSuffixUntilCharacter(m_FullPath, YG_PS);
+
+      // Texture path in the mtl file is a complete path, we just assign the complete path to the compare_path without adding to it
+      Yeager::ValidatesPath(comparePath + textureString) ? comparePath += textureString : comparePath = textureString;
+
+      // Checks if the texture is already loaded to the model, if so, it skips the loading, saving a lot of time
+    }
     for (Uint y = 0; y < data->TexturesLoaded.size(); y++) {
       if (std::strcmp(data->TexturesLoaded[y]->first.GetTextureDataHandle()->Path.data(), comparePath.data()) == 0) {
         MaterialTexture2D* rt = &data->TexturesLoaded[y]->first;
@@ -304,8 +319,10 @@ STBIDataOutput* Importer::LoadStbiDataOutput(String path, bool flip)
   return output;
 }
 
-AnimatedObjectModelData Importer::ImportAnimated(Cchar path, bool flip_image, Uint assimp_flags)
+AnimatedObjectModelData Importer::ImportAnimated(Cchar path, const ObjectCreationConfiguration configuration,
+                                                 bool flip_image, Uint assimp_flags)
 {
+  m_CreationConfiguration = configuration;
   m_ImageFlip = flip_image;
   AnimatedObjectModelData data;
   Assimp::Importer imp;
@@ -451,8 +468,10 @@ ImporterThreaded::ImporterThreaded(String source, ApplicationCore* app) : Import
 
 ImporterThreaded::~ImporterThreaded() {}
 
-void ImporterThreaded::ThreadImport(Cchar path, bool flip_image, Uint assimp_flags)
+void ImporterThreaded::ThreadImport(Cchar path, const ObjectCreationConfiguration configuration, bool flip_image,
+                                    Uint assimp_flags)
 {
+  m_CreationConfiguration = configuration;
   m_ImageFlip = flip_image;
 
   m_FullPath = path;
@@ -479,10 +498,11 @@ ImporterThreadedAnimated::ImporterThreadedAnimated(String source, ApplicationCor
 }
 ImporterThreadedAnimated::~ImporterThreadedAnimated() {}
 
-void ImporterThreadedAnimated::ThreadImport(Cchar path, bool flip_image, Uint assimp_flags)
+void ImporterThreadedAnimated::ThreadImport(Cchar path, const ObjectCreationConfiguration configuration,
+                                            bool flip_image, Uint assimp_flags)
 {
+  m_CreationConfiguration = configuration;
   m_ImageFlip = flip_image;
-
   m_FullPath = path;
   m_Thread = std::thread([this, path, assimp_flags] {
     Assimp::Importer imp;

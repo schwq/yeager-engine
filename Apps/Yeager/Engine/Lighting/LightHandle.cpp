@@ -123,7 +123,7 @@ void PhysicalLightHandle::BuildShaderProps(Vector3 viewPos, Vector3 front, float
   }
 }
 
-void PhysicalLightHandle::AddObjectPointLight(const ObjectPointLight& obj, Transformation& trans)
+void PhysicalLightHandle::AddObjectPointLight(const ObjectPointLight& obj, Transformation3D& trans)
 {
 
   ObjectPointLight pObj = obj;

@@ -114,7 +114,7 @@ void BaseCamera::UpdateDirection(float xoffset, float yoffset)
 
 void BaseCamera::MouseCallback(bool& firstMouse, float& lastX, float& lastY, double xpos, double ypos)
 {
-  if (m_CameraShouldMove && m_Application->GetMode() == YgApplicationMode::eAPPLICATION_EDITOR) {
+  if (m_CameraShouldMove && m_Application->GetMode() == ApplicationMode::eAPPLICATION_EDITOR) {
     if (firstMouse) {
       lastX = static_cast<float>(xpos);
       lastY = static_cast<float>(ypos);

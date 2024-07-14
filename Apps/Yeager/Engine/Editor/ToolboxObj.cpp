@@ -5,6 +5,7 @@
 #include "../Renderer/Entity.h"
 #include "../Renderer/Object.h"
 #include "../Renderer/Skybox.h"
+#include "../Renderer/TextureHandle.h"
 using namespace ImGui;
 using namespace Yeager;
 
@@ -84,7 +85,7 @@ void ToolboxHandle::DrawToolboxObjectType()
     if (!obj->IsLoaded())
       return;
 
-    Transformation* trans = obj->GetTransformationPtr();
+    Transformation3D* trans = obj->GetTransformationPtr();
 
     if (Button("Rename")) {
       m_RenameWindowOpen = true;
@@ -187,6 +188,24 @@ void ToolboxHandle::DrawToolboxObjectType()
     if (Button("PolygonMode: POINT")) {
       obj->GetOnScreenProprieties()->m_PolygonMode = RenderingGLPolygonMode::ePOINTS;
     }
+
+    SliderInt("Resize textures", (int*)&m_ResizeTextures, 1, 100);
+
+    if (m_EntityPtr->GetEntityType() == EntityObjectType::OBJECT) {
+      for (const auto& p : obj->GetModelData()->TexturesLoaded) {
+        Yeager::MaterialTexture2D* texture = &p->first;
+        DisplayTextureInformation(texture);
+      }
+    }
+  }
+}
+
+void ToolboxHandle::DisplayTextureInformation(MaterialTexture2D* texture)
+{
+  if (texture->IsGenerated()) {
+    Text(texture->GetName().c_str());
+    Text("Width %u, Height %u", texture->GetWidth(), texture->GetHeight());
+    DisplayImageImGui(texture, m_ResizeTextures);
   }
 }
 
@@ -262,6 +281,10 @@ void ToolboxHandle::DrawToolboxSkybox()
 {
   Yeager::Skybox* skybox = (Yeager::Skybox*)m_EntityPtr;
   const ObjectGeometryType::Enum type = skybox->GetGeometry();
+
+  SliderInt("Resize textures", (int*)&m_ResizeTextures, 1, 100);
+  Yeager::MaterialTexture2D* texture = &skybox->GetModelData()->TexturesLoaded[0]->first;
+  DisplayTextureInformation(texture);
 }
 
 void ToolboxHandle::DrawToolboxObjectPlayable()

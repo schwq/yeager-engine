@@ -67,7 +67,7 @@ struct ObjectPhysXCreationBase {
     Scale = Vector3ToPxVec3(scale);
   }
 
-  void ApplyToObjectTransformation(Yeager::Transformation* trans) const
+  void ApplyToObjectTransformation(Yeager::Transformation3D* trans) const
   {
     trans->position = PxVec3ToVector3(Position);
     trans->rotation = PxVec3ToVector3(Rotation);

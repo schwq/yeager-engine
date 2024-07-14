@@ -8,8 +8,6 @@
 #endif
 using namespace Yeager;
 
-Yeager::MemoryManagement Yeager::s_MemoryManagement;
-
 std::map<String, FileType> Yeager::ExtensionTypesToRawExtensions = {
     {"ERROR", FileType("ERROR_NOT_FILETYPE", EExtensionTypeSource, false)},
     {".obj", FileType("3D Model Object", EExtensitonType3DModel, true)},
@@ -36,6 +34,15 @@ bool Yeager::CreateDirectoryAndValidate(const std::filesystem::path& p)
     return false;
   }
   return true;
+}
+bool Yeager::ValidatesAndCreateDirectory(const std::filesystem::path& p)
+{
+  bool exists = Yeager::ValidatesPath(p);
+  bool dir = true;
+  if (!exists) {
+    dir = Yeager::CreateDirectoryAndValidate(p);
+  }
+  return exists || dir;
 }
 
 String Yeager::ExtractExtensionTypenameFromPath(String filename)
@@ -147,24 +154,21 @@ Cchar Yeager::GetShaderPath(String shader)
   return rt;
 }
 
-void* operator new(size_t s)
+String Yeager::FileContentToString(const std::filesystem::path& p)
 {
-  Yeager::s_MemoryManagement.m_MemoryAllocatedSize += s;
-  Yeager::s_MemoryManagement.m_NumberNewCalls += 1;
-  return malloc(s);
-}
-
-void operator delete(void* ptr, size_t s)
-{
-  Yeager::s_MemoryManagement.m_MemoryFreedSize += s;
-  Yeager::s_MemoryManagement.m_NumberDeleteCalls += 1;
-  if (ptr) {
-    free(ptr);
+  if (!ValidatesPath(p)) {
+    return String(YEAGER_STRING_ERROR("File doesnt exists!"));
   }
-}
-uint32_t Yeager::MemoryManagement::GetMemortUsage()
-{
-  return m_MemoryAllocatedSize - m_MemoryFreedSize;
+  std::ifstream in;
+  String s;
+  String result;
+  in.open(p.c_str());
+  while (!in.eof()) {
+    getline(in, s);
+    result += s + '\n';
+  }
+  in.close();
+  return result;
 }
 
 String Yeager::GetPath(String path)
@@ -207,11 +211,6 @@ String Yeager::GetPathFromShared(String path)
     // TODO: make this
   }
 }
-
-String Yeager::kDefaultTexturePath = Yeager::GetPath("/Assets/textures/default.jpg");
-
-Uint Yeager::ygWindowWidth = 1300;
-Uint Yeager::ygWindowHeight = 720;
 
 extern String Yeager::CurrentTimeFormatToString()
 {
@@ -308,7 +307,7 @@ bool Yeager::ValidatesPath(const std::filesystem::path& p, bool declare, std::fi
   if (declare)
   //Yeager::Log((status == "Validated!" ? INFO : ERROR), "File validation: Path: {}, Status [{}]", p.c_str(), status);
 #endif
-    return EvaluateIntToBool(known);
+    return known;
 }
 
 String Yeager::ReadSuffixUntilCharacter(String expression, char characterToStop)

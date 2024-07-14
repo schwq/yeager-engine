@@ -44,4 +44,5 @@ YeagerEngine.vcxproj
 YeagerEngine.vcxproj.filters
 YeagerEngine.vcxproj.user
 Apps/Yeager/Assets/ImportedModels/
+Utils/Dependencies/__pycache__
 YeagerEngine

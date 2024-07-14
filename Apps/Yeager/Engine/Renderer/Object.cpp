@@ -80,25 +80,40 @@ ObjectGeometryType::Enum Yeager::StringToObjectGeometryType(const String& str)
   }
 }
 
-Object::Object(String name, ApplicationCore* application) : GameEntity(EntityObjectType::OBJECT, application, name)
+Object::Object(String name, ApplicationCore* application)
+    : GameEntity(EntityObjectType::OBJECT, application, name),
+      m_InstancedType(ObjectInstancedType::eNON_INSTACED),
+      m_Actor(std::make_shared<PhysXActor>(m_Application, this)),
+      m_ThreadImporter(std::make_shared<ImporterThreaded>(name, m_Application))
 {
-  m_InstancedType = ObjectInstancedType::eNON_INSTACED;
-  m_Actor = new PhysXActor(m_Application, this);
-
-  m_ThreadImporter = new ImporterThreaded("Object", m_Application);
+  BuildNode(m_Application->GetScene()->GetRootNode());
 }
 
 Object::Object(String name, ApplicationCore* application, GLuint amount)
-    : GameEntity(EntityObjectType::OBJECT, application, name), m_InstancedObjs(amount)
+    : GameEntity(EntityObjectType::OBJECT, application, name),
+      m_InstancedObjs(amount),
+      m_InstancedType(ObjectInstancedType::eINSTANCED),
+      m_Actor(std::make_shared<PhysXActor>(m_Application, this)),
+      m_ThreadImporter(std::make_shared<ImporterThreaded>(name, m_Application))
 {
-  m_InstancedType = ObjectInstancedType::eINSTANCED;
   m_Props.reserve(amount);
-  m_Actor = new PhysXActor(m_Application, this);
-
-  m_ThreadImporter = new ImporterThreaded("Object", m_Application);
+  BuildNode(m_Application->GetScene()->GetRootNode());
 }
 
-void Object::BuildProps(const std::vector<Transformation*>& transformations, Shader* shader)
+AnimatedObject::AnimatedObject(String name, ApplicationCore* application)
+    : Object(name, application), m_ThreadImporter(std::make_shared<ImporterThreadedAnimated>(name, m_Application))
+{
+  SetEntityType(EntityObjectType::OBJECT_ANIMATED);
+}
+
+AnimatedObject::AnimatedObject(String name, ApplicationCore* application, GLuint amount)
+    : Object(name, application, amount),
+      m_ThreadImporter(std::make_shared<ImporterThreadedAnimated>(name, m_Application))
+{
+  SetEntityType(EntityObjectType::OBJECT_INSTANCED_ANIMATED);
+}
+
+void Object::BuildProps(const std::vector<std::shared_ptr<Transformation3D>>& transformations, Shader* shader)
 {
   if (transformations.size() > m_InstancedObjs)
     Yeager::Log(WARNING,
@@ -109,8 +124,8 @@ void Object::BuildProps(const std::vector<Transformation*>& transformations, Sha
   /* The number of instances can differ from the actual number of props that exists*/
   if (m_Props.size() == m_InstancedObjs) {
     for (Uint x = 0; x < m_InstancedObjs; x++) {
-      Yeager::ApplyTransformation(m_Props.at(x));
-      shader->SetMat4("matrices[" + std::to_string(x) + "]", m_Props.at(x)->model);
+      Matrix4 model = Transformation3D::Apply(*(m_Props.at(x).get()));
+      shader->SetMat4("matrices[" + std::to_string(x) + "]", model);
     }
   }
 }
@@ -119,7 +134,7 @@ Object::~Object()
 {
   if (m_InstancedType == ObjectInstancedType::eINSTANCED) {
     for (auto& trans : m_Props)
-      YEAGER_DELETE(trans);
+      trans.reset();
   }
 
   if (!m_ThreadImporter->IsThreadFinish()) {
@@ -128,33 +143,29 @@ Object::~Object()
       m_ThreadImporter->GetThreadPtr()->join();
     }
   }
-  YEAGER_DELETE(m_ThreadImporter);
+  m_ThreadImporter.reset();
   if (m_ObjectDataLoaded) {
     if (m_GeometryType == ObjectGeometryType::eCUSTOM) {
-      glDeleteVertexArrays(1, &m_GeometryData.m_Vao);
-      glDeleteBuffers(1, &m_GeometryData.m_Vbo);
-      glDeleteBuffers(1, &m_GeometryData.m_Ebo);
+      m_GeometryData.Renderer.DeleteBuffers();
     } else {
       for (auto& mesh : m_ModelData.Meshes) {
         DeleteMeshGLBuffers(&mesh);
       }
     }
-    YEAGER_DELETE(m_Actor);
+    m_Actor.reset();
     Yeager::Log(INFO, "Destroying object {}", m_Name);
   }
 }
 
 AnimatedObject::~AnimatedObject()
 {
-  YEAGER_DELETE(m_AnimationEngine)
-  YEAGER_DELETE(m_ThreadImporter)
+  m_AnimationEngine.reset();
+  m_ThreadImporter.reset();
 }
 
 void Yeager::DeleteMeshGLBuffers(ObjectMeshData* mesh)
 {
-  glDeleteVertexArrays(1, &mesh->m_Vao);
-  glDeleteBuffers(1, &mesh->m_Vbo);
-  glDeleteBuffers(1, &mesh->m_Ebo);
+  mesh->Renderer.DeleteBuffers();
 }
 
 std::vector<GLfloat> Yeager::ExtractVerticesFromEveryMesh(ObjectModelData* model)
@@ -223,15 +234,14 @@ void Yeager::DrawSeparateMesh(ObjectMeshData* mesh, Yeager::Shader* shader)
     }
     String mat = ("material." + name + number).c_str();
     shader->SetInt(mat, x);
-    glBindTexture(GL_TEXTURE_2D, mesh->Textures[x]->GetTextureID());
+    mesh->Textures[x]->BindTexture();
   }
 
-  glBindVertexArray(mesh->m_Vao);
+  mesh->Renderer.BindVertexArray();
   glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh->Indices.size()), GL_UNSIGNED_INT, YEAGER_NULLPTR);
+  mesh->Renderer.UnbindVertexArray();
 
-  glBindVertexArray(0);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, NULL);
+  MaterialTexture2D::Unbind2DTextures();
 }
 
 void Yeager::DrawSeparateInstancedMesh(ObjectMeshData* mesh, Yeager::Shader* shader, int amount)
@@ -249,16 +259,15 @@ void Yeager::DrawSeparateInstancedMesh(ObjectMeshData* mesh, Yeager::Shader* sha
       number = std::to_string(specularNum++);
     }
     shader->SetInt((name + number).c_str(), x);
-    glBindTexture(GL_TEXTURE_2D, mesh->Textures[x]->GetTextureID());
+    mesh->Textures[x]->BindTexture();
   }
 
-  glBindVertexArray(mesh->m_Vao);
-  glDrawElementsInstanced(GL_TRIANGLES, static_cast<GLsizei>(mesh->Indices.size()), GL_UNSIGNED_INT, YEAGER_NULLPTR,
-                          amount);
+  mesh->Renderer.BindVertexArray();
+  mesh->Renderer.DrawInstanced(GL_TRIANGLES, static_cast<GLsizei>(mesh->Indices.size()), GL_UNSIGNED_INT,
+                               YEAGER_NULLPTR, amount);
+  mesh->Renderer.UnbindVertexArray();
 
-  glBindVertexArray(0);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, 0);
+  MaterialTexture2D::Unbind2DTextures();
 }
 
 bool Object::GenerateObjectGeometry(ObjectGeometryType::Enum geometry, const ObjectPhysXCreationBase& physics)
@@ -295,14 +304,14 @@ bool Object::GenerateObjectGeometry(ObjectGeometryType::Enum geometry, const Obj
   }
 }
 
-bool Object::ImportObjectFromFile(Cchar path, bool flip_image)
+bool Object::ImportObjectFromFile(Cchar path, const ObjectCreationConfiguration configuration, bool flip_image)
 {
   Path = path;
 
   if (!m_ObjectDataLoaded) {
     Importer imp(m_Name, m_Application);
 
-    m_ModelData = imp.Import(path, flip_image);
+    m_ModelData = imp.Import(path, configuration, flip_image);
 
     if (!m_ModelData.SuccessfulLoaded) {
       Yeager::Log(ERROR, "Cannot load imported model data, model {} path {}", m_Name, path);
@@ -329,14 +338,14 @@ bool Object::ImportObjectFromFile(Cchar path, bool flip_image)
   }
 }
 
-bool Object::ThreadImportObjectFromFile(Cchar path, bool flip_image)
+bool Object::ThreadImportObjectFromFile(Cchar path, const ObjectCreationConfiguration configuration, bool flip_image)
 {
   Path = path;
 
   if (!m_ObjectDataLoaded) {
-    m_ThreadImporter->ThreadImport(path, flip_image);
+    m_ThreadImporter->ThreadImport(path, configuration, flip_image);
     std::pair<ImporterThreaded*, Yeager::Object*> thread;
-    thread.first = m_ThreadImporter;
+    thread.first = m_ThreadImporter.get();
     thread.second = this;
     m_Application->GetScene()->GetThreadImporters()->push_back(thread);
     return true;
@@ -384,14 +393,15 @@ void Object::ThreadSetup()
   Yeager::LogDebug(INFO, "Success in loading mode {}", m_Name);
 }
 
-bool AnimatedObject::ThreadImportObjectFromFile(Cchar path, bool flip_image)
+bool AnimatedObject::ThreadImportObjectFromFile(Cchar path, const ObjectCreationConfiguration configuration,
+                                                bool flip_image)
 {
   Path = path;
 
   if (!m_ObjectDataLoaded) {
-    m_ThreadImporter->ThreadImport(path, flip_image);
+    m_ThreadImporter->ThreadImport(path, configuration, flip_image);
     std::pair<ImporterThreadedAnimated*, Yeager::AnimatedObject*> thread;
-    thread.first = m_ThreadImporter;
+    thread.first = m_ThreadImporter.get();
     thread.second = this;
     m_Application->GetScene()->GetThreadAnimatedImporters()->push_back(thread);
     return true;
@@ -445,12 +455,12 @@ void AnimatedObject::ThreadSetup()
 
 void Object::DrawInstancedGeometry(Yeager::Shader* shader)
 {
-  glBindVertexArray(m_GeometryData.m_Vao);
+  m_GeometryData.Renderer.BindVertexArray();
 
-  glDrawElementsInstanced(GL_TRIANGLES, static_cast<unsigned int>(m_GeometryData.Indices.size()), GL_UNSIGNED_INT, 0,
-                          m_InstancedObjs);
+  m_GeometryData.Renderer.DrawInstanced(GL_TRIANGLES, static_cast<unsigned int>(m_GeometryData.Indices.size()),
+                                        GL_UNSIGNED_INT, 0, m_InstancedObjs);
 
-  glBindVertexArray(0);
+  m_GeometryData.Renderer.UnbindVertexArray();
   glActiveTexture(GL_TEXTURE0);
 }
 
@@ -462,13 +472,12 @@ void Object::DrawGeometry(Yeager::Shader* shader)
     glBindTexture(GL_TEXTURE_2D, m_GeometryData.Texture->GetTextureID());
   }
 
-  glBindVertexArray(m_GeometryData.m_Vao);
+  m_GeometryData.Renderer.BindVertexArray();
 
-  glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(m_GeometryData.Indices.size()), GL_UNSIGNED_INT, 0);
-
-  glBindVertexArray(0);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, NULL);
+  m_GeometryData.Renderer.Draw(GL_TRIANGLES, static_cast<unsigned int>(m_GeometryData.Indices.size()), GL_UNSIGNED_INT,
+                               0);
+  m_GeometryData.Renderer.UnbindVertexArray();
+  MaterialTexture2D::Unbind2DTextures();
 }
 
 void Object::DrawModel(Yeager::Shader* shader)
@@ -539,55 +548,43 @@ void Object::Setup()
   if (m_GeometryType == ObjectGeometryType::eCUSTOM) {
 
     for (auto& mesh : m_ModelData.Meshes) {
-      glGenVertexArrays(1, &mesh.m_Vao);
-      glGenBuffers(1, &mesh.m_Vbo);
-      glGenBuffers(1, &mesh.m_Ebo);
+      mesh.Renderer.GenBuffers();
+      mesh.Renderer.BindBuffers();
 
-      glBindVertexArray(mesh.m_Vao);
-      glBindBuffer(GL_ARRAY_BUFFER, mesh.m_Vbo);
+      mesh.Renderer.BufferData(GL_ARRAY_BUFFER, mesh.Vertices.size() * sizeof(ObjectVertexData), &mesh.Vertices[0],
+                               GL_STATIC_DRAW);
+      mesh.Renderer.BufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.Indices.size() * sizeof(unsigned int), &mesh.Indices[0],
+                               GL_STATIC_DRAW);
 
-      glBufferData(GL_ARRAY_BUFFER, mesh.Vertices.size() * sizeof(ObjectVertexData), &mesh.Vertices[0], GL_STATIC_DRAW);
+      mesh.Renderer.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ObjectVertexData), (void*)0);
 
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.m_Ebo);
-      glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.Indices.size() * sizeof(unsigned int), &mesh.Indices[0],
-                   GL_STATIC_DRAW);
+      mesh.Renderer.VertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(ObjectVertexData),
+                                        (void*)offsetof(ObjectVertexData, Normals));
 
-      glEnableVertexAttribArray(0);
-      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ObjectVertexData), (void*)0);
+      mesh.Renderer.VertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(ObjectVertexData),
+                                        (void*)offsetof(ObjectVertexData, TextureCoords));
 
-      glEnableVertexAttribArray(1);
-      glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(ObjectVertexData),
-                            (void*)offsetof(ObjectVertexData, Normals));
-
-      glEnableVertexAttribArray(2);
-      glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(ObjectVertexData),
-                            (void*)offsetof(ObjectVertexData, TextureCoords));
-
-      glBindVertexArray(0);
+      mesh.Renderer.UnbindBuffers();
     }
   } else {
 
-    glGenVertexArrays(1, &m_GeometryData.m_Vao);
-    glGenBuffers(1, &m_GeometryData.m_Vbo);
-    glGenBuffers(1, &m_GeometryData.m_Ebo);
+    m_GeometryData.Renderer.GenBuffers();
+    m_GeometryData.Renderer.BindBuffers();
 
-    glBindVertexArray(m_GeometryData.m_Vao);
-    glBindBuffer(GL_ARRAY_BUFFER, m_GeometryData.m_Vbo);
-    glBufferData(GL_ARRAY_BUFFER, m_GeometryData.Vertices.size() * sizeof(GLfloat), &m_GeometryData.Vertices[0],
-                 GL_STATIC_DRAW);
+    m_GeometryData.Renderer.BufferData(GL_ARRAY_BUFFER, m_GeometryData.Vertices.size() * sizeof(GLfloat),
+                                       &m_GeometryData.Vertices[0], GL_STATIC_DRAW);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_GeometryData.m_Ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_GeometryData.Indices.size() * sizeof(GLuint), &m_GeometryData.Indices[0],
-                 GL_STATIC_DRAW);
+    m_GeometryData.Renderer.BufferData(GL_ELEMENT_ARRAY_BUFFER, m_GeometryData.Indices.size() * sizeof(GLuint),
+                                       &m_GeometryData.Indices[0], GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
-    glEnableVertexAttribArray(2);
+    m_GeometryData.Renderer.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)0);
 
-    glBindVertexArray(0);
+    m_GeometryData.Renderer.VertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat),
+                                                (void*)(3 * sizeof(GLfloat)));
+
+    m_GeometryData.Renderer.VertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat),
+                                                (void*)(6 * sizeof(GLfloat)));
+    m_GeometryData.Renderer.UnbindBuffers();
   }
 }
 
@@ -596,33 +593,20 @@ void Object::GenerateGeometryTexture(MaterialTexture2D* texture)
   m_GeometryData.Texture = texture;
 }
 
-AnimatedObject::AnimatedObject(String name, ApplicationCore* application) : Object(name, application)
-{
-  SetEntityType(EntityObjectType::OBJECT_ANIMATED);
-  m_ThreadImporter = new ImporterThreadedAnimated("ObjectAnimated", m_Application);
-}
-
-AnimatedObject::AnimatedObject(String name, ApplicationCore* application, GLuint amount)
-    : Object(name, application, amount)
-{
-  SetEntityType(EntityObjectType::OBJECT_ANIMATED);
-  m_ThreadImporter = new ImporterThreadedAnimated("ObjectAnimated", m_Application);
-}
-
 void AnimatedObject::BuildAnimation(String path)
 {
-  m_AnimationEngine = new AnimationEngine;
+  m_AnimationEngine = std::make_shared<AnimationEngine>();
   m_AnimationEngine->Initialize();
   m_AnimationEngine->LoadAnimationsFromFile(path, this);
 }
 
-bool AnimatedObject::ImportObjectFromFile(Cchar path, bool flip_image)
+bool AnimatedObject::ImportObjectFromFile(Cchar path, const ObjectCreationConfiguration configuration, bool flip_image)
 {
   Path = path;
 
   if (!m_ObjectDataLoaded) {
     Importer imp(m_Name, m_Application);
-    m_ModelData = imp.ImportAnimated(path, flip_image);
+    m_ModelData = imp.ImportAnimated(path, configuration, flip_image);
 
     if (!m_ModelData.SuccessfulLoaded) {
       Yeager::Log(ERROR, "Cannot load imported model data, model {} path {}", m_Name, path);
@@ -650,46 +634,35 @@ void AnimatedObject::Setup()
 {
 
   for (auto& mesh : m_ModelData.Meshes) {
-    glGenVertexArrays(1, &mesh.m_Vao);
-    glGenBuffers(1, &mesh.m_Vbo);
-    glGenBuffers(1, &mesh.m_Ebo);
+    mesh.Renderer.GenBuffers();
+    mesh.Renderer.BindBuffers();
 
-    glBindVertexArray(mesh.m_Vao);
-    glBindBuffer(GL_ARRAY_BUFFER, mesh.m_Vbo);
+    mesh.Renderer.BufferData(GL_ARRAY_BUFFER, mesh.Vertices.size() * sizeof(AnimatedVertexData), &mesh.Vertices[0],
+                             GL_STATIC_DRAW);
+    mesh.Renderer.BufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.Indices.size() * sizeof(unsigned int), &mesh.Indices[0],
+                             GL_STATIC_DRAW);
 
-    glBufferData(GL_ARRAY_BUFFER, mesh.Vertices.size() * sizeof(AnimatedVertexData), &mesh.Vertices[0], GL_STATIC_DRAW);
+    mesh.Renderer.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(AnimatedVertexData), (void*)0);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.m_Ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.Indices.size() * sizeof(unsigned int), &mesh.Indices[0], GL_STATIC_DRAW);
+    mesh.Renderer.VertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(AnimatedVertexData),
+                                      (void*)offsetof(AnimatedVertexData, Normals));
 
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(AnimatedVertexData), (void*)0);
+    mesh.Renderer.VertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(AnimatedVertexData),
+                                      (void*)offsetof(AnimatedVertexData, TextureCoords));
 
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(AnimatedVertexData),
-                          (void*)offsetof(AnimatedVertexData, Normals));
+    mesh.Renderer.VertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(AnimatedVertexData),
+                                      (void*)offsetof(AnimatedVertexData, Tangent));
 
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(AnimatedVertexData),
-                          (void*)offsetof(AnimatedVertexData, TextureCoords));
+    mesh.Renderer.VertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(AnimatedVertexData),
+                                      (void*)offsetof(AnimatedVertexData, BiTangent));
 
-    glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(AnimatedVertexData),
-                          (void*)offsetof(AnimatedVertexData, Tangent));
-    // vertex bitangent
-    glEnableVertexAttribArray(4);
-    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(AnimatedVertexData),
-                          (void*)offsetof(AnimatedVertexData, BiTangent));
-    // ids
-    glEnableVertexAttribArray(5);
-    glVertexAttribIPointer(5, 4, GL_INT, sizeof(AnimatedVertexData), (void*)offsetof(AnimatedVertexData, BonesIDs));
+    mesh.Renderer.VertexAttribPointer(5, 4, GL_INT, GL_FALSE, sizeof(AnimatedVertexData),
+                                      (void*)offsetof(AnimatedVertexData, BonesIDs));
 
-    // weights
-    glEnableVertexAttribArray(6);
-    glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(AnimatedVertexData),
-                          (void*)offsetof(AnimatedVertexData, Weights));
+    mesh.Renderer.VertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(AnimatedVertexData),
+                                      (void*)offsetof(AnimatedVertexData, Weights));
 
-    glBindVertexArray(0);
+    mesh.Renderer.UnbindBuffers();
   }
 }
 
@@ -732,17 +705,16 @@ void AnimatedObject::DrawMeshes(Shader* shader)
       glBindTexture(GL_TEXTURE_2D, mesh.Textures[x]->GetTextureID());
     }
 
-    glBindVertexArray(mesh.m_Vao);
+    mesh.Renderer.BindVertexArray();
     if (m_InstancedType == ObjectInstancedType::eNON_INSTACED) {
-      glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh.Indices.size()), GL_UNSIGNED_INT, YEAGER_NULLPTR);
+      mesh.Renderer.Draw(GL_TRIANGLES, static_cast<GLsizei>(mesh.Indices.size()), GL_UNSIGNED_INT, YEAGER_NULLPTR);
     } else {
-      glDrawElementsInstanced(GL_TRIANGLES, static_cast<GLsizei>(mesh.Indices.size()), GL_UNSIGNED_INT, YEAGER_NULLPTR,
-                              m_InstancedObjs);
+      mesh.Renderer.DrawInstanced(GL_TRIANGLES, static_cast<GLsizei>(mesh.Indices.size()), GL_UNSIGNED_INT,
+                                  YEAGER_NULLPTR, m_InstancedObjs);
     }
 
-    glBindVertexArray(0);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    mesh.Renderer.UnbindVertexArray();
+    MaterialTexture2D::Unbind2DTextures();
   }
 }
 

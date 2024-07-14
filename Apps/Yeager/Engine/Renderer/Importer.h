@@ -33,6 +33,7 @@
 
 namespace Yeager {
 class ApplicationCore;
+struct CustomTextureFolder;
 
 #define YEAGER_ASSIMP_DEFAULT_FLAGS aiProcess_Triangulate
 #define YEAGER_ASSIMP_DEFAULT_FLAGS_ANIMATED \
@@ -65,9 +66,11 @@ class Importer {
   Importer(String source = YEAGER_IMPORTER_DEFAULT_SOURCE, ApplicationCore* app = YEAGER_NULLPTR);
   ~Importer();
 
-  ObjectModelData Import(Cchar path, bool flip_image = false, Uint assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS);
-  AnimatedObjectModelData ImportAnimated(Cchar path, bool flip_image = false,
-                                         Uint assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS_ANIMATED);
+  ObjectModelData Import(Cchar path, const ObjectCreationConfiguration configuration = ObjectCreationConfiguration(),
+                         bool flip_image = false, Uint assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS);
+  AnimatedObjectModelData ImportAnimated(
+      Cchar path, const ObjectCreationConfiguration configuration = ObjectCreationConfiguration(),
+      bool flip_image = false, Uint assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS_ANIMATED);
   ObjectModelData ImportToPhysX(Cchar path, physx::PxRigidActor* actor, bool flip_image = false,
                                 Uint assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS);
 
@@ -93,6 +96,7 @@ class Importer {
 
   static Uint m_ImportedModelsCount;
   ApplicationCore* m_Application = YEAGER_NULLPTR;
+  ObjectCreationConfiguration m_CreationConfiguration;
   String m_FullPath;
   String m_Source;
   bool m_ImageFlip = false;
@@ -102,7 +106,8 @@ class ImporterThreaded : public Importer {
  public:
   ImporterThreaded(String source, ApplicationCore* app);
   ~ImporterThreaded();
-  virtual void ThreadImport(Cchar path, bool flip_image = false, Uint assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS);
+  virtual void ThreadImport(Cchar path, const ObjectCreationConfiguration configuration = ObjectCreationConfiguration(),
+                            bool flip_image = false, Uint assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS);
   bool IsThreadFinish();
   std::thread* GetThreadPtr() { return &m_Thread; }
   ObjectModelData GetValue() { return m_FutureObject.get(); }
@@ -120,7 +125,8 @@ class ImporterThreadedAnimated : public ImporterThreaded {
  public:
   ImporterThreadedAnimated(String source, ApplicationCore* app);
   ~ImporterThreadedAnimated();
-  void ThreadImport(Cchar path, bool flip_image = false, Uint assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS);
+  void ThreadImport(Cchar path, const ObjectCreationConfiguration configuration = ObjectCreationConfiguration(),
+                    bool flip_image = false, Uint assimp_flags = YEAGER_ASSIMP_DEFAULT_FLAGS);
   AnimatedObjectModelData GetValue() { return m_FutureObject.get(); }
 
  private:

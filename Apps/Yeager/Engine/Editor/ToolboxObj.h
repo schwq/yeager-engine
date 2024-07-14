@@ -62,7 +62,7 @@ class ToolboxHandle {
 
   ~ToolboxHandle() {}
 
-  Yeager::Transformation* GetTransformation()
+  Yeager::Transformation3D* GetTransformation()
   {
     return static_cast<Yeager::GameEntity*>(m_EntityPtr)->GetTransformationPtr();
   }
@@ -84,12 +84,15 @@ class ToolboxHandle {
   ToolboxEntityType::Enum m_EntityType = ToolboxEntityType::Undefined;
   Yeager::EditorEntity* m_EntityPtr = YEAGER_NULLPTR;
 
+  Uint m_ResizeTextures = 1;
   bool m_SelectedToolbox = false;
   bool m_ScheduleDeletion = false;
   bool m_IsSeen = false;
   bool m_RenameWindowOpen = false;
   bool m_FlipEveryTexture = false;
   String m_NewName = YEAGER_NULL_LITERAL;
+
+  void DisplayTextureInformation(MaterialTexture2D* texture);
 
   void DrawToolboxObjectType();
   void DrawToolboxObjectAnimated();

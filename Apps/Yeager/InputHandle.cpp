@@ -14,22 +14,23 @@ KeyMap* Yeager::FindKeyMap(uint8_t key)
       return &keymap;
     }
   }
-  assert("Cannot find key associated to keymapping!");
+  static_assert("Cannot find key associated to keymapping!");
   return &KeyMapping[0];  // MSVC dont throw warning!
 }
 
-float Input::m_LastMouseWidth = ygWindowWidth / 2.0f;
-float Input::m_LastMouseHeight = ygWindowHeight / 2.0f;
+float Input::m_LastMouseWidth = 0;
+float Input::m_LastMouseHeight = 0;
 bool Input::m_FirstMouse = true;
 CameraCursorLastState Input::m_LastState;
 bool Input::m_CursorShouldAppear = true;
 bool Input::m_SilentInputHandling = false;
+
 void Input::KeyboardKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
   if (m_SilentInputHandling)
     return;
 
-  if (m_Application->GetMode() == YgApplicationMode::eAPPLICATION_EDITOR) {
+  if (m_Application->GetMode() == ApplicationMode::eAPPLICATION_EDITOR) {
     switch (key) {
       case GLFW_KEY_E:
         if (FindKeyMap(GLFW_KEY_E)->AddStateAwaitAction(action)) {
@@ -72,7 +73,7 @@ void Input::KeyboardKeyCallback(GLFWwindow* window, int key, int scancode, int a
 
 void Input::MouseKeyCallback(GLFWwindow* window, int button, int action, int mods)
 {
-  if (m_Application->GetMode() == YgApplicationMode::eAPPLICATION_EDITOR) {
+  if (m_Application->GetMode() == ApplicationMode::eAPPLICATION_EDITOR) {
     switch (button) {
       case GLFW_MOUSE_BUTTON_2:
         if (FindKeyMap(GLFW_MOUSE_BUTTON_2)->AddStateAwaitAction(action)) {}
@@ -96,8 +97,8 @@ Input::Input(Yeager::ApplicationCore* app)
 
 void Input::InitializeCallbacks()
 {
-  glfwSetMouseButtonCallback(m_Application->GetWindow()->getWindow(), MouseKeyCallback);
-  glfwSetKeyCallback(m_Application->GetWindow()->getWindow(), KeyboardKeyCallback);
+  glfwSetMouseButtonCallback(m_Application->GetWindow()->GetGLFWwindow(), MouseKeyCallback);
+  glfwSetKeyCallback(m_Application->GetWindow()->GetGLFWwindow(), KeyboardKeyCallback);
 }
 
 void Input::MouseCallback(GLFWwindow* window, double xpos, double ypos)
@@ -119,7 +120,7 @@ void Input::SetCursorAppear(bool appear) noexcept
 {
   m_CursorShouldAppear = appear;
   uint64_t cursor = appear ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED;
-  glfwSetInputMode(m_Application->GetWindow()->getWindow(), GLFW_CURSOR, cursor);
+  glfwSetInputMode(m_Application->GetWindow()->GetGLFWwindow(), GLFW_CURSOR, cursor);
 }
 
 void Input::SetCameraCursorToWindowState(bool state)
@@ -139,7 +140,7 @@ void Input::SetCameraCursorToWindowState(bool state)
 
 const inline bool Input::GetKeyPressed(int key) noexcept
 {
-  return glfwGetKey(m_Application->GetWindow()->getWindow(), key) == GLFW_PRESS;
+  return glfwGetKey(m_Application->GetWindow()->GetGLFWwindow(), key) == GLFW_PRESS;
 }
 
 void Input::ProcessInputRender(Window* window, float delta)
@@ -147,17 +148,17 @@ void Input::ProcessInputRender(Window* window, float delta)
   m_FramesCount++;
   Yeager::Interface* intr = m_Application->GetInterface();
   Yeager::BaseCamera* camera = m_Application->GetCamera();
-  if (glfwGetKey(window->getWindow(), GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+  if (glfwGetKey(window->GetGLFWwindow(), GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 
     if (!intr->GetExitProgramWindowOpen()) {
       intr->SetExitProgramWindowOpen(true);
     }
   }
   if (intr->GetUserChoiceExitProgram()) {
-    glfwSetWindowShouldClose(window->getWindow(), true);
+    glfwSetWindowShouldClose(window->GetGLFWwindow(), true);
   }
 
-  if (m_Application->GetMode() == YgApplicationMode::eAPPLICATION_EDITOR && camera->GetShouldMove()) {
+  if (m_Application->GetMode() == ApplicationMode::eAPPLICATION_EDITOR && camera->GetShouldMove()) {
     if (GetKeyPressed(GLFW_KEY_W)) {
       camera->UpdatePosition(YgCameraPosition::eCAMERA_FORWARD, delta);
     }
@@ -171,10 +172,10 @@ void Input::ProcessInputRender(Window* window, float delta)
       camera->UpdatePosition(YgCameraPosition::eCAMERA_BACKWARD, delta);
     }
   }
-  if (m_Application->GetMode() == YgApplicationMode::eAPPLICATION_EDITOR) {
+  if (m_Application->GetMode() == ApplicationMode::eAPPLICATION_EDITOR) {
 
-    if (glfwGetKey(window->getWindow(), GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-      if (glfwGetKey(window->getWindow(), GLFW_KEY_F) == GLFW_PRESS) {
+    if (glfwGetKey(window->GetGLFWwindow(), GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+      if (glfwGetKey(window->GetGLFWwindow(), GLFW_KEY_F) == GLFW_PRESS) {
         m_Application->GetInterface()->MakeScreenShotAppear(true);
       }
     }

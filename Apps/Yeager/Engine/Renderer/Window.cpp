@@ -113,7 +113,7 @@ bool Window::RegenerateMainWindow(Uint window_x, Uint window_y, String title, GL
 void Window::ResizeCallback(GLFWwindow* window, int width, int height)
 {
   Yeager::ApplicationCore* application = static_cast<Yeager::ApplicationCore*>(glfwGetWindowUserPointer(window));
-  if (application->GetMode() == YgApplicationMode::eAPPLICATION_LAUNCHER) {
+  if (application->GetMode() == ApplicationMode::eAPPLICATION_LAUNCHER) {
     m_WindowInformation.LauncherSize = Vector2(width, height);
   } else {
     m_WindowInformation.EditorSize = Vector2(width, height);
@@ -126,7 +126,7 @@ void Window::WindowMaximizeCallback(GLFWwindow* window, int maximized)
 
   int width, height;
   glfwGetWindowSize(window, &width, &height);
-  if (application->GetMode() == YgApplicationMode::eAPPLICATION_LAUNCHER) {
+  if (application->GetMode() == ApplicationMode::eAPPLICATION_LAUNCHER) {
     m_WindowInformation.LauncherSize = Vector2(width, height);
   } else {
     m_WindowInformation.EditorSize = Vector2(width, height);
@@ -141,8 +141,9 @@ void Window::WindowMaximizeCallback(GLFWwindow* window, int maximized)
 
 bool Window::GenerateWindow(unsigned window_x, Uint window_y, String title)
 {
-
+  void* previous = m_WindowHandle;
   m_WindowHandle = glfwCreateWindow(window_x, window_y, title.c_str(), NULL, NULL);
+  Yeager::LogDebug(INFO, "GLFW window pointer changes from ({}) to ({})", fmt::ptr(previous), fmt::ptr(m_WindowHandle));
 
   if (!m_WindowHandle) {
     Yeager::Log(ERROR, "Cannot Generate GLFW Window!");
@@ -231,8 +232,8 @@ Window::~Window()
 
 Vector2 Window::GetWindowSize() const
 {
-  return (m_Application->GetMode() == YgApplicationMode::eAPPLICATION_EDITOR ? m_WindowInformation.EditorSize
-                                                                             : m_WindowInformation.LauncherSize);
+  return (m_Application->GetMode() == ApplicationMode::eAPPLICATION_EDITOR ? m_WindowInformation.EditorSize
+                                                                           : m_WindowInformation.LauncherSize);
 }
 
 void Window::GetWindowSize(int* width, int* height)

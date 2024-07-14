@@ -1,0 +1,4 @@
+# All the sound`s paths must be relative to the Assets/Sounds/ folder
+Sounds:
+  - Name: "Click_01"
+    Filename: "Click_01.wav"

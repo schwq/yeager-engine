@@ -30,7 +30,8 @@ class Interface;
 
 #define YEAGER_EXPLORER_MAX_STRING_INPUT 150
 
-extern String GetExplorerSymbolForToolbox(EntityObjectType::Enum type);
+static const String GetExplorerSymbolForToolbox(EntityObjectType::Enum type);
+static const String CreateToolboxLabel(Yeager::ToolboxHandle* obj);
 
 class EditorExplorer {
  public:
@@ -39,7 +40,7 @@ class EditorExplorer {
   ~EditorExplorer();
   void DrawExplorer();
 
-  constexpr YEAGER_FORCE_INLINE ToolboxHandle* GetSelectedToolbox() const { return m_ToolboxSelected; }
+  YEAGER_CONSTEXPR YEAGER_FORCE_INLINE ToolboxHandle* GetSelectedToolbox() const { return m_ToolboxSelected; }
   YEAGER_FORCE_INLINE void ResetSelectedToolbox() { m_ToolboxSelected = YEAGER_NULLPTR; }
 
  private:
@@ -54,13 +55,15 @@ class EditorExplorer {
   void HandleSelectableOptions(const String& name);
   void DrawToolboxesList();
   void CleanupAfterObjectCreation();
-  const String CreateToolboxLabel(Yeager::ToolboxHandle* obj);
 
   void AsynchronousAwaitUserFolder(FileExtensionType type);
   void StartFolderSelection(const String& title);
+  void StartFolderSelectionFromTexture(const String& title);
+  void AsynchronousAwaitUserTextureFolder();
 
-  void BuildInstancedObjectTransformation(std::vector<Transformation*>& pos);
-  void DeleteInstancedObjectTransformation(std::vector<Transformation*>* pos);
+  YEAGER_USING_SHARED_PTR
+  void BuildInstancedObjectTransformation(std::vector<SharedPtr<Transformation3D>>& pos);
+  void DeleteInstancedObjectTransformation(std::vector<SharedPtr<Transformation3D>>& pos);
 
   void CreateObject();
   void CreateAnimatedObject();
@@ -86,10 +89,13 @@ class EditorExplorer {
   String m_NewObjectName = YEAGER_NULL_LITERAL;
   String m_NewObjectPath = YEAGER_NULL_LITERAL;
   String m_NewObjectTexturePath = YEAGER_NULL_LITERAL;
+  ObjectCreationConfiguration m_CreationConfiguration;
 
-  static bool m_AwaitingUserChoiceFile;
-  pfd::open_file* m_Selection = YEAGER_NULLPTR;
+  bool m_AwaitingUserChoiceFile = false;
+  bool m_AwaintingUserChoiceFolder = false;
 
+  SharedPtr<pfd::open_file> m_FileSelection = YEAGER_NULLPTR;
+  SharedPtr<pfd::select_folder> m_FolderSelection = YEAGER_NULLPTR;
   std::vector<std::pair<String, String>> m_SelectableOptions;
 };
 }  // namespace Yeager

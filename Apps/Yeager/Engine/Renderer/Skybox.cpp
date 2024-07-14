@@ -1,6 +1,5 @@
 
 #include "Skybox.h"
-
 #include "Object.h"
 #include "TextureHandle.h"
 using namespace Yeager;
@@ -18,7 +17,8 @@ bool Skybox::BuildSkyboxFromImport(String path, bool flip)
     Path = path;
 
     Importer imp("Skybox", m_Application);
-    m_Model = imp.Import(path.c_str(), flip);
+    ObjectCreationConfiguration configuration = ObjectCreationConfiguration();
+    m_Model = imp.Import(path.c_str(), configuration, flip);
 
     if (!m_Model.SuccessfulLoaded) {
       Yeager::Log(ERROR, "Cannot load model to skybox!");
@@ -115,64 +115,55 @@ void Skybox::SetupModel()
 
   for (auto& mesh : m_Model.Meshes) {
 
-    glGenVertexArrays(1, &mesh.m_Vao);
-    glGenBuffers(1, &mesh.m_Vbo);
-    glGenBuffers(1, &mesh.m_Ebo);
+    mesh.Renderer.GenBuffers();
+    mesh.Renderer.BindBuffers();
 
-    glBindVertexArray(mesh.m_Vao);
-    glBindBuffer(GL_ARRAY_BUFFER, mesh.m_Vbo);
+    mesh.Renderer.BufferData(GL_ARRAY_BUFFER, mesh.Vertices.size() * sizeof(ObjectVertexData), &mesh.Vertices[0],
+                             GL_STATIC_DRAW);
+    mesh.Renderer.BufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.Indices.size() * sizeof(unsigned int), &mesh.Indices[0],
+                             GL_STATIC_DRAW);
 
-    glBufferData(GL_ARRAY_BUFFER, mesh.Vertices.size() * sizeof(ObjectVertexData), &mesh.Vertices[0], GL_STATIC_DRAW);
+    mesh.Renderer.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ObjectVertexData), (void*)0);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.m_Ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.Indices.size() * sizeof(unsigned int), &mesh.Indices[0], GL_STATIC_DRAW);
+    mesh.Renderer.VertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(ObjectVertexData),
+                                      (void*)offsetof(ObjectVertexData, Normals));
 
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ObjectVertexData), (void*)0);
+    mesh.Renderer.VertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(ObjectVertexData),
+                                      (void*)offsetof(ObjectVertexData, TextureCoords));
 
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(ObjectVertexData),
-                          (void*)offsetof(ObjectVertexData, Normals));
-
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(ObjectVertexData),
-                          (void*)offsetof(ObjectVertexData, TextureCoords));
-
-    glBindVertexArray(0);
+    mesh.Renderer.UnbindBuffers();
   }
 }
 
 void Skybox::Setup()
 {
+  m_Renderer.GenBuffers();
 
-  glGenVertexArrays(1, &m_Vao);
-  glGenBuffers(1, &m_Vbo);
+  m_Renderer.BindBuffers();
+  m_Renderer.BufferData(GL_ARRAY_BUFFER, m_Data.Vertices.size() * sizeof(GLfloat), &m_Data.Vertices[0], GL_STATIC_DRAW);
 
-  glBindVertexArray(m_Vao);
-  glBindBuffer(GL_ARRAY_BUFFER, m_Vbo);
-  glBufferData(GL_ARRAY_BUFFER, m_Data.Vertices.size() * sizeof(GLfloat), &m_Data.Vertices[0], GL_STATIC_DRAW);
-
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, (m_Type == SkyboxTextureType::ESamplerCube ? 3 : 8) * sizeof(float),
-                        (void*)0);
+  m_Renderer.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
+                                 (m_Type == SkyboxTextureType::ESamplerCube ? 3 : 8) * sizeof(float), (void*)0);
 
   if (m_Type == SkyboxTextureType::ESampler2D) {
 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(sizeof(GLfloat) * 3));
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(GLfloat)));
-    glEnableVertexAttribArray(2);
+    m_Renderer.VertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(sizeof(GLfloat) * 3));
+    m_Renderer.VertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(GLfloat)));
   }
 
-  glBindVertexArray(0);
+  m_Renderer.UnbindBuffers();
 }
 
 Skybox::~Skybox()
 {
   if (m_SkyboxDataLoaded) {
-    glDeleteVertexArrays(1, &m_Vao);
-    glDeleteBuffers(1, &m_Vbo);
-    glDeleteBuffers(1, &m_Ebo);
+    if (m_Geometry == ObjectGeometryType::eCUSTOM) {
+      for (auto& mesh : m_Model.Meshes) {
+        mesh.Renderer.DeleteBuffers();
+      }
+    } else {
+      m_Renderer.DeleteBuffers();
+    }
   }
 }
 
@@ -185,19 +176,18 @@ void Skybox::Draw(Yeager::Shader* shader, Matrix4 view, Matrix4 projection)
     shader->UseShader();
     shader->SetMat4("view", view);
     shader->SetMat4("projection", projection);
-    glBindVertexArray(m_Vao);
+    m_Renderer.BindVertexArray();
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(m_Type == SkyboxTextureType::ESampler2D ? GL_TEXTURE_2D : GL_TEXTURE_CUBE_MAP,
                   m_Model.TexturesLoaded[0]->first.GetTextureID());
     if (m_Geometry != ObjectGeometryType::eCUSTOM) {
-      glDrawArrays(GL_TRIANGLES, 0, m_VerticesIndex);
+      m_Renderer.Draw(GL_TRIANGLES, 0, m_VerticesIndex);
     } else {
       for (auto& mesh : m_Model.Meshes) {
         Yeager::DrawSeparateMesh(&mesh, shader);
       }
     }
-
-    glBindVertexArray(0);
+    m_Renderer.UnbindVertexArray();
     glDepthFunc(GL_LESS);
   }
 

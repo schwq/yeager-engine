@@ -33,15 +33,39 @@ class NodeComponent;
 class MaterialBase;
 
 struct Transformation {
+  Transformation() {}
   Matrix4 model = YEAGER_IDENTITY_MATRIX4x4;
+};
+
+struct Transformation2D : Transformation {
+  Transformation2D(const Vector2& Position, const Vector2& Rotation, const Vector2& Scale)
+      : Transformation(), position(Position), rotation(Rotation), scale(Scale)
+  {}
+  Transformation2D() : Transformation() {}
+  Vector2 position = YEAGER_ZERO_VECTOR2;
+  Vector2 rotation = YEAGER_ZERO_VECTOR2;
+  Vector2 scale = Vector2(1.0);
+
+  static void Apply(Transformation2D* transformation, Yeager::Shader* shader);
+  static void Apply(Transformation2D* transformation);
+  static Matrix4 Apply(const Transformation2D& transformation);
+  static Transformation2D GetDefault();
+};
+
+struct Transformation3D : Transformation {
+  Transformation3D(const Vector3& Position, const Vector3& Rotation, const Vector3& Scale)
+      : Transformation(), position(Position), rotation(Rotation), scale(Scale)
+  {}
+  Transformation3D() : Transformation() {}
   Vector3 position = YEAGER_ZERO_VECTOR3;
   Vector3 rotation = YEAGER_ZERO_VECTOR3;
   Vector3 scale = Vector3(1.0);
-};
 
-extern Transformation GetDefaultTransformation();
-extern void ApplyTransformation(Transformation* trans);
-extern void LookAt(const Vector3& At, const Vector3& From, Vector3* rVec);
+  static void Apply(Transformation3D* transformation, Yeager::Shader* shader);
+  static void Apply(Transformation3D* transformation);
+  static Matrix4 Apply(const Transformation3D& transformation);
+  static Transformation3D GetDefault();
+};
 
 struct EntityObjectType {
   enum Enum {
@@ -59,7 +83,7 @@ struct EntityObjectType {
     CAMERA,
     UNDEFINED
   };
-  static String ToString(Enum type);
+  YEAGER_ENUM_TO_STRING(EntityObjectType)
 };
 
 /**
@@ -74,7 +98,7 @@ class Entity {
 
   String GetName();
   void SetName(const String& name) { m_Name = name; }
-  Uint GetId();
+  Uint GetEntityID();
 
   void SetEntityType(EntityObjectType::Enum type) { m_Type = type; }
   EntityObjectType::Enum GetEntityType() const { return m_Type; }
@@ -116,22 +140,22 @@ class EditorEntity : public Entity {
    * @brief Sets to true, when the scene calls for search for schedule deletions, it will remove this entity from the 
    * application, basically, delete it 
   */
-  constexpr void SetScheduleDeletion(bool deletion) { m_ScheduleDeletion = deletion; }
+  YEAGER_CONSTEXPR void SetScheduleDeletion(bool deletion) { m_ScheduleDeletion = deletion; }
 
   /**
    * @brief returns true if the entity must have been requested for deletion
   */
-  constexpr bool GetScheduleDeletion() const { return m_ScheduleDeletion; }
+  YEAGER_CONSTEXPR bool GetScheduleDeletion() const { return m_ScheduleDeletion; }
 
-  void BuildNode(Yeager::NodeComponent* parent);
-  Yeager::NodeComponent* GetNodeComponent() { return m_Node; }
+  void BuildNode(std::shared_ptr<NodeComponent> parent);
+  std::shared_ptr<NodeComponent> GetNodeComponent() { return m_Node; }
 
  protected:
   /* Toolbox object handles the information about the entity, name, id, and custom propieties*/
   std::shared_ptr<ToolboxHandle> m_Toolbox = YEAGER_NULLPTR;
   /* Node component handles the relation of the entity with other entities, like if the are parent, children. 
     This build a hierarchy of information about parent nodes and their children */
-  Yeager::NodeComponent* m_Node = YEAGER_NULLPTR;
+  std::shared_ptr<NodeComponent> m_Node = YEAGER_NULLPTR;
 
   bool m_ScheduleDeletion = false;
 };
@@ -144,16 +168,19 @@ class GameEntity : public EditorEntity {
  public:
   GameEntity(EntityObjectType::Enum type, Yeager::ApplicationCore* app, String name = YEAGER_NULL_LITERAL);
   ~GameEntity();
-  Transformation GetTransformation();
-  Transformation* GetTransformationPtr();
+  Transformation3D GetTransformation();
+  Transformation3D* GetTransformationPtr();
 
   virtual void ApplyTransformation(Shader* Shader);
-  YEAGER_FORCE_INLINE void SetTransformation(const Transformation& trans) { m_EntityTransformation = trans; }
-  constexpr YEAGER_FORCE_INLINE std::vector<MaterialBase*>* GetLoadedTextures() { return &m_EntityLoadedTextures; };
+  YEAGER_FORCE_INLINE void SetTransformation(const Transformation3D& trans) { m_EntityTransformation = trans; }
+  YEAGER_CONSTEXPR YEAGER_FORCE_INLINE std::vector<MaterialBase*>* GetLoadedTextures()
+  {
+    return &m_EntityLoadedTextures;
+  };
 
  protected:
   std::vector<MaterialBase*> m_EntityLoadedTextures;
-  Transformation m_EntityTransformation;
+  Transformation3D m_EntityTransformation;
 };
 
 }  // namespace Yeager

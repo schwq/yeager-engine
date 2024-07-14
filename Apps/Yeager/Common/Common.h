@@ -29,6 +29,8 @@
 // Enable all kind of important messages, useful for debugging
 #define YEAGER_DEBUG_VERBOSE true
 
+#define YEAGER_API
+
 // Version is written as (major version * 100 + minor version)
 #define YEAGER_VERSION 100
 #define YEAGER_BETA_VERSION true
@@ -97,15 +99,17 @@
 #define YEAGER_NODISCARD
 #endif
 
+#define YEAGER_NULL_LITERAL "NULL"
+#define YEAGER_NULLPTR nullptr
+#define YEAGER_NULLPTR_T nullptr_t
+#define YEAGER_FORCE_INLINE inline
+#define YEAGER_CONSTEXPR constexpr
+#define YEAGER_IF_CONSTEXPR __cpp_if_constexpr
+
 #define YEAGER_NOT_IMPLEMENTED(func)                                     \
   {                                                                      \
     printf("(??) Function not implemented as been called [%s]\n", func); \
   }
-#define YEAGER_NULL_LITERAL "NULL"
-
-#define YEAGER_NULLPTR nullptr
-#define YEAGER_NULLPTR_T nullptr_t
-#define YEAGER_FORCE_INLINE inline
 
 #include <math.h>
 #include <string.h>
@@ -122,7 +126,9 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <optional>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 // clang-format off
@@ -142,6 +148,7 @@
 #include "imgui_stdlib.h"
 #include "loguru.hpp"
 #include "portable-file-dialogs.h"
+#include "implot.h"
 
 #define FMT_HEADER_ONLY
 #include "core.h"
@@ -164,6 +171,9 @@ typedef uint64_t DFlags; // defined flags with the #define YEAGER_
 
 #define YEAGER_IDENTITY_MATRIX4x4 Matrix4(1.0f)
 #define YEAGER_ZERO_VECTOR3 Vector3(0.0f)
+#define YEAGER_ZERO_VECTOR2 Vector2(0.0f)
+#define CONST_IT(type) std::vector<type>::const_iterator
+#define TSTRUCT typedef struct 
 
 // PS means Path separator, used in getting path from files and folders
 #if defined(YEAGER_SYSTEM_WINDOWS_x64)

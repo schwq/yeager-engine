@@ -36,25 +36,26 @@ class NodeComponent {
   NodeComponent(Yeager::ApplicationCore* application, Yeager::Scene* scene);
 
   /* Child node constructor */
-  NodeComponent(Yeager::ApplicationCore* application, Yeager::EditorEntity* entity, Yeager::NodeComponent* parent);
+  NodeComponent(Yeager::ApplicationCore* application, Yeager::EditorEntity* entity,
+                std::shared_ptr<NodeComponent> parent);
 
-  bool AddChild(Yeager::NodeComponent* child);
-  bool AddChild(const std::vector<Yeager::NodeComponent*>& child);
+  bool AddChild(std::shared_ptr<NodeComponent> child);
+  bool AddChild(const std::vector<std::shared_ptr<NodeComponent>>& child);
   bool AddChild(Yeager::EditorEntity* entity);
   bool AddChild(Yeager::NodeComponent&& child);
 
-  bool RemoveChild(Yeager::NodeComponent* child);
+  bool RemoveChild(std::shared_ptr<NodeComponent> child);
 
-  bool LinkToParent(Yeager::NodeComponent* parent);
+  bool LinkToParent(std::shared_ptr<NodeComponent> parent);
 
   // copy assignment
   Yeager::NodeComponent& operator=(const Yeager::NodeComponent& other);
 
-  Yeager::NodeComponent* GetParent()
+  std::shared_ptr<NodeComponent> GetParent()
   {
     if (!m_IsRoot)
       return m_Parent;
-    return this;
+    return std::make_shared<NodeComponent>(*this);
   }
 
   /* Just for the non root nodes */
@@ -63,30 +64,31 @@ class NodeComponent {
   /* Just for the root node */
   Yeager::Scene* GetRootScene();
 
-  std::vector<Yeager::NodeComponent*>* GetChildren() { return &m_Children; }
+  std::vector<std::shared_ptr<NodeComponent>>* GetChildren() { return &m_Children; }
   constexpr YEAGER_FORCE_INLINE bool IsRoot() const { return m_IsRoot; }
 
  private:
   Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
-  Yeager::NodeComponent* m_Parent = YEAGER_NULLPTR;
+  std::shared_ptr<NodeComponent> m_Parent = YEAGER_NULLPTR;
   Yeager::EditorEntity* m_Entity = YEAGER_NULLPTR;
   Yeager::Scene* m_RootScene = YEAGER_NULLPTR;
-  std::vector<Yeager::NodeComponent*> m_Children;
+  std::vector<std::shared_ptr<NodeComponent>> m_Children;
 
   /* There can be only one node that is the root of the project! */
   bool m_IsRoot = false;
 };
 
-extern void AddNodeComponentToScene(Yeager::NodeComponent* node, Yeager::Scene* scene);
+extern void AddNodeComponentToScene(std::shared_ptr<NodeComponent> node, Yeager::Scene* scene);
 /* Checks if isChild is a child node of ofParent and returns a boolean */
-extern bool IsNodeChildOf(Yeager::NodeComponent* isChild, Yeager::NodeComponent* ofParent);
-extern bool IsNodeParent(Yeager::NodeComponent* isParent);
+extern bool IsNodeChildOf(std::shared_ptr<NodeComponent> isChild, std::shared_ptr<NodeComponent> ofParent);
+extern bool IsNodeParent(std::shared_ptr<NodeComponent> isParent);
 
-extern bool MoveNodeChildToNewParent(Yeager::NodeComponent* child, Yeager::NodeComponent* newParent);
-extern bool CopyNodeChildToNewParent(Yeager::NodeComponent* child, Yeager::NodeComponent* newParent);
+extern bool MoveNodeChildToNewParent(std::shared_ptr<NodeComponent> child, std::shared_ptr<NodeComponent> newParent);
+extern bool CopyNodeChildToNewParent(std::shared_ptr<NodeComponent> child, std::shared_ptr<NodeComponent> newParent);
 
 /* The delete child of node, clears EVERY node! it is a recusive function that keeps cleaning children and left only the root node */
-extern void DeleteChildOf(Yeager::NodeComponent* node);
-extern void SwapNodes(Yeager::NodeComponent* node1, Yeager::NodeComponent* node2);
+extern void DeleteChildOf(std::shared_ptr<NodeComponent> node);
+extern void DeleteChildOf(std::shared_ptr<NodeComponent> node);
+extern void SwapNodes(std::shared_ptr<NodeComponent> node1, std::shared_ptr<NodeComponent> node2);
 
 }  // namespace Yeager

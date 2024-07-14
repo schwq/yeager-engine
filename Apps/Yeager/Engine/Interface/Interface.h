@@ -135,7 +135,11 @@ struct InterfaceFonts {
   float PixelSize = 14.0f;
 };
 
+struct LauncherProjectPicker;
+
 struct OpenProjectsDisplay {
+  OpenProjectsDisplay() {}
+  OpenProjectsDisplay(const LauncherProjectPicker& other);
   String Name;
   String Author;
   String SceneType;
@@ -266,6 +270,8 @@ class Interface {
   static void AlignForWidth(float width, float alignment = 0.5f);
   static void CreateSpaceX(Uint count);
 
+  void SetSceneFileText(const String& text) { m_SceneFileText = text; }
+
  private:
   String m_NewProjectCurrentRenderer = "Default";
   String m_NewProjectAuthorName = "Default";
@@ -330,6 +336,8 @@ class Interface {
   String m_VSAntiAliasingOptionSelected = YEAGER_NULL_LITERAL;
   String m_VSAspectRatioOptionSelected = YEAGER_NULL_LITERAL;
 
+  String m_SceneFileText = YEAGER_NULL_LITERAL;
+
   void LaunchImGui(Window* window);
   void DrawExplorer();
   void DrawToolbox();
@@ -340,6 +348,7 @@ class Interface {
   void RenderDebugger();
   void LoadColorscheme();
   void WindowUserIsSureDeletingProject();
+
   String NewProjectCreateDirectory(String folder_path);
   /*
    When deleting a project handle from the LoadedProject.yml configuration of the engine (the file that handles all the projects 

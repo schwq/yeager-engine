@@ -1,25 +1,28 @@
 #include "ImageUtilities.h"
+#include "../../Application.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 using namespace Yeager;
 
-bool MakeScreenShot(Cchar output) noexcept
+bool Yeager::MakeScreenShot(Yeager::ApplicationCore* application, Cchar output) noexcept
 {
-  size_t lenght = ygWindowWidth * ygWindowHeight;
+  Vector2 wndSize = application->GetWindow()->GetWindowSize();
+  size_t lenght = wndSize.x * wndSize.y;
   ImagePixel* pixels = new ImagePixel[lenght];
   glPixelStorei(GL_PACK_ALIGNMENT, 1);
   glReadBuffer(GL_BACK_LEFT);
-  glReadPixels(0, 0, ygWindowWidth, ygWindowHeight, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+  glReadPixels(0, 0, wndSize.x, wndSize.y, GL_RGB, GL_UNSIGNED_BYTE, pixels);
 
   // Flip the Image in the X and Y axis
-  for (int line = 0; line != ygWindowHeight / 2; ++line) {
-    std::swap_ranges(std::begin(pixels, lenght) + ygWindowWidth * line,
-                     std::begin(pixels, lenght) + ygWindowWidth * (line + 1),
-                     std::begin(pixels, lenght) + ygWindowWidth * (ygWindowHeight - line - 1));
+  for (int line = 0; line != wndSize.y / 2; ++line) {
+    std::swap_ranges(
+        std::begin(pixels, lenght) + static_cast<int>(wndSize.x) * line,
+        std::begin(pixels, lenght) + static_cast<int>(wndSize.x) * (line + 1),
+        std::begin(pixels, lenght) + static_cast<int>(wndSize.x) * (static_cast<int>(wndSize.y) - line - 1));
   }
 
-  stbi_write_jpg(output, ygWindowWidth, ygWindowHeight, 3, pixels, ygWindowWidth);
+  stbi_write_jpg(output, wndSize.x, wndSize.y, 3, pixels, wndSize.x);
   delete pixels;
   return true;
 }
@@ -36,14 +39,15 @@ String Yeager::ImageExtensionToString(ImageExtension ext)
   }
 }
 
-extern bool MakeScreenShotMiddle(Cchar output) noexcept
+bool Yeager::MakeScreenShotMiddle(Yeager::ApplicationCore* application, Cchar output) noexcept
 {
   size_t lenght = 800 * 800;
+  const Vector2 wndSize = application->GetWindow()->GetWindowSize();
   ImagePixel* pixels = new ImagePixel[lenght];
   glPixelStorei(GL_PACK_ALIGNMENT, 1);
   glReadBuffer(GL_BACK_LEFT);
-  int pos_x = (ygWindowWidth / 2) - 400;
-  int pos_y = (ygWindowHeight / 2) - 400;
+  int pos_x = (wndSize.x / 2) - 400;
+  int pos_y = (wndSize.y / 2) - 400;
   glReadPixels(pos_x, pos_y, 800, 800, GL_RGB, GL_UNSIGNED_BYTE, pixels);
 
   // Flip the Image in the X and Y axis
@@ -56,9 +60,12 @@ extern bool MakeScreenShotMiddle(Cchar output) noexcept
   delete pixels;
   return true;
 }
-extern bool MakeScreenShotInPosition(Cchar output, Uint pos_x, Uint pos_y, Uint size_x, Uint size_y)
+
+bool Yeager::MakeScreenShotInPosition(Yeager::ApplicationCore* application, Cchar output, Uint pos_x, Uint pos_y,
+                                      Uint size_x, Uint size_y)
 {
-  if (size_x == 0 || size_x > ygWindowWidth || size_y == 0 || size_y > ygWindowHeight) {
+  const Vector2 wndSize = application->GetWindow()->GetWindowSize();
+  if (size_x == 0 || size_x > wndSize.x || size_y == 0 || size_y > wndSize.y) {
     Yeager::Log(WARNING, "Trying to make a screenshot with invalid size!");
     return false;
   }

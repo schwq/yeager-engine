@@ -48,6 +48,41 @@ GLenum Yeager::ChannelsToFormat(const int channels)
   }
 }
 
+std::optional<Uint> Yeager::FormatToChannels(GLenum format)
+{
+
+  switch (format) {
+    case GL_RED:
+      return 1;
+    case GL_RGB:
+      return 3;
+    case GL_RGBA:
+      return 4;
+    default:
+      Yeager::LogDebug(ERROR, "FormatToChannels(), invalid format requested! {}", format);
+      return std::nullopt;
+  }
+}
+
+void Yeager::DisplayImageImGui(MaterialTexture2D* texture, Uint resize)
+{
+  if (resize == 0)
+    resize = 1;
+  ImGui::Image((void*)(intptr_t)texture->GetTextureID(),
+               ImVec2(texture->GetWidth() / resize, texture->GetHeight() / resize));
+}
+
+void MaterialTexture2D::Unbind2DTextures()
+{
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, NULL);
+}
+
+void MaterialTexture2D::BindTexture()
+{
+  glBindTexture(m_TextureHandle.BindTarget, m_TextureHandle.Texture);
+}
+
 void MaterialTexture2D::GenerateFromData(STBIDataOutput* output, const MateriaTextureParameterGL parameteri)
 {
   if (m_TextureHandle.Generated)
@@ -62,6 +97,7 @@ void MaterialTexture2D::GenerateFromData(STBIDataOutput* output, const MateriaTe
   m_TextureHandle.Path = output->OriginalPath;
   m_TextureHandle.Generated = true;
   m_TextureHandle.Format = ChannelsToFormat(output->NrComponents);
+  m_TextureHandle.BindTarget = parameteri.BindTarget;
 
   glTexImage2D(parameteri.BindTarget, 0, m_TextureHandle.Format, output->Width, output->Height, 0,
                m_TextureHandle.Format, GL_UNSIGNED_BYTE, output->Data);
@@ -123,6 +159,7 @@ bool MaterialTexture2D::GenerateFromFile(const String& path, bool flip, const Ma
   stbi_set_flip_vertically_on_load(flip);
   m_TextureHandle.Flipped = flip;
   m_TextureHandle.Parameter = parameteri;
+  m_TextureHandle.BindTarget = parameteri.BindTarget;
 
   int channels = 0;
   unsigned char* data = stbi_load(path.c_str(), &m_TextureHandle.Width, &m_TextureHandle.Height, &channels, 0);
@@ -166,6 +203,7 @@ bool MaterialTexture2D::GenerateCubeMapFromFile(const std::vector<String>& paths
 
   m_TextureHandle.Flipped = flip;
   m_TextureHandle.Parameter = parameteri;
+  m_TextureHandle.BindTarget = parameteri.BindTarget;
 
   int channels = 0;
   bool successed = true;

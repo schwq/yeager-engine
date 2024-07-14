@@ -126,7 +126,7 @@ class PhysicalLightHandle : public LightBaseHandle {
     }
   }
 
-  void AddObjectPointLight(const ObjectPointLight& obj, Transformation& trans);
+  void AddObjectPointLight(const ObjectPointLight& obj, Transformation3D& trans);
   void AddObjectPointLight(const ObjectPointLight& obj, Yeager::Object& custom_obj);
   void AddObjectPointLight(const ObjectPointLight& obj);
   void AddObjectPointLight(ObjectPointLight* light, ObjectGeometryType::Enum type);

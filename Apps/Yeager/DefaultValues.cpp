@@ -5,14 +5,13 @@ using namespace Yeager;
 
 DefaultValues::DefaultValues(Yeager::ApplicationCore* application) : m_Application(application)
 {
-  Yeager::LogDebug(INFO, "Defaults generated!");
   GenerateDefaults();
 }
 
 void DefaultValues::GenerateDefaults()
 {
   m_DefaultTexture = std::make_shared<MaterialTexture2D>(m_Application, "Default", MaterialTextureType::eDIFFUSE);
-  m_DefaultTexture->GenerateFromFile(GetPath("/Configuration/Internal/Default/DefaultTexture.jpg"));
+  m_DefaultTexture->GenerateFromFile(GetPath("/Configuration/Editor/Private/Default/DefaultTexture.jpg"));
 }
 
 std::shared_ptr<MaterialTexture2D> DefaultValues::GetTexture()

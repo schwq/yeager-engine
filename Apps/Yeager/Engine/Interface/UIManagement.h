@@ -29,6 +29,8 @@
 #define YEAGER_WINDOW_MOVEABLE ImGuiWindowFlags_AlwaysAutoResize
 namespace Yeager {
 
+class ApplicationCore;
+
 enum class WindowRelativePos {
   /// Children window
   ABOVE,
@@ -85,16 +87,16 @@ class InterfaceWindow {
   /// @param parent_window The pointer to the parent window
   /// @param parent_relative_pos You can change the position the children window have from the parent window, like some space between them
   /// @param relative_pos Where the children window will appear in relation to the parent window (above the parent, under, left, and right)
-  InterfaceWindow(String title, ImVec2 size, InterfaceWindow* parent_window, ImVec2 parent_relative_pos = ImVec2(0, 0),
-                  WindowRelativePos relative_pos = WindowRelativePos::LEFT);
+  InterfaceWindow(Yeager::ApplicationCore* application, String title, ImVec2 size, InterfaceWindow* parent_window,
+                  ImVec2 parent_relative_pos = ImVec2(0, 0), WindowRelativePos relative_pos = WindowRelativePos::LEFT);
   /// @brief Constructor for a ImGui interface window, this constructor is for a parent window (root), that will have multiple children following it
   /// @param title The window title to be display in the menu
   /// @param size The window size
   /// @param position The window position relative to the screen (GLFW window)
   /// @param follow_glfw_window Boolean if set to true, went the user resize the GLFW window, the ImGui window will follow to stay at the place and dont dissapear or stay in the middle of the screen
   /// @param glfw_relative_pos A position enum that indicate the relative position to the glfw that the root window will follow
-  InterfaceWindow(String title, ImVec2 size, ImVec2 position, bool follow_glfw_window = true,
-                  WindowRelativePos glfw_relative_pos = WindowRelativePos::RIGHT);
+  InterfaceWindow(Yeager::ApplicationCore* application, String title, ImVec2 size, ImVec2 position,
+                  bool follow_glfw_window = true, WindowRelativePos glfw_relative_pos = WindowRelativePos::RIGHT);
   ~InterfaceWindow();
   InterfaceWindow() {}
 
@@ -137,5 +139,6 @@ class InterfaceWindow {
   ImVec2 m_ScreenPosition = ImVec2(0.0f, 0.0f);
   ImVec2 m_TempSize = ImVec2(0, 0);
   WindowsRulesContext m_WindowRules;
+  Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
 };
 }  // namespace Yeager

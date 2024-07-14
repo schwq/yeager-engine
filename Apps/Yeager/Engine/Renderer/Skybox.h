@@ -25,7 +25,9 @@
 #include "ImageUtilities.h"
 #include "Importer.h"
 #include "Object.h"
+#include "OpenGLRender.h"
 #include "ShaderHandle.h"
+
 namespace Yeager {
 
 enum class SkyboxTextureType { ESamplerCube, ESampler2D };
@@ -61,8 +63,9 @@ class Skybox : public EditorEntity {
   std::shared_ptr<MaterialTexture2D> m_Texture = YEAGER_NULLPTR;
 
   Uint m_VerticesIndex = 0;
-  GLuint m_Vao = -1, m_Vbo = -1, m_Ebo = -1;
   String Path = YEAGER_NULL_LITERAL;
+
+  SimpleRenderer m_Renderer;
 
   SkyboxTextureType m_Type;
   ObjectGeometryData m_Data;

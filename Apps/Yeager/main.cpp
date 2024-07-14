@@ -24,10 +24,8 @@
 // clang-format on 
 int main(int argc, char* argv[])
 {
-  Yeager::ApplicationCore Application;
+  Yeager::ApplicationCore Application(argc, argv);
   if(Application.ShouldRender()) {
-    Application.Render();
+    Application.UpdateTheEngine();
   }
-  Application.Terminate();
-  return EXIT_SUCCESS;
 }

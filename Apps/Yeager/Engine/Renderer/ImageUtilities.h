@@ -20,42 +20,22 @@
 
 #include "../../Common/Common.h"
 #include "../../Common/LogEngine.h"
-
-namespace std {
-template <typename T>
-T* begin(T* arr, size_t N)
-{
-  return arr;
-}
-
-template <typename T>
-const T* cbegin(const T* arr, size_t N)
-{
-  return arr;
-}
-
-template <typename T>
-T* end(T* arr, size_t N)
-{
-  return arr + N;
-}
-
-template <typename T>
-const T* cend(const T* arr, size_t N)
-{
-  return arr + N;
-}
-}  // namespace std
+#include "../../Common/Utilities.h"
 
 namespace Yeager {
+
+class ApplicationCore;
+
 enum class ImageExtension { EPng, EJpeg };
 extern String ImageExtensionToString(ImageExtension ext);
-}  // namespace Yeager
 
 struct ImagePixel {
   std::byte Colors[3];
 };
 
-extern bool MakeScreenShot(Cchar output) noexcept;
-extern bool MakeScreenShotMiddle(Cchar output) noexcept;
-extern bool MakeScreenShotInPosition(Cchar output, Uint pos_x, Uint pos_y, Uint size_x, Uint size_y);
+extern bool MakeScreenShot(Yeager::ApplicationCore* application, Cchar output) noexcept;
+extern bool MakeScreenShotMiddle(Yeager::ApplicationCore* application, Cchar output) noexcept;
+extern bool MakeScreenShotInPosition(Yeager::ApplicationCore* application, Cchar output, Uint pos_x, Uint pos_y,
+                                     Uint size_x, Uint size_y);
+
+}  // namespace Yeager

@@ -8,7 +8,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(PHYSX_BUILD_TYPE "The build type of PhysX, i.e., one of {debug, checked, profile, release}" "checked")
 
-include_directories(Include/Physx/include Include/Physx/pvdruntime/include Include/imgui Include/fmt Include/STB_Image/ Include/PFD Include/Loguru Include/UUID)
+include_directories(Include/Physx/include Include/Physx/pvdruntime/include Include/imgui Include/fmt Include/STB_Image/ Include/implot Include/PFD Include/Loguru Include/UUID)
 
 if(CMAKE_BUILD_TYPE AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     message("Building YeagerEngine in debug configuration")
@@ -38,6 +38,10 @@ set(LIBRARIES
     Include/imgui/imgui_widgets.cpp
     Include/imgui/imgui_demo.cpp
     Include/imgui/imgui_stdlib.cpp
+    Include/implot/implot.h 
+    Include/implot/implot.cpp 
+    Include/implot/implot_items.cpp
+    Include/implot/implot_internal.h
 )
 
 set(SOURCEFILES 
@@ -56,6 +60,8 @@ set(SOURCEFILES
     Apps/Yeager/Request.cpp 
     Apps/Yeager/Common/Utilities.cpp 
     Apps/Yeager/Engine/Renderer/ShaderHandle.cpp
+    Apps/Yeager/Engine/Renderer/OpenGLRender.cpp
+    Apps/Yeager/Engine/Renderer/OpenGLRender.h
     Apps/Yeager/Engine/Media/AudioHandle.cpp 
     Apps/Yeager/Engine/Renderer/Entity.cpp
     Apps/Yeager/Engine/Renderer/Object.cpp
@@ -93,6 +99,8 @@ set(SOURCEFILES
     Apps/Yeager/Kernel/HardwareInfo.cpp
     Apps/Yeager/Kernel/NvidiaCuda.h 
     Apps/Yeager/Kernel/NvidiaCuda.cpp
+    Apps/Yeager/Kernel/Caching/Cache.h
+    Apps/Yeager/Kernel/Caching/Cache.cpp
     
 )
 

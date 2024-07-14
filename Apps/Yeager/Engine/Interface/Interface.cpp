@@ -1,6 +1,7 @@
 #include "Interface.h"
 #include "../../Application.h"
 #include "../../Common/Common.h"
+#include "../../Common/Mathematics.h"
 #include "../../InputHandle.h"
 #include "../../Launcher.h"
 #include "../../Serialization.h"
@@ -10,6 +11,17 @@ using namespace ImGui;
 using namespace Yeager;
 
 Uint Yeager::Interface::m_Frames = 0;
+
+OpenProjectsDisplay::OpenProjectsDisplay(const LauncherProjectPicker& other)
+{
+  Name = other.m_Name;
+  Author = other.m_AuthorName;
+  SceneType = SceneTypeToString(other.m_SceneType);
+  RendererType = SceneRendererToString(other.m_SceneRenderer);
+  Path = other.m_ProjectConfigurationPath;
+  FolderPath = other.m_ProjectFolderPath;
+  TimeOfCreation = other.m_ProjectDateOfCreation;
+}
 
 SpaceFitText::SpaceFitText(const String& text, size_t size)
 {
@@ -111,7 +123,7 @@ void Interface::LightHandleControlWindow()
     PushID(label_id++);
     if (Button("Add Light Source")) {
       ObjectPointLight light;
-      Transformation trans;
+      Transformation3D trans;
       trans.position = m_Application->GetCamera()->GetPosition() + m_Application->GetCamera()->GetDirection();
       trans.scale = Vector3(0.1f);
       lightsources->AddObjectPointLight(light, trans);
@@ -157,9 +169,11 @@ void Interface::LightHandleControlWindow()
 
 Interface::~Interface()
 {
+  SaveIniSettingsToDisk(m_ImGuiConfigurationPath->c_str());
   Yeager::Log(INFO, "Destrorying Interface!");
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
+  ImPlot::DestroyContext();
   DestroyContext();
   // This function termination was placed in the Window.h file, but it was causing a error, because interface class that managers imgui and the window class
   // that manage the glfw window are smart pointers, and in the wrong calling sequence, the glfw windows was destroryed before imgui can terminate properly
@@ -171,7 +185,7 @@ bool Interface::FindProjectHandleInApplicationAndDelete(String path)
 {
   for (Uint index = 0; index < m_Application->GetLoadedProjectsHandles()->size(); index++) {
     Yeager::LoadedProjectHandle* project = &m_Application->GetLoadedProjectsHandles()->at(index);
-    if (project->m_ProjectFolderPath == path) {
+    if (project->ProjectFolderPath == path) {
       m_Application->GetLoadedProjectsHandles()->erase(m_Application->GetLoadedProjectsHandles()->begin() + index);
       return true;
     }
@@ -184,10 +198,10 @@ void Interface::DebugControlWindow()
   CenteredWindow(500, 500);
   Begin("Debug control window");
 
-  if (Button("Spawn PhysX sphere")) {
+  if (Button("Spawn PhysX cube")) {
     Yeager::BaseCamera* camera = m_Application->GetCamera();
-    SpawnSphereObject(m_Application, "DEBUG_DEFAULT", camera->GetPosition() + camera->GetDirection(), Vector3(0.0f),
-                      Vector3(0.1f), ObjectPhysicsType::eDYNAMIC_BODY);
+    SpawnCubeObject(m_Application, "DEBUG_DEFAULT", camera->GetPosition() + camera->GetDirection(), Vector3(0.0f),
+                    Vector3(0.1f), ObjectPhysicsType::eDYNAMIC_BODY);
   }
 
   End();
@@ -217,7 +231,8 @@ bool Interface::WindowExitProgram()
 
 void Interface::CenteredWindow(Uint size_x, Uint size_y)
 {
-  SetNextWindowPos(ImVec2((ygWindowWidth / 2) - (size_x / 2), (ygWindowHeight / 2) - (size_y / 2)));
+  const Vector2 wndSize = m_Application->GetWindow()->GetWindowSize();
+  SetNextWindowPos(ImVec2((wndSize.x / 2) - (size_x / 2), (wndSize.y / 2) - (size_y / 2)));
   SetNextWindowSize(ImVec2(size_x, size_y));
 }
 
@@ -304,18 +319,21 @@ void Interface::LaunchImGui(Window* window)
 
   IMGUI_CHECKVERSION();
   CreateContext();
+  ImPlot::CreateContext();
 
   ImGuiIO& m_imgui_io = GetIO();
   (void)m_imgui_io;
   m_imgui_io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
   m_imgui_io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
   m_imgui_io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Keyboard Controls
-  m_ImGuiConfigurationPath = new String(GetPath("/Configuration/Internal/imgui.ini"));
+  m_ImGuiConfigurationPath = new String(GetPath("/Configuration/Editor/Public/Internal/imgui.ini"));
   m_imgui_io.IniFilename = m_ImGuiConfigurationPath->c_str();
+
+  LoadIniSettingsFromDisk(m_ImGuiConfigurationPath->c_str());
 
   StyleColorsDark();
 
-  ImGui_ImplGlfw_InitForOpenGL(window->getWindow(), true);
+  ImGui_ImplGlfw_InitForOpenGL(window->GetGLFWwindow(), true);
   ImGui_ImplOpenGL3_Init(YEAGER_IMGUI_OPENGL_VERSION);
 }
 
@@ -324,13 +342,12 @@ void Interface::RequestRestartInterface(Window* window)
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
 
-  ImGui_ImplGlfw_InitForOpenGL(window->getWindow(), true);
+  ImGui_ImplGlfw_InitForOpenGL(window->GetGLFWwindow(), true);
   ImGui_ImplOpenGL3_Init(YEAGER_IMGUI_OPENGL_VERSION);
 }
 
 Interface::Interface(Window* window, Yeager::ApplicationCore* app) : m_Application(app)
 {
-
   LaunchImGui(window);
 
   Yeager::Log(INFO, "Initialize ImGui");
@@ -352,19 +369,19 @@ Interface::Interface(Window* window, Yeager::ApplicationCore* app) : m_Applicati
   m_Control.Initialize = true;
   Yeager::EngineEditorMenuBar.HasMenuBar = true;
 
-  m_ToolboxWindow =
-      Yeager::InterfaceWindow("Toolbox", ImVec2(450, 600), ImVec2(0, 0), true, Yeager::WindowRelativePos::LEFT_ABOVE);
-  m_ConsoleWindow = Yeager::InterfaceWindow("Console", ImVec2(1000, 300), &m_ExplorerWindow, ImVec2(0, 100),
-                                            Yeager::WindowRelativePos::RIGHT);
-  m_ExplorerWindow = Yeager::InterfaceWindow("Explorer", ImVec2(450, 450), &m_ToolboxWindow, ImVec2(0, 0),
-                                             Yeager::WindowRelativePos::UNDER);
-  m_DebuggerWindow =
-      Yeager::InterfaceWindow("Debugger", ImVec2(400, 300), ImVec2(0, 0), true, Yeager::WindowRelativePos::RIGHT_UNDER);
+  m_ToolboxWindow = Yeager::InterfaceWindow(m_Application, "Toolbox", ImVec2(450, 600), ImVec2(0, 0), true,
+                                            Yeager::WindowRelativePos::LEFT_ABOVE);
+  m_ConsoleWindow = Yeager::InterfaceWindow(m_Application, "Console", ImVec2(1000, 300), &m_ExplorerWindow,
+                                            ImVec2(0, 100), Yeager::WindowRelativePos::RIGHT);
+  m_ExplorerWindow = Yeager::InterfaceWindow(m_Application, "Explorer", ImVec2(450, 450), &m_ToolboxWindow,
+                                             ImVec2(0, 0), Yeager::WindowRelativePos::UNDER);
+  m_DebuggerWindow = Yeager::InterfaceWindow(m_Application, "Debugger", ImVec2(400, 300), ImVec2(0, 0), true,
+                                             Yeager::WindowRelativePos::RIGHT_UNDER);
   m_ExplorerWindow.SetRule(Yeager::EWindowFollowUnder, true);
   m_ConsoleWindow.SetRule(Yeager::EWindowFollowUnder, true);
 
-  m_ScreenShotWindow =
-      Yeager::InterfaceWindow("ScreenShot", ImVec2(400, 400), ImVec2(0, 0), true, Yeager::WindowRelativePos::MIDDLE);
+  m_ScreenShotWindow = Yeager::InterfaceWindow(m_Application, "ScreenShot", ImVec2(400, 400), ImVec2(0, 0), true,
+                                               Yeager::WindowRelativePos::MIDDLE);
 
   m_LauncherInformation = SpaceFitText(
       "This is a small project built by one developer. It`s a game / renderer engine, that supports 2D and 3D "
@@ -405,11 +422,11 @@ void Interface::RenderUI(Yeager::Launcher* launcher)
   m_Frames++;
 
   switch (m_Application->GetMode()) {
-    case YgApplicationMode::eAPPLICATION_LAUNCHER:
+    case ApplicationMode::eAPPLICATION_LAUNCHER:
       RenderLauncher(launcher);
       DisplayWarningWindow();
       break;
-    case YgApplicationMode::eAPPLICATION_EDITOR:
+    case ApplicationMode::eAPPLICATION_EDITOR:
       if (m_MakeScreenShotWindowShouldAppear) {
         ScreenShotWindow();
       }
@@ -555,7 +572,8 @@ void Interface::RenderEditor()
 void Interface::WindowUserIsSureDeletingProject()
 {
   const int height = 600, width = 600;
-  SetNextWindowPos(ImVec2((ygWindowWidth / 2) - (width / 2), (ygWindowHeight / 2) - (height / 2)));
+  const Vector2 wndSize = m_Application->GetWindow()->GetWindowSize();
+  SetNextWindowPos(ImVec2((wndSize.x / 2) - (width / 2), (wndSize.y / 2) - (height / 2)));
   SetNextWindowSize(ImVec2(width, height));
   Begin("Are you sure you want to delete this project?", NULL, YEAGER_WINDOW_STATIC);
 
@@ -606,6 +624,7 @@ void Interface::OpenProjectWindow(Yeager::Launcher* launcher, InterfaceButton& b
         launcher->GetCurrentProjectPicked()->m_SceneType = StringToSceneType(project.SceneType);
         launcher->GetCurrentProjectPicked()->m_ProjectFolderPath = project.FolderPath;
         launcher->GetCurrentProjectPicked()->m_ProjectConfigurationPath = project.Path;
+        m_SceneFileText = FileContentToString(project.Path);
       }
       SameLine();
       if (Button(labelDeleteID.c_str())) {
@@ -728,9 +747,9 @@ void Interface::NewProjectWindow(Yeager::Launcher* launcher, InterfaceButton& bu
         launcher->SetUserHasSelect(true);
         launcher->SetNewProjectLoaded(true);
         LoadedProjectHandle handle;
-        handle.m_ProjectName = m_NewProjectHandle->m_Name;
-        handle.m_ProjectFolderPath = m_NewProjectHandle->m_ProjectFolderPath;
-        handle.m_ProjectConfigurationPath = m_NewProjectHandle->m_ProjectConfigurationPath;
+        handle.ProjectName = m_NewProjectHandle->m_Name;
+        handle.ProjectFolderPath = m_NewProjectHandle->m_ProjectFolderPath;
+        handle.ProjectConfigurationPath = m_NewProjectHandle->m_ProjectConfigurationPath;
         m_Application->GetLoadedProjectsHandles()->push_back(handle);
         delete m_NewProjectHandle;
       }
@@ -842,15 +861,17 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
   InterfaceButton new_project("interface_new_project", ICON_FA_FOLDER " New Project");
   InterfaceButton settings_button("interface_settings_button", ICON_FA_GEARS " Settings");
   InterfaceButton help_button("interface_help_button", ICON_FA_CIRCLE_QUESTION " Help");
-  Yeager::InterfaceWindow open_project_window("Open Project", ImVec2(1000, 400),
-                                              ImVec2(ygWindowWidth / 2, ygWindowHeight / 2), true,
+
+  Yeager::WindowInfo* wnd = m_Application->GetWindow()->GetWindowInformationPtr();
+  Yeager::InterfaceWindow open_project_window(m_Application, "Open Project", ImVec2(1000, 400),
+                                              ImVec2(wnd->LauncherSize.x / 2, wnd->LauncherSize.y / 2), true,
                                               Yeager::WindowRelativePos::MIDDLE);
-  Yeager::InterfaceWindow new_project_window("Create New Project", ImVec2(1000, 400),
-                                             ImVec2(ygWindowWidth / 2, ygWindowHeight / 2), true,
+  Yeager::InterfaceWindow new_project_window(m_Application, "Create New Project", ImVec2(1000, 400),
+                                             ImVec2(wnd->LauncherSize.x / 2, wnd->LauncherSize.y / 2), true,
                                              Yeager::WindowRelativePos::MIDDLE);
 
-  Yeager::InterfaceWindow settings_window("Launcher Settings", ImVec2(1000, 400),
-                                          ImVec2(ygWindowWidth / 2, ygWindowHeight / 2), true,
+  Yeager::InterfaceWindow settings_window(m_Application, "Launcher Settings", ImVec2(1000, 400),
+                                          ImVec2(wnd->LauncherSize.x / 2, wnd->LauncherSize.y / 2), true,
                                           Yeager::WindowRelativePos::MIDDLE);
 
   const Vector2 windowSize = m_Application->GetWindow()->GetWindowSize();
@@ -976,8 +997,7 @@ void Interface::RenderDebugger()
   SameLine();
 
   if (Button("Attach scene player camera")) {
-    Yeager::PlayerCamera* camera = m_Application->GetScene()->GetPlayerCamera();
-    m_Application->AttachPlayerCamera(camera);
+    m_Application->AttachPlayerCamera(m_Application->GetScene()->GetPlayerCamera());
   }
 
   Separator();
@@ -991,12 +1011,12 @@ void Interface::RenderDebugger()
   Separator();
 
   Text("Frames %u", m_Frames);
-  if (m_Application->GetMode() == YgApplicationMode::eAPPLICATION_EDITOR) {
+  if (m_Application->GetMode() == ApplicationMode::eAPPLICATION_EDITOR) {
     /* Prevent the calculation of dividing itself by 0 */
     Text("Time elapsed since start : %u", (unsigned int)m_Application->GetSecondsElapsedSinceStart());
     if ((unsigned int)m_Application->GetSecondsElapsedSinceStart() > 0) {
-      Text("FPS: %u",
-           m_Application->GetFrameCurrentCount() / (unsigned int)m_Application->GetSecondsElapsedSinceStart());
+      Uint fps = m_Application->GetFrameCurrentCount() / (unsigned int)m_Application->GetSecondsElapsedSinceStart();
+      Text("FPS: %u", fps);
     }
   }
 
@@ -1006,14 +1026,11 @@ void Interface::RenderDebugger()
   Vector3 cameraPos = m_Application->GetCamera()->GetPosition();
   Text("Camera world position: x: %f y: %f z: %f", cameraPos.x, cameraPos.y, cameraPos.z);
   Checkbox("Windows dont move", &m_Control.DontMoveWindowsEditor);
-  Uint memory_usage_mb = Yeager::s_MemoryManagement.GetMemortUsage() / 1000000;
-  Uint memory_usage_by = Yeager::s_MemoryManagement.GetMemortUsage() % 1000000;
-  Text("Memory Usage in MB: %u.%u", memory_usage_mb, memory_usage_by);
 
   Separator();
 
   /* Display the vector of the direction of the camera */
-  if (m_Application->GetMode() == YgApplicationMode::eAPPLICATION_EDITOR) {
+  if (m_Application->GetMode() == ApplicationMode::eAPPLICATION_EDITOR) {
     const Vector3 cameraDirection = m_Application->GetCamera()->GetFront();
     const Vector3 rDirection = Vector3(lround(cameraDirection.x), lround(cameraDirection.y), lround(cameraDirection.z));
     Text("Camera direction: x: %i, y: %i, z: %i", rDirection.x, rDirection.y, rDirection.z);
@@ -1024,6 +1041,7 @@ void Interface::RenderDebugger()
   Separator();
 
   if (Button(ICON_FA_EXCLAMATION " Throw Console Error")) {
+    m_Application->GetAudioFromEngine()->PlaySound("Click_01");
     Yeager::Log(ERROR, "Test Error");
   }
   SameLine();
@@ -1051,6 +1069,18 @@ void Interface::RenderDebugger()
   Text("Window Editor Size: x: %f y: %f", wnd->EditorSize.x, wnd->EditorSize.y);
   Text("Window Launcher Size: x: %f y: %f", wnd->LauncherSize.x, wnd->LauncherSize.y);
   Text("Window Framebuffer Size: x: %f y: %f", wnd->FrameBufferSize.x, wnd->FrameBufferSize.y);
+
+  if (CollapsingHeader("Engine Sounds Test")) {
+    for (const auto& sound : *m_Application->GetAudioFromEngine()->GetSounds()) {
+      if (Button(sound.Name.c_str())) {
+        m_Application->GetAudioFromEngine()->PlaySound(sound.Name);
+      }
+    }
+  }
+
+  if (CollapsingHeader("Scene file content")) {
+    Text(m_SceneFileText.c_str());
+  }
 
   End();
 }
@@ -1104,14 +1134,14 @@ void Interface::PrepareAndMakeScreenShot()
   String output = GetPath("/Configuration/") + m_NewScreenShootName + ".jpg";
   switch (m_ScreenShotMode) {
     case ScreenShotMode::ECustomSizedAndPosition:
-      MakeScreenShotInPosition(output.c_str(), m_ScreenShotPosition[0], m_ScreenShotPosition[1], m_ScreenShotSize[0],
-                               m_ScreenShotSize[1]);
+      MakeScreenShotInPosition(m_Application, output.c_str(), m_ScreenShotPosition[0], m_ScreenShotPosition[1],
+                               m_ScreenShotSize[0], m_ScreenShotSize[1]);
       break;
     case ScreenShotMode::EFullScreen:
-      MakeScreenShot(output.c_str());
+      MakeScreenShot(m_Application, output.c_str());
       break;
     case ScreenShotMode::EMiddleFixedSized:
-      MakeScreenShotMiddle(output.c_str());
+      MakeScreenShotMiddle(m_Application, output.c_str());
       break;
   }
   m_Application->GetInput()->SetCursorCanDisappear(true);

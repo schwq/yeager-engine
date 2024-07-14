@@ -1,13 +1,16 @@
 #include "UIManagement.h"
+#include "../../Application.h"
 using namespace ImGui;
 using namespace Yeager;
 
 WindowMenuBar Yeager::EngineEditorMenuBar;
 bool Yeager::EngineEditorWindowShouldVanish = false;
 
-InterfaceWindow::InterfaceWindow(String title, ImVec2 size, InterfaceWindow* parent_window, ImVec2 parent_relative_pos,
+InterfaceWindow::InterfaceWindow(Yeager::ApplicationCore* application, String title, ImVec2 size,
+                                 InterfaceWindow* parent_window, ImVec2 parent_relative_pos,
                                  WindowRelativePos relative_pos)
     : m_Title(title),
+      m_Application(application),
       Size(size),
       m_ParentWindow(parent_window),
       m_ParentRelativePosition(parent_relative_pos),
@@ -15,9 +18,10 @@ InterfaceWindow::InterfaceWindow(String title, ImVec2 size, InterfaceWindow* par
 {
   m_ScreenPosition = ImVec2(0.0f, 0.0f);
 }
-InterfaceWindow::InterfaceWindow(String title, ImVec2 size, ImVec2 position, bool follow_glfw_window,
-                                 WindowRelativePos glfw_relative_pos)
-    : m_Title(title),
+InterfaceWindow::InterfaceWindow(Yeager::ApplicationCore* application, String title, ImVec2 size, ImVec2 position,
+                                 bool follow_glfw_window, WindowRelativePos glfw_relative_pos)
+    : m_Application(application),
+      m_Title(title),
       Size(size),
       m_ScreenPosition(position),
       m_FollowGlfwWindow(follow_glfw_window),
@@ -53,9 +57,10 @@ void Yeager::InterfaceWindow::ProcessPreRules()
 
 void Yeager::InterfaceWindow::ProcessPosRules()
 {
+  const Vector2 wndSize = m_Application->GetWindow()->GetWindowSize();
   if (m_WindowRules.Fullscreen) {
-    Size.x = ygWindowWidth;
-    Size.y = ygWindowHeight;
+    Size.x = wndSize.x;
+    Size.y = wndSize.y;
     m_ScreenPosition = ImVec2(0.0f, 0.0f);
   }
 
@@ -72,7 +77,7 @@ void Yeager::InterfaceWindow::ProcessPosRules()
   if (m_WindowRules.FollowUnder) {
     ImVec2 new_size = ImVec2(0, 0);
     new_size.x = Size.x;
-    new_size.y = Size.y + ygWindowHeight - (m_ScreenPosition.y + Size.y);
+    new_size.y = Size.y + wndSize.y - (m_ScreenPosition.y + Size.y);
     Size = new_size;
   }
 
@@ -106,8 +111,9 @@ void InterfaceWindow::End()
 
 void InterfaceWindow::CheckIfOffWindow()
 {
-  if (m_ScreenPosition.y >= ygWindowHeight) {
-    m_ScreenPosition.y = ygWindowHeight - 10;
+  const Vector2 wndSize = m_Application->GetWindow()->GetWindowSize();
+  if (m_ScreenPosition.y >= wndSize.y) {
+    m_ScreenPosition.y = wndSize.y - 10;
   } else if (m_ScreenPosition.y < 0) {
     if (EngineEditorMenuBar.HasMenuBar) {
       m_ScreenPosition.y = EngineEditorMenuBar.MenuBarSize.y;
@@ -116,24 +122,24 @@ void InterfaceWindow::CheckIfOffWindow()
     }
   }
 
-  if (m_ScreenPosition.y + Size.y > ygWindowHeight) {
-    Size.y = ygWindowHeight - m_ScreenPosition.y;
+  if (m_ScreenPosition.y + Size.y > wndSize.y) {
+    Size.y = wndSize.y - m_ScreenPosition.y;
   }
 
-  if (m_ScreenPosition.x >= ygWindowWidth) {
-    m_ScreenPosition.x = ygWindowWidth - 10;
+  if (m_ScreenPosition.x >= wndSize.x) {
+    m_ScreenPosition.x = wndSize.x - 10;
   } else if (m_ScreenPosition.x < 0) {
     m_ScreenPosition.x = 0.0f;
   }
 
-  if (m_ScreenPosition.x + Size.x > ygWindowWidth) {
-    Size.x = ygWindowWidth - m_ScreenPosition.x;
+  if (m_ScreenPosition.x + Size.x > wndSize.x) {
+    Size.x = wndSize.x - m_ScreenPosition.x;
   }
 }
 
 void InterfaceWindow::CalcScreenPos()
 {
-  ImVec2 glfw_window = ImVec2(ygWindowWidth, ygWindowHeight);
+  const Vector2 wndSize = m_Application->GetWindow()->GetWindowSize();
 
   if (m_RootWindow) {
 
@@ -148,24 +154,24 @@ void InterfaceWindow::CalcScreenPos()
         case WindowRelativePos::RIGHT_ABOVE: {
           ImVec2 pos = ImVec2(0, 0);
           pos.y += Yeager::EngineEditorMenuBar.MenuBarSize.y;
-          pos.x = glfw_window.x - Size.x;
+          pos.x = wndSize.x - Size.x;
           m_ScreenPosition = pos;
         } break;
         case WindowRelativePos::ABOVE_MIDDLE: {
-          Uint middle_above_x = glfw_window.x / 2;
+          Uint middle_above_x = wndSize.x / 2;
           Uint window_middle_x = Size.x / 2;
           ImVec2 pos = ImVec2(middle_above_x - window_middle_x, 0);
           pos.y += Yeager::EngineEditorMenuBar.MenuBarSize.y;
           m_ScreenPosition = pos;
         } break;
         case WindowRelativePos::UNDER_MIDDLE: {
-          Uint middle_above_x = glfw_window.x / 2;
+          Uint middle_above_x = wndSize.x / 2;
           Uint window_middle_x = Size.x / 2;
-          ImVec2 pos = ImVec2(middle_above_x - window_middle_x, glfw_window.y - Size.y);
+          ImVec2 pos = ImVec2(middle_above_x - window_middle_x, wndSize.y - Size.y);
           m_ScreenPosition = pos;
         } break;
         case WindowRelativePos::LEFT_MIDDLE: {
-          Uint middle_right_y = glfw_window.y / 2;
+          Uint middle_right_y = wndSize.y / 2;
           Uint window_middle_y = Size.y / 2;
           ImVec2 pos = ImVec2(0, middle_right_y - window_middle_y);
           pos.y += Yeager::EngineEditorMenuBar.MenuBarSize.y;
@@ -174,25 +180,25 @@ void InterfaceWindow::CalcScreenPos()
         case WindowRelativePos::MIDDLE: {
           Uint window_middle_x = Size.x / 2;
           Uint window_middle_y = Size.y / 2;
-          Uint middle_window_x = glfw_window.x / 2;
-          Uint middle_window_y = glfw_window.y / 2;
+          Uint middle_window_x = wndSize.x / 2;
+          Uint middle_window_y = wndSize.y / 2;
           ImVec2 pos = ImVec2(middle_window_x - window_middle_x, middle_window_y - window_middle_y);
           pos.y += Yeager::EngineEditorMenuBar.MenuBarSize.y;
           m_ScreenPosition = pos;
         } break;
         case WindowRelativePos::RIGHT_MIDDLE: {
-          Uint middle_left_y = glfw_window.y / 2;
+          Uint middle_left_y = wndSize.y / 2;
           Uint window_middle_y = Size.y / 2;
-          ImVec2 pos = ImVec2(glfw_window.x, middle_left_y - window_middle_y);
+          ImVec2 pos = ImVec2(wndSize.x, middle_left_y - window_middle_y);
           pos.y += Yeager::EngineEditorMenuBar.MenuBarSize.y;
           m_ScreenPosition = pos;
         } break;
         case WindowRelativePos::LEFT_UNDER: {
-          ImVec2 pos = ImVec2(0, glfw_window.y - Size.y);
+          ImVec2 pos = ImVec2(0, wndSize.y - Size.y);
           m_ScreenPosition = pos;
         } break;
         case WindowRelativePos::RIGHT_UNDER: {
-          ImVec2 pos = ImVec2(glfw_window.x - Size.x, glfw_window.y - Size.y);
+          ImVec2 pos = ImVec2(wndSize.x - Size.x, wndSize.y - Size.y);
           m_ScreenPosition = pos;
         } break;
       }

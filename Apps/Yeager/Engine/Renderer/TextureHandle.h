@@ -20,6 +20,7 @@
 
 #include "../../Common/Common.h"
 #include "../../Common/LogEngine.h"
+#include "../../Kernel/Caching/Cache.h"
 #include "Entity.h"
 #include "ShaderHandle.h"
 
@@ -188,6 +189,7 @@ struct STBIDataOutput {
 struct TextureHandleBase {
   GLuint Texture = -1;
   GLenum Format = GL_RGBA;
+  GLuint BindTarget = GL_TEXTURE_2D;
   int Width = 0;
   int Height = 0;
 };
@@ -201,7 +203,8 @@ struct MaterialTextureDataHandle : TextureHandleBase {
   bool ImcompletedID = false;  // Multithreaded texture loaded, data is readed but there is still a id missing
 };
 
-static GLenum ChannelsToFormat(const int channels);
+extern GLenum ChannelsToFormat(const int channels);
+extern std::optional<Uint> FormatToChannels(GLenum format);
 
 class MaterialBase : public EditorEntity {
  public:
@@ -209,16 +212,16 @@ class MaterialBase : public EditorEntity {
                const MaterialSurfaceType::Enum surface);
   ~MaterialBase();
 
-  constexpr Vector4 GetColor() const { return m_Color; }
-  constexpr void SetColor(const Vector4& color) { m_Color = color; }
+  YEAGER_CONSTEXPR Vector4 GetColor() const { return m_Color; }
+  YEAGER_CONSTEXPR void SetColor(const Vector4& color) { m_Color = color; }
 
   virtual void ApplyToShader(Yeager::Shader* shader);
 
-  constexpr MaterialType::Enum GetMaterialType() const { return m_MaterialType; }
-  constexpr void SetMaterialType(const MaterialType::Enum material) { m_MaterialType = material; }
+  YEAGER_CONSTEXPR MaterialType::Enum GetMaterialType() const { return m_MaterialType; }
+  YEAGER_CONSTEXPR void SetMaterialType(const MaterialType::Enum material) { m_MaterialType = material; }
 
-  constexpr MaterialSurfaceType::Enum GetSurfaceType() const { return m_SurfaceType; }
-  constexpr void SetSurfaceType(const MaterialSurfaceType::Enum type) { m_SurfaceType = type; }
+  YEAGER_CONSTEXPR MaterialSurfaceType::Enum GetSurfaceType() const { return m_SurfaceType; }
+  YEAGER_CONSTEXPR void SetSurfaceType(const MaterialSurfaceType::Enum type) { m_SurfaceType = type; }
 
  protected:
   Vector4 m_Color = YEAGER_MATERIAL_DEFAULT_COLOR;
@@ -235,26 +238,28 @@ class MaterialTexture2D : public MaterialBase {
 
   MaterialTextureDataHandle* GetTextureDataHandle() { return &m_TextureHandle; }
 
-  constexpr int GetWidth() const { return m_TextureHandle.Width; }
-  constexpr int GetHeight() const { return m_TextureHandle.Height; }
+  YEAGER_CONSTEXPR int GetWidth() const { return m_TextureHandle.Width; }
+  YEAGER_CONSTEXPR int GetHeight() const { return m_TextureHandle.Height; }
 
-  constexpr GLuint GetTextureID() const { return m_TextureHandle.Texture; }
-  constexpr void SetTextureID(const GLuint& id) { m_TextureHandle.Texture = id; }
+  YEAGER_CONSTEXPR GLuint GetTextureID() const { return m_TextureHandle.Texture; }
+  YEAGER_CONSTEXPR void SetTextureID(const GLuint& id) { m_TextureHandle.Texture = id; }
 
   String GetPath() const { return m_TextureHandle.Path; }
   void SetPath(String& path) { m_TextureHandle.Path = path; }
 
-  constexpr bool IsGenerated() const { return m_TextureHandle.Generated; }
-  constexpr void SetIsGenerated(bool gen) { m_TextureHandle.Generated = gen; }
+  YEAGER_CONSTEXPR bool IsGenerated() const { return m_TextureHandle.Generated; }
+  YEAGER_CONSTEXPR void SetIsGenerated(bool gen) { m_TextureHandle.Generated = gen; }
 
-  constexpr MaterialTextureType::Enum GetTextureType() const { return m_TextureType; }
-  constexpr void SetTextureType(const MaterialTextureType::Enum type) { m_TextureType = type; }
+  YEAGER_CONSTEXPR MaterialTextureType::Enum GetTextureType() const { return m_TextureType; }
+  YEAGER_CONSTEXPR void SetTextureType(const MaterialTextureType::Enum type) { m_TextureType = type; }
 
-  constexpr bool IsFlipped() const { return m_TextureHandle.Flipped; }
+  virtual void BindTexture();
+
+  YEAGER_CONSTEXPR bool IsFlipped() const { return m_TextureHandle.Flipped; }
 
   /* The format returned is a OpenGL macro defined as unsigned 32bit int, 
   you need to test the value returned against the possibles values avaliable*/
-  constexpr uint32_t GetFormat() const { return m_TextureHandle.Format; }
+  YEAGER_CONSTEXPR uint32_t GetFormat() const { return m_TextureHandle.Format; }
 
   virtual bool GenerateFromFile(const String& path, bool flip = false,
                                 const MateriaTextureParameterGL parameteri =
@@ -273,10 +278,14 @@ class MaterialTexture2D : public MaterialBase {
   This is used when we load a model with the texture flipped to the wrong side, and this function fixs it!*/
   bool RegenerateTextureFlipped(bool flip = false);
 
+  static void Unbind2DTextures();
+
  protected:
   virtual void GenerateTextureParameter(const MateriaTextureParameterGL& parameter);
   MaterialTextureType::Enum m_TextureType = MaterialTextureType::eUNDEFINED;
   MaterialTextureDataHandle m_TextureHandle;
 };
+
+extern void DisplayImageImGui(MaterialTexture2D* texture, Uint resize = 1);
 
 }  // namespace Yeager

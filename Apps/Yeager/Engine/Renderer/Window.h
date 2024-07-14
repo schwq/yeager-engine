@@ -33,9 +33,14 @@ class ApplicationCore;
 
 struct AspectRatio {
   enum Enum { eASPECT_21_9, eASPECT_4_3 };
-  static String ToString(Enum type);
-  static Enum ToEnum(const String& str);
+  YEAGER_ENUM_TO_STRING(AspectRatio)
+  YEAGER_STRING_TO_ENUM(AspectRatio)
   static float ToValue(Enum type);
+};
+
+struct OnScreenSpaceRange {
+  Uint Width = 0, Height = 0;
+  Uint PositionX = 0, PositionY = 0;
 };
 
 struct WindowInfo {
@@ -66,7 +71,7 @@ class Window {
 
   void GenerateWindow(String title, GLFWcursorposfun cursor, DFlags wndType);
 
-  YEAGER_NODISCARD GLFWwindow* getWindow() { return m_WindowHandle; }
+  YEAGER_NODISCARD GLFWwindow* GetGLFWwindow() { return m_WindowHandle; }
   static void FramebufferSizeCallback(GLFWwindow* window, int width, int height);
   static void HandleError(int code, Cchar description);
   void GetWindowSize(int* width, int* height);

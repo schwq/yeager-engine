@@ -1,6 +1,6 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
-//    Repo : https://github.com/schwq/
+//    Repo : https://github.com/schwq/YeagerEngine
 //
 //    Copyright (C) 2023
 //
@@ -31,6 +31,7 @@
 #include "Engine/Renderer/Text/TextRendering.h"
 #include "Engine/Renderer/Window.h"
 #include "InputHandle.h"
+#include "Kernel/Caching/Cache.h"
 #include "Launcher.h"
 #include "Request.h"
 #include "Scene.h"
@@ -38,131 +39,129 @@
 
 namespace Yeager {
 
-/// @brief Represent the current state for the Application, if its running, paused, crashed ect
-struct YgApplicationState {
-  enum Enum { eAPPLICATION_RUNNING, eAPPLICATION_STOPPED, eAPPLICATION_CRASHED };
+/** @brief Represent the current state for the Application, if its running, paused, crashed ect */
+struct ApplicationState {
+  enum Enum { eAPPLICATION_RUNNING, eAPPLICATION_STOPPED, eAPPLICATION_CRASHED, eAPPLICATION_UNDEFINED };
+  YEAGER_ENUM_TO_STRING(ApplicationState)
+  YEAGER_STRING_TO_ENUM(ApplicationState)
 };
-/// @brief Represent the current mode of the Application, used most for control the current window to appear to the user
-struct YgApplicationMode {
+
+/** @brief Represent the current mode of the Application, used most for control the current window to appear to the user */
+struct ApplicationMode {
   enum Enum {
     eAPPLICATION_EDITOR,
     eAPPLICATION_LAUNCHER,
     eAPPLICATION_SETTINGS,
     eAPPLICATION_GAME,
-    eAPPLICATION_LOADING
+    eAPPLICATION_LOADING,
+    eAPPLICATION_UNDEFINED
   };
+  YEAGER_ENUM_TO_STRING(ApplicationMode)
+  YEAGER_STRING_TO_ENUM(ApplicationMode)
 };
 
+/** @brief Represent the matrices that the character needs to view the world */
 struct WorldCharacterMatrices {
   Matrix4 Projection = YEAGER_IDENTITY_MATRIX4x4;
   Matrix4 View = YEAGER_IDENTITY_MATRIX4x4;
   Vector3 ViewerPos = YEAGER_ZERO_VECTOR3;
 };
 
+/** @brief Handles the yeager engine projects loaded in the machine, represents the name, folder, configuration path */
 struct LoadedProjectHandle {
-  String m_ProjectName = YEAGER_NULL_LITERAL;
-  String m_ProjectFolderPath = YEAGER_NULL_LITERAL;
-  String m_ProjectConfigurationPath = YEAGER_NULL_LITERAL;
+  String ProjectName = YEAGER_NULL_LITERAL;
+  String ProjectFolderPath = YEAGER_NULL_LITERAL;
+  String ProjectConfigurationPath = YEAGER_NULL_LITERAL;
 };
 
-/* ApplicationCore pointers should never have a default argument! This leads to seg faults around the code when the developer (like me) 
+struct ForcedEntryProject {
+  bool Activated = false;
+  String ProjectName = YEAGER_NULL_LITERAL;
+};
+
+struct DebugTitleString {
+  bool Activated = false;
+  String Title = YEAGER_NULL_LITERAL;
+};
+
+/** @brief The main class of the engine, handles everything! Every class is called in this class functions.
+ * @attention ApplicationCore pointers should never have a default argument! This leads to seg faults around the code when the developer
  forgets to link the application pointer to the class because the IDE havent alert about a missing argument! */
 class ApplicationCore {
  public:
-  ApplicationCore();
+  ApplicationCore(int argc, char* argv[]);
   ~ApplicationCore();
   ApplicationCore(ApplicationCore&&) = delete;
 
+  void ProcessArguments(int argc, char* argv[]);
+  Uint IterateArguments(const String& arg, Uint index);
+  std::optional<const String> AcessableArgumentArray(Uint index);
+
   void Setup();
-  /**
-   * Engine information are stored in $HOME/.YeagerEngine in linux plataforms, and in %appdata%/.YeagerEngine in windows plataforms
-  */
+  /** @brief Engine information are stored in $HOME/.YeagerEngine in linux plataforms, and in %appdata%/.YeagerEngine in windows plataforms */
   void CreateDirectoriesAndFiles();
   bool ShouldRender();
 
-  LauncherProjectPicker RequestLauncher();
-  void Render();
-  void Terminate() {}
+  void ShowCommonTextOnScreen();
+
+  std::optional<LauncherProjectPicker> RequestLauncher();
+  void UpdateTheEngine();
+
+  ApplicationMode::Enum GetMode() const noexcept;
+  ApplicationState::Enum GetState() const noexcept;
+
+  void SetMode(ApplicationMode::Enum mode) noexcept;
+  void SetState(ApplicationState::Enum state) noexcept;
+  void CheckGLADIntegrity();
+
+  /** @brief Returns external folder location {Path to engine external folder location}/{Engine folder name}/External.
+  On Unix systems the engine external folder location is the $HOME variable, and in windows system, %appdata% location 
+  The engine folder name in Unix system is .YeagerEngine to hide it, in windows system, the folder is just YeagerEngine, without the point */
+  String GetPathRelativeToExternalFolder(String path) const;
+  EditorExplorer* GetExplorer();
+
+  /** Some getters functions so the other classes have access to the application */
 
   Interface* GetInterface();
   Input* GetInput();
   Window* GetWindow();
-  EditorExplorer* GetExplorer();
   BaseCamera* GetCamera();
   Scene* GetScene();
+  String GetSettingsExternalFolder() const;
+  Matrix4 GetProjection() const;
+  Matrix4 GetView() const;
+  String GetExternalFolder() const;
+  std::vector<LoadedProjectHandle>* GetLoadedProjectsHandles();
+  Serialization* GetSerial();
+  Settings* GetSettings();
+  RequestHandle* GetRequestHandle();
+  DefaultValues* GetDefaults();
+  PhysXHandle* GetPhysXHandle();
+  AudioEngineHandle* GetAudioEngineHandle();
+  physx::PxController* GetController();
+  AudioEngine* GetAudioFromEngine();
+  float GetTimeBeforeLoop() const;
+  long long GetFrameCurrentCount() const;
 
-  YgApplicationMode::Enum GetMode() const noexcept;
-  YgApplicationState::Enum GetState() const noexcept;
+  using ConfigShaders = std::vector<std::pair<std::shared_ptr<Shader>, String>>;
+  /** @brief Returns the configuration shaders been used by the application, 
+   * its a vector of pairs with shared_ptr<Shader> and a string represeting the name*/
+  YEAGER_FORCE_INLINE ConfigShaders* GetConfigShaders() { return &m_ConfigShaders; }
 
-  void SetMode(YgApplicationMode::Enum mode) noexcept;
-  void SetState(YgApplicationState::Enum state) noexcept;
-  void CheckGLAD();
-
-  /** Returns external folder location {Path to engine external folder location}/{Engine folder name}/External.
-  On Unix systems the engine external folder location is the $HOME variable, and in windows system, %appdata% location 
-  The engine folder name in Unix system is .YeagerEngine to hide it, in windows system, the folder is just YeagerEngine, without the point */
-  String GetPathRelativeToExternalFolder(String path) const;
-
-  YEAGER_FORCE_INLINE String GetSettingsExternalFolder() const { return m_EngineExternalFolder + YG_PS + "Settings"; }
-
-  YEAGER_FORCE_INLINE Matrix4 GetProjection() const { return m_WorldMatrices.Projection; }
-  YEAGER_FORCE_INLINE Matrix4 GetView() const { return m_WorldMatrices.View; }
-  YEAGER_FORCE_INLINE String GetExternalFolder() const { return m_EngineExternalFolder; }
-  YEAGER_FORCE_INLINE std::vector<LoadedProjectHandle>* GetLoadedProjectsHandles() { return &m_LoadedProjectsHandles; }
-  YEAGER_FORCE_INLINE Serialization* GetSerial() { return m_Serial; }
-  YEAGER_FORCE_INLINE Settings* GetSettings() { return m_Settings; }
-  YEAGER_FORCE_INLINE RequestHandle* GetRequestHandle() { return m_Request; }
-  YEAGER_FORCE_INLINE DefaultValues* GetDefaults() { return m_Defaults; }
-  PhysXHandle* GetPhysXHandle() { return m_PhysXHandle; }
-  YEAGER_FORCE_INLINE AudioEngineHandle* GetAudioEngine() { return m_AudioEngine; }
-  YEAGER_FORCE_INLINE std::vector<std::pair<std::shared_ptr<Shader>, String>>* GetConfigShaders()
-  {
-    return &m_ConfigShaders;
-  }
-  YEAGER_FORCE_INLINE float GetTimeBeforeLoop() const { return m_TimeBeforeRender; }
-  YEAGER_FORCE_INLINE long long GetFrameCurrentCount() const { return m_FrameCurrentCount; }
-
-  void AddConfigShader(std::shared_ptr<Yeager::Shader> shader, const String& var) noexcept;
   Shader* ShaderFromVarName(String var);
-  physx::PxController* m_Controller = YEAGER_NULLPTR;
+  void DetachPlayerCamera();
+  void AttachPlayerCamera(std::shared_ptr<PlayerCamera> camera);
+  void AddConfigShader(std::shared_ptr<Yeager::Shader> shader, const String& var) noexcept;
+  void BeginEngineTimer();
+  float GetSecondsElapsedSinceStart() const;
 
-  YEAGER_FORCE_INLINE void AttachPlayerCamera(PlayerCamera* camera)
-  {
-    camera->TransferInformation(m_BaseCamera);
-    m_BaseCamera = static_cast<BaseCamera*>(camera);
-  }
-
-  YEAGER_FORCE_INLINE void DetachPlayerCamera()
-  {
-    m_EditorCamera->TransferInformation(m_BaseCamera);
-    m_BaseCamera = static_cast<BaseCamera*>(m_EditorCamera);
-  }
-
-  void BeginEngineTimer()
-  {
-    m_TimeElapsedSinceStart = std::chrono::system_clock::now();
-    m_TimerHasStarted = true;
-  }
-
-  float GetSecondsElapsedSinceStart() const
-  {
-    if (m_TimerHasStarted) {
-      std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
-      std::chrono::duration<float> elapsed = end - m_TimeElapsedSinceStart;
-      return elapsed.count();
-    }
-    return 1;
-  }
+  ForcedEntryProject* GetForcedEntryProject() { return &m_ForcedEntry; }
+  std::optional<Yeager::LauncherProjectPicker> SearchForcedEntryProject();
+  DebugTitleString* GetDebugTitleString() { return &m_DebugTitleString; }
 
  private:
-  std::chrono::time_point<std::chrono::system_clock> m_TimeElapsedSinceStart;
-  bool m_TimerHasStarted = false;
-
   String GetExternalFolderLocation();
-  String m_EngineExternalFolder = YEAGER_NULL_LITERAL;
-  String m_EngineConfigurationPath = YEAGER_NULL_LITERAL;
   String RequestWindowEngineName(const LauncherProjectPicker& project);
-
   void ValidatesExternalEngineFolder();
   void ManifestShaderProps(Yeager::Shader* shader);
   void OpenGLFunc();
@@ -175,40 +174,56 @@ class ApplicationCore {
   void BuildAndDrawLightSources();
   void ManifestAllShaders();
   void TerminatePosRender();
-
   void SetupCamera();
-
   void UpdateCamera();
-
   void PrepareSceneToLoad(const LauncherProjectPicker& project);
+
+ private:
+  ForcedEntryProject m_ForcedEntry;
+  DebugTitleString m_DebugTitleString;
+
+  TextRenderer m_CommonTextOnScreen;
+
+  String m_EngineExternalFolder = YEAGER_NULL_LITERAL;
+  String m_EngineConfigurationPath = YEAGER_NULL_LITERAL;
+
+  using TimeElapsed = std::chrono::time_point<std::chrono::system_clock>;
+  TimeElapsed m_TimeElapsedSinceStart;
+
+  bool m_TimerHasStarted = false;
   float m_DeltaTime = 0.0f;
   float m_LastFrame = 0.0f;
   float m_TimeBeforeRender = 0.0f;
   long long m_FrameCurrentCount = 0;
 
   /**   Every shader have a var name associated with it, so it can been called on the ShaderFromVar(var name) */
-  std::vector<std::pair<std::shared_ptr<Shader>, String>> m_ConfigShaders;
+  ConfigShaders m_ConfigShaders;
   std::vector<LoadedProjectHandle> m_LoadedProjectsHandles;
 
+  std::vector<String> m_AllArguments;
+
+  template <class U>
+  using SharedPtr = std::shared_ptr<U>;
+
+  SharedPtr<physx::PxController> m_Controller = YEAGER_NULLPTR;
+  SharedPtr<Serialization> m_Serial = YEAGER_NULLPTR;
+  SharedPtr<Interface> m_Interface = YEAGER_NULLPTR;
+  SharedPtr<Input> m_Input = YEAGER_NULLPTR;
+  SharedPtr<Window> m_Window = YEAGER_NULLPTR;
+  SharedPtr<EditorExplorer> m_EditorExplorer = YEAGER_NULLPTR;
+  SharedPtr<BaseCamera> m_BaseCamera = YEAGER_NULLPTR;
+  SharedPtr<EditorCamera> m_EditorCamera = YEAGER_NULLPTR;
+  SharedPtr<RequestHandle> m_Request = YEAGER_NULLPTR;
+  SharedPtr<DefaultValues> m_Defaults = YEAGER_NULLPTR;
+  SharedPtr<AudioEngineHandle> m_AudioEngine = YEAGER_NULLPTR;
+  SharedPtr<Scene> m_Scene = YEAGER_NULLPTR;
+  SharedPtr<Launcher> m_Launcher = YEAGER_NULLPTR;
+  SharedPtr<PhysXHandle> m_PhysXHandle = YEAGER_NULLPTR;
+  SharedPtr<Settings> m_Settings = YEAGER_NULLPTR;
+  SharedPtr<AudioEngine> m_AudiosFromEngine = YEAGER_NULLPTR;
+
   WorldCharacterMatrices m_WorldMatrices;
-  Serialization* m_Serial = YEAGER_NULLPTR;
-  Interface* m_Interface = YEAGER_NULLPTR;
-  Input* m_Input = YEAGER_NULLPTR;
-  Window* m_Window = YEAGER_NULLPTR;
-  EditorExplorer* m_EditorExplorer = YEAGER_NULLPTR;
-
-  BaseCamera* m_BaseCamera = YEAGER_NULLPTR;
-  EditorCamera* m_EditorCamera = YEAGER_NULLPTR;
-  RequestHandle* m_Request = YEAGER_NULLPTR;
-  DefaultValues* m_Defaults = YEAGER_NULLPTR;
-
-  AudioEngineHandle* m_AudioEngine = YEAGER_NULLPTR;
-  Scene* m_Scene = YEAGER_NULLPTR;
-  Launcher* m_Launcher = YEAGER_NULLPTR;
-  PhysXHandle* m_PhysXHandle = YEAGER_NULLPTR;
-  Settings* m_Settings = YEAGER_NULLPTR;
-
-  YgApplicationState::Enum m_state = YgApplicationState::eAPPLICATION_RUNNING;
-  YgApplicationMode::Enum m_mode = YgApplicationMode::eAPPLICATION_LAUNCHER;
+  ApplicationState::Enum m_state = ApplicationState::eAPPLICATION_RUNNING;
+  ApplicationMode::Enum m_mode = ApplicationMode::eAPPLICATION_LAUNCHER;
 };
 }  // namespace Yeager

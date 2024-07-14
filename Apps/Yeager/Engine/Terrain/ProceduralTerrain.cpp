@@ -18,11 +18,6 @@ ProceduralTerrain::ProceduralTerrain(std::vector<String> TexturesPaths, int Terr
   for (int x = 0; x < MAX_TEXTURE_TILES; x++) {
     m_TextureData.m_TexturesLoaded[x].GenerateFromFile(TexturesPaths[x], false);
   }
-
-  m_MetricData.m_HeightMap = new Yeager::Math::Array2D<float>(m_MetricData.m_Width, m_MetricData.m_Height);
-  m_Perlin.GeneratePerlin(m_MetricData.m_HeightMap, 5, 1, m_MetricData.m_Width, m_MetricData.m_Height,
-                          m_MetricData.m_MaxHeight);
-  Setup();
 }
 
 void ProceduralTerrain::GenerateTerrain(Shader* shader, int octaves, int bias, bool regenerate_seed)
@@ -34,7 +29,10 @@ void ProceduralTerrain::GenerateTerrain(Shader* shader, int octaves, int bias, b
   if (regenerate_seed) {
     m_Perlin.RegenerateSeed();
   }
-  m_Perlin.GeneratePerlin(m_MetricData.m_HeightMap, octaves, bias, m_MetricData.m_Width, m_MetricData.m_Height,
+  m_MetricData.m_HeightMap =
+      std::make_shared<Yeager::Math::Array2D<float>>(m_MetricData.m_Width, m_MetricData.m_Height);
+
+  m_Perlin.GeneratePerlin(m_MetricData.m_HeightMap.get(), octaves, bias, m_MetricData.m_Width, m_MetricData.m_Height,
                           m_MetricData.m_MaxHeight);
   Setup();
 }
@@ -56,23 +54,18 @@ void TerrainVertex::InitVertex(ProceduralTerrain* Terrain, int x, int z)
 
 void ProceduralTerrain::Setup()
 {
-  glGenVertexArrays(1, &m_DrawData.m_Vao);
-  glGenBuffers(1, &m_DrawData.m_Vbo);
-  glGenBuffers(1, &m_DrawData.m_Ebo);
+  m_DrawData.Renderer.GenBuffers();
 
-  glBindVertexArray(m_DrawData.m_Vao);
-  glBindBuffer(GL_ARRAY_BUFFER, m_DrawData.m_Vbo);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_DrawData.m_Ebo);
+  m_DrawData.Renderer.BindBuffers();
 
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex),
-                        (const void*)offsetof(TerrainVertex, Position));
+  m_DrawData.Renderer.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex),
+                                          (const void*)offsetof(TerrainVertex, Position));
 
-  glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex),
-                        (const void*)offsetof(TerrainVertex, TexCoords));
-  glEnableVertexAttribArray(2);
-  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex), (const void*)offsetof(TerrainVertex, Normals));
+  m_DrawData.Renderer.VertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex),
+                                          (const void*)offsetof(TerrainVertex, TexCoords));
+
+  m_DrawData.Renderer.VertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex),
+                                          (const void*)offsetof(TerrainVertex, Normals));
 
   int v_index = 0;
   m_DrawData.Vertices.resize(m_MetricData.m_Width * m_MetricData.m_Height);
@@ -116,12 +109,12 @@ void ProceduralTerrain::Setup()
     m_DrawData.Vertices[x].Normals = glm::normalize(m_DrawData.Vertices[x].Normals);
   }
 
-  glBufferData(GL_ARRAY_BUFFER, sizeof(m_DrawData.Vertices[0]) * m_DrawData.Vertices.size(), &m_DrawData.Vertices[0],
-               GL_STATIC_DRAW);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(m_DrawData.Indices[0]) * m_DrawData.Indices.size(),
-               &m_DrawData.Indices[0], GL_STATIC_DRAW);
+  m_DrawData.Renderer.BufferData(GL_ARRAY_BUFFER, sizeof(m_DrawData.Vertices[0]) * m_DrawData.Vertices.size(),
+                                 &m_DrawData.Vertices[0], GL_STATIC_DRAW);
+  m_DrawData.Renderer.BufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(m_DrawData.Indices[0]) * m_DrawData.Indices.size(),
+                                 &m_DrawData.Indices[0], GL_STATIC_DRAW);
 
-  glBindVertexArray(0);
+  m_DrawData.Renderer.UnbindVertexArray();
 }
 
 void ProceduralTerrain::Draw(Shader* shader)
@@ -139,7 +132,7 @@ void ProceduralTerrain::Draw(Shader* shader)
   shader->SetFloat("TextureHeight2", m_TextureData.m_MultiTextureHeights.Height2);
   shader->SetFloat("TextureHeight3", m_TextureData.m_MultiTextureHeights.Height3);
 
-  glBindVertexArray(m_DrawData.m_Vao);
+  m_DrawData.Renderer.BindVertexArray();
 
   for (int x = 0; x < MAX_TEXTURE_TILES; x++) {
     glActiveTexture(GL_TEXTURE0 + x);
@@ -148,11 +141,12 @@ void ProceduralTerrain::Draw(Shader* shader)
     glBindTexture(GL_TEXTURE_2D, m_TextureData.m_TexturesLoaded[x].GetTextureID());
   }
 
-  glDrawElements(GL_TRIANGLES, (m_MetricData.m_Height - 1) * (m_MetricData.m_Width - 1) * 6, GL_UNSIGNED_INT, NULL);
-  glBindVertexArray(0);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, 0);
+  m_DrawData.Renderer.Draw(GL_TRIANGLES, (m_MetricData.m_Height - 1) * (m_MetricData.m_Width - 1) * 6, GL_UNSIGNED_INT,
+                           NULL);
+  m_DrawData.Renderer.UnbindVertexArray();
+  MaterialTexture2D::Unbind2DTextures();
 }
+
 std::vector<Vector3> ProceduralTerrain::GetRandomPointsInTerrain(int amount) noexcept
 {
   std::vector<Vector3> vector;
@@ -180,9 +174,10 @@ void FaultFormationTerrain::CreateFaultFormationTerrain(Shader* shader, int Terr
   shader->SetFloat("MaxHeight", MaxHeight);
   shader->SetFloat("MinHeight", MinHeight);
 
-  m_MetricData.m_HeightMap = new Yeager::Math::Array2D<float>(m_MetricData.m_Width, m_MetricData.m_Height);
+  m_MetricData.m_HeightMap =
+      std::make_shared<Yeager::Math::Array2D<float>>(m_MetricData.m_Width, m_MetricData.m_Height);
   m_Perlin.RegenerateSeed();
-  m_Perlin.GeneratePerlin(m_MetricData.m_HeightMap, octaves, bias, m_MetricData.m_Width, m_MetricData.m_Height,
+  m_Perlin.GeneratePerlin(m_MetricData.m_HeightMap.get(), octaves, bias, m_MetricData.m_Width, m_MetricData.m_Height,
                           m_MetricData.m_MaxHeight);
   CreateFaultFormationInternal(It, MinHeight, MaxHeight, FIR);
   m_MetricData.m_HeightMap->Normalize(MinHeight, MaxHeight);
@@ -283,9 +278,10 @@ void MidPointDisplacementTerrain::CreateMidPointDisplacement(Shader* shader, int
   shader->SetFloat("MinHeight", MinHeight);
   shader->SetFloat("MaxHeight", MaxHeight);
 
-  m_MetricData.m_HeightMap = new Yeager::Math::Array2D<float>(m_MetricData.m_Width, m_MetricData.m_Height);
+  m_MetricData.m_HeightMap =
+      std::make_shared<Yeager::Math::Array2D<float>>(m_MetricData.m_Width, m_MetricData.m_Height);
   m_Perlin.RegenerateSeed();
-  m_Perlin.GeneratePerlin(m_MetricData.m_HeightMap, octaves, bias, m_MetricData.m_Width, m_MetricData.m_Height,
+  m_Perlin.GeneratePerlin(m_MetricData.m_HeightMap.get(), octaves, bias, m_MetricData.m_Width, m_MetricData.m_Height,
                           m_MetricData.m_MaxHeight);
 
   CreateMidPointDisplacementF32(Roughness);
