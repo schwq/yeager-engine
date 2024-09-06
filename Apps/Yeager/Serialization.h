@@ -84,8 +84,10 @@ namespace Yeager {
 class Scene;
 class ApplicationCore;
 class Settings;
+struct TemplateHandle;
 
 extern std::vector<OpenProjectsDisplay> ReadProjectsToDisplay(String dir, Yeager::ApplicationCore* app);
+
 
 /***
  * @brief Serialize and deserialize mostly of the engine required information, like scenes props, configurations files, and more. Every GameEntity is serialize 
@@ -108,12 +110,15 @@ class Serialization {
 
   bool ReadEditorSoundsConfiguration(const String& path);
 
-  YgTime_t DeserializeProjectTimeOfCreation(YAML::Node node);
+  TimePointType DeserializeProjectTimeOfCreation(YAML::Node node);
 
-  bool ReadSettingsConfiguration(Yeager::Settings* settings, const String& path);
-  void WriteSettingsConfiguration(Yeager::Settings* settings, const String& path);
+  std::vector<Yeager::TemplateHandle> FindTemplatesFromSharedFolder(const std::filesystem::path& path);
+  Yeager::TemplateHandle ReadTemplateConfiguration(const std::filesystem::path& path, const std::filesystem::path& folder);
+
+  void DeserializeTemplateAssetsIntoScene(Yeager::Scene* scene, const std::filesystem::path& path);
 
  private:
+
   Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
 
   void YEAGER_FORCE_INLINE DeserializeEntity(Yeager::Scene* scene, YAML::Node& node,
@@ -134,6 +139,9 @@ class Serialization {
   void YEAGER_FORCE_INLINE SerializeBegin(YAML::Emitter& out, const char* key, YAML::EMITTER_MANIP manip);
   void YEAGER_FORCE_INLINE SerializeSystemInfo(YAML::Emitter& out, Yeager::Scene* scene);
 
+  template<typename Type>
+  std::optional<Type> DeserializeObject(const YAML::Node& node, Cchar key);
+
   void SerializeProjectTimeOfCreation(YAML::Emitter& out, Yeager::Scene* scene, const char* key);
 
   void DeserializeAudioHandle(YAML::detail::iterator_value& entity, Yeager::Scene* scene, const String& name,
@@ -146,5 +154,7 @@ class Serialization {
                                  const String& type, const Uint id);
   void DeserializeLightSource(YAML::detail::iterator_value& entity, Yeager::Scene* scene, const String& name,
                               const String& type, const Uint id);
+  void DeserializeSkybox(YAML::detail::iterator_value& entity, Yeager::Scene* scene, const String& name,
+                         const String& type, const Uint id);
 };
 }  // namespace Yeager

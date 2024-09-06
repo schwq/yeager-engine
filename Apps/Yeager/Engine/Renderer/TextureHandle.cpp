@@ -66,9 +66,12 @@ std::optional<Uint> Yeager::FormatToChannels(GLenum format)
 
 void Yeager::DisplayImageImGui(MaterialTexture2D* texture, Uint resize)
 {
+    
+  ImDrawList* draw = ImGui::GetWindowDrawList();
+  draw->AddCallback(ImDrawCallback_ResetRenderState, NULL);
   if (resize == 0)
     resize = 1;
-  ImGui::Image((void*)(intptr_t)texture->GetTextureID(),
+  ImGui::Image((ImTextureID)(intptr_t)texture->GetTextureID(),
                ImVec2(texture->GetWidth() / resize, texture->GetHeight() / resize));
 }
 

@@ -9,6 +9,20 @@ Launcher::Launcher(Uint width, Uint height, String title, ApplicationCore* app)
   Yeager::Log(INFO, "Launching the Engine Launcher");
 }
 
+LauncherProjectPicker::LauncherProjectPicker(const OpenProjectsDisplay& other) {
+  ConstructorFrom(other);
+}
+
+void LauncherProjectPicker::ConstructorFrom(const OpenProjectsDisplay& other) {
+  m_Name = other.Name;
+  m_AuthorName = other.Author;
+  m_ProjectFolderPath = other.FolderPath;
+  m_ProjectConfigurationPath = other.Path;
+  m_ProjectDateOfCreation = other.TimeOfCreation;
+  m_SceneType = StringToSceneType(other.SceneType);
+  m_SceneRenderer = StringToSceneRenderer(other.RendererType);
+}
+
 void Launcher::Render()
 {
   while ((!UserHasSelect() || m_Application->GetMode() == ApplicationMode::eAPPLICATION_EDITOR) &&

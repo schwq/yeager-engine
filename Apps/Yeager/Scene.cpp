@@ -2,6 +2,7 @@
 #include "Application.h"
 #include "Engine/Editor/NodeHierarchy.h"
 #include "Engine/Renderer/Importer.h"
+#include "Engine/Renderer/Skybox.h"
 using namespace Yeager;
 
 SceneRenderer Yeager::StringToSceneRenderer(String str)
@@ -60,44 +61,53 @@ void Scene::InitializeRootNode()
 }
 
 SceneContext Yeager::InitializeContext(String name, String author, SceneType type, String folderPath,
-                                       SceneRenderer renderer, YgTime_t dateOfCreation)
+                                       SceneRenderer renderer, TimePointType dateOfCreation)
 {
   SceneContext context;
-  context.m_name = name;
-  context.m_ExplorerType = type;
-  context.m_ProjectAuthor = author;
-  context.m_renderer = renderer;
-  context.m_ProjectFolderPath = folderPath;
-  context.m_TimeOfCreation = dateOfCreation;
+  context.Name = name;
+  context.ProjectSceneType = type;
+  context.ProjectAuthor = author;
+  context.ProjectSceneRenderer = renderer;
+  context.ProjectFolderPath = folderPath;
+  context.TimeOfCreation = dateOfCreation;
   return context;
 }
 
-Scene::Scene(Yeager::ApplicationCore* app) : m_Application(app) {}
+Scene::Scene(Yeager::ApplicationCore* app) : m_Application(app)  {}
 
-void Scene::BuildScene(String name, String Author, SceneType type, String folder_path, SceneRenderer renderer,
-                       YgTime_t dateOfCreation)
+void Scene::BuildScene(const LauncherProjectPicker& project)
 {
-  m_Context = InitializeContext(name, Author, type, folder_path, renderer, dateOfCreation);
-  m_Context.m_ProjectSavePath = GetConfigurationFilePath(m_Context.m_ProjectFolderPath);
+  m_Context = InitializeContext(project.m_Name, project.m_AuthorName, project.m_SceneType, project.m_ProjectFolderPath, project.m_SceneRenderer, project.m_ProjectDateOfCreation);
+  m_Context.ProjectSavePath = GetConfigurationFilePath(m_Context.ProjectFolderPath);
   ValidatesCommonFolders();
-  m_AssetsFolderPath = m_Context.m_ProjectFolderPath + YG_PS + "Assets";
+  m_AssetsFolderPath = m_Context.ProjectFolderPath + YG_PS + "Assets";
   m_PlayerCamera = std::make_shared<PlayerCamera>(m_Application);
   m_Application->AttachPlayerCamera(m_PlayerCamera);
+  m_Skybox = std::make_shared<Yeager::Skybox>(m_Application);
 
-  Log(INFO, "Created Scene name {}", m_Context.m_name);
+  Log(INFO, "Created Scene name {}", m_Context.Name);
   InitializeRootNode();
+  
+  if (project.m_TemplateHandle.has_value()) 
+     BuildSceneFromTemplate(project.m_TemplateHandle.value());
 }
 
 String Scene::GetConfigurationFilePath(String path) const
 {
-  return path + YG_PS + m_Context.m_name + ".yml";
+  return path + YG_PS + m_Context.Name + ".yml";
+}
+
+
+void Scene::BuildSceneFromTemplate(const TemplateHandle& handle) {
+  m_Template = handle;
+  m_Application->GetSerial()->DeserializeTemplateAssetsIntoScene(this, handle.AssetsConfigurationPath);
 }
 
 void Scene::RemoveDuplicatesEntities() {}
 
 void Scene::VerifyAssetsSubFolders()
 {
-  String assetsFolder = m_Context.m_ProjectFolderPath + YG_PS + "Assets";
+  String assetsFolder = m_Context.ProjectFolderPath + YG_PS + "Assets";
   if (!Yeager::ValidatesPath(assetsFolder)) {
     Yeager::Log(WARNING, "Cannot verify assets sub folders! Assets folder doesnt exists!");
     return;
@@ -114,7 +124,7 @@ void Scene::VerifyAssetsSubFolders()
 
 std::vector<std::pair<String, String>> Scene::VerifyImportedModelsOptionsInAssetsFolder()
 {
-  String assetsFolder = m_Context.m_ProjectFolderPath + "Assets";
+  String assetsFolder = m_Context.ProjectFolderPath + "Assets";
   std::vector<std::pair<String, String>> models;
   const String importedModelPath = String(assetsFolder + YG_PS + "ImportedModels");
   if (!Yeager::ValidatesPath(importedModelPath)) {
@@ -158,7 +168,7 @@ std::vector<std::pair<String, String>> Scene::VerifyImportedModelsOptionsInAsset
 
 std::vector<std::pair<String, String>> Scene::VerifySoundsOptionsInAssetFolder()
 {
-  String assetsFolder = m_Context.m_ProjectFolderPath + YG_PS + "Assets";
+  String assetsFolder = m_Context.ProjectFolderPath + YG_PS + "Assets";
   std::vector<std::pair<String, String>> audios;
   if (!Yeager::ValidatesPath(assetsFolder + YG_PS + "Sound", false)) {
     Yeager::Log(WARNING, "Assets sub folder Sound doesnt not exist, options and help wont be avaliable!");
@@ -248,7 +258,7 @@ void Scene::CheckToolboxIsSelectedAndDisable(Yeager::ToolboxHandle* toolbox)
 
 void Scene::ValidatesCommonFolders()
 {
-  const String projectPath = m_Context.m_ProjectFolderPath + YG_PS;
+  const String projectPath = m_Context.ProjectFolderPath + YG_PS;
 
   if (!Yeager::ValidatesAndCreateDirectory(projectPath + "Assets")) {
     VerifyAssetsSubFolders();
@@ -263,9 +273,14 @@ void Scene::ValidatesCommonFolders()
   }
 }
 
+void Scene::DrawSkybox(Yeager::Shader* shader, const Matrix3& view, const Matrix4& projection)
+{
+  m_Skybox->Draw(shader, view, projection);
+}
+
 void Scene::VerifyCacheSubFolders()
 {
-  const String cacheFolder = String(m_Context.m_ProjectFolderPath + YG_PS + "Cache");
+  const String cacheFolder = String(m_Context.ProjectFolderPath + YG_PS + "Cache");
   if (!Yeager::ValidatesPath(cacheFolder + YG_PS + "Texture")) {
     Yeager::CreateDirectoryAndValidate(cacheFolder + YG_PS + "Texture");
   }
@@ -276,7 +291,7 @@ void Scene::VerifyCacheSubFolders()
 
 String Scene::GetTextureCacheFolderPath() const
 {
-  return String(m_Context.m_ProjectFolderPath + YG_PS + "Cache" + YG_PS + "Texture");
+  return String(m_Context.ProjectFolderPath + YG_PS + "Cache" + YG_PS + "Texture");
 }
 
 Scene::~Scene()
@@ -284,6 +299,7 @@ Scene::~Scene()
   if (!m_SceneWasTerminated) {
     Terminate();
   }
+  m_Skybox.reset();
 }
 
 void Scene::Terminate()
@@ -291,7 +307,7 @@ void Scene::Terminate()
   DeleteChildOf(m_RootNodeOfScene);
   m_PlayerCamera.reset();
   m_RootNodeOfScene.reset();
-  Yeager::Log(INFO, "Destroring Scene name {}", m_Context.m_name);
+  Yeager::Log(INFO, "Destroring Scene name {}", m_Context.Name);
   m_SceneWasTerminated = true;
 }
 
@@ -357,7 +373,7 @@ void Scene::CheckThreadsAndTriggerActions()
 
 void Scene::Save()
 {
-  m_Application->GetSerial()->SerializeScene(this, m_Context.m_ProjectSavePath);
+  m_Application->GetSerial()->SerializeScene(this, m_Context.ProjectSavePath);
 }
 
 void Scene::LoadEditorColorscheme(Interface* intr)
@@ -372,16 +388,16 @@ void Scene::Load(String path)
 
 void Scene::LoadSceneSave()
 {
-  m_Application->GetSerial()->DeserializeScene(this, m_Context.m_ProjectSavePath);
+  m_Application->GetSerial()->DeserializeScene(this, m_Context.ProjectSavePath);
 }
 
 void Scene::SetContextType(SceneType type)
 {
-  m_Context.m_ExplorerType = type;
+  m_Context.ProjectSceneType = type;
 }
 void Scene::SetContextRenderer(SceneRenderer renderer)
 {
-  m_Context.m_renderer = renderer;
+  m_Context.ProjectSceneRenderer = renderer;
 }
 
 std::vector<std::shared_ptr<Yeager::Audio3DHandle>>* Scene::GetAudios3D()

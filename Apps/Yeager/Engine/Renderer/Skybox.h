@@ -30,27 +30,29 @@
 
 namespace Yeager {
 
+#define YEAGER_SKYBOX_DEFAULT_NAME "Scene Skybox"
+
 enum class SkyboxTextureType { ESamplerCube, ESampler2D };
 
 class Skybox : public EditorEntity {
 
  public:
   Skybox(String name, ObjectGeometryType::Enum type, ApplicationCore* application);
+  Skybox(ApplicationCore* application);
   ~Skybox();
+
 
   bool BuildSkyboxFromCubemap(String directory, Yeager::ImageExtension ext, bool flip = false);
   bool BuildSkyboxFrom2DTexture(String path, bool flip = false);
   bool BuildSkyboxFromImport(String path, bool flip = false);
   void Draw(Yeager::Shader* shader, Matrix4 view, Matrix4 projection);
 
-  String GetPath() const { return Path; }
-
-  SkyboxTextureType GetTextureType() const { return m_Type; }
-
-  ObjectGeometryData* GetGeometryData() { return &m_Data; }
-  ObjectModelData* GetModelData() { return &m_Model; }
-
-  ObjectGeometryType::Enum GetGeometry() const { return m_Geometry; }
+  YEAGER_NODISCARD String GetPath() const { return Path; }
+  YEAGER_NODISCARD SkyboxTextureType GetTextureType() const { return m_Type; }
+  YEAGER_NODISCARD ObjectGeometryData* GetGeometryData() { return &m_Data; }
+  YEAGER_NODISCARD ObjectModelData* GetModelData() { return &m_Model; }
+  YEAGER_NODISCARD ObjectGeometryType::Enum GetGeometry() const { return m_Geometry; }
+  YEAGER_NODISCARD bool IsLoaded() const { return m_SkyboxDataLoaded; }
 
  private:
   void Setup();

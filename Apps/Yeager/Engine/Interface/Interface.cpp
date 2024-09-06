@@ -14,6 +14,10 @@ Uint Yeager::Interface::m_Frames = 0;
 
 OpenProjectsDisplay::OpenProjectsDisplay(const LauncherProjectPicker& other)
 {
+  ConstructorFrom(other);
+}
+
+void OpenProjectsDisplay::ConstructorFrom(const LauncherProjectPicker& other) {
   Name = other.m_Name;
   Author = other.m_AuthorName;
   SceneType = SceneTypeToString(other.m_SceneType);
@@ -178,7 +182,7 @@ Interface::~Interface()
   // This function termination was placed in the Window.h file, but it was causing a error, because interface class that managers imgui and the window class
   // that manage the glfw window are smart pointers, and in the wrong calling sequence, the glfw windows was destroryed before imgui can terminate properly
   glfwTerminate();
-  YEAGER_DELETE(m_ImGuiConfigurationPath);
+  m_ImGuiConfigurationPath.reset();
 }
 
 bool Interface::FindProjectHandleInApplicationAndDelete(String path)
@@ -201,7 +205,7 @@ void Interface::DebugControlWindow()
   if (Button("Spawn PhysX cube")) {
     Yeager::BaseCamera* camera = m_Application->GetCamera();
     SpawnCubeObject(m_Application, "DEBUG_DEFAULT", camera->GetPosition() + camera->GetDirection(), Vector3(0.0f),
-                    Vector3(0.1f), ObjectPhysicsType::eDYNAMIC_BODY);
+                    Vector3(1.0f), ObjectPhysicsType::eDYNAMIC_BODY);
   }
 
   End();
@@ -302,11 +306,11 @@ void Interface::AlignForWidth(float width, float alignment)
     SetCursorPosX(GetCursorPosX() + off);
 }
 
-String Interface::ProjectTimeOfCreationToString(YgTime_t time)
+String Interface::ProjectTimeOfCreationToString(TimePointType time)
 {
   String str;
   str += String(std::to_string(time.Date.Year) + " ");
-  str += String(MonthNumberToString(time.Date.Month) + " ");
+  str += String(DateType::MonthNumberToString(time.Date.Month) + " ");
   str += String(std::to_string(time.Date.Day) + " | ");
 
   str += String(std::to_string(time.Time.Hours) + ":");
@@ -326,13 +330,21 @@ void Interface::LaunchImGui(Window* window)
   m_imgui_io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
   m_imgui_io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
   m_imgui_io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Keyboard Controls
-  m_ImGuiConfigurationPath = new String(GetPath("/Configuration/Editor/Public/Internal/imgui.ini"));
-  m_imgui_io.IniFilename = m_ImGuiConfigurationPath->c_str();
+  
+  if (GetPathFromLocal("/Configuration/Interface/imgui.ini").has_value()) {
+    m_ImGuiConfigurationPath =
+        std::make_shared<String>(GetPathFromLocal("/Configuration/Interface/imgui.ini").value());
+    m_imgui_io.IniFilename = m_ImGuiConfigurationPath->c_str();
+    LoadIniSettingsFromDisk(m_ImGuiConfigurationPath->c_str());
+  }
+  else {
+    m_ImGuiConfigurationPath =
+        std::make_shared<String>(GetPathFromSourceCode("/Assets/Configuration/Editor/Public/Interface/imgui.ini"));
+    m_imgui_io.IniFilename = m_ImGuiConfigurationPath->c_str();
+  }
 
-  LoadIniSettingsFromDisk(m_ImGuiConfigurationPath->c_str());
 
   StyleColorsDark();
-
   ImGui_ImplGlfw_InitForOpenGL(window->GetGLFWwindow(), true);
   ImGui_ImplOpenGL3_Init(YEAGER_IMGUI_OPENGL_VERSION);
 }
@@ -346,43 +358,32 @@ void Interface::RequestRestartInterface(Window* window)
   ImGui_ImplOpenGL3_Init(YEAGER_IMGUI_OPENGL_VERSION);
 }
 
-Interface::Interface(Window* window, Yeager::ApplicationCore* app) : m_Application(app)
-{
-  LaunchImGui(window);
-
-  Yeager::Log(INFO, "Initialize ImGui");
-
+void Interface::CreateImGuiContext() {
   ImGuiIO& m_imgui_io = GetIO();
-
   ImFontConfig config;
   m_imgui_io.Fonts->AddFontDefault();
   config.MergeMode = true;
   config.GlyphMinAdvanceX = 13.0f;
   static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
 
-  m_imgui_io.Fonts->AddFontFromFileTTF(GetPath("/Assets/Fonts/IosevkaNerdFont-Medium.ttf").c_str(), m_Fonts.PixelSize,
-                                       &config, icon_ranges);
-
+  m_imgui_io.Fonts->AddFontFromFileTTF(
+      GetPathFromSourceCode("/Assets/Fonts/IosevkaNerdFont-Medium.ttf").c_str(),
+                                       m_Fonts.PixelSize, &config, icon_ranges);
   m_imgui_io.Fonts->Build();
-  LoadColorscheme();
+}
 
+Interface::Interface(Window* window, Yeager::ApplicationCore* app)
+    : m_Application(app),
+      m_ScreenShotWindow(Yeager::InterfaceWindow(m_Application, "ScreenShot", ImVec2(400, 400), ImVec2(0, 0), true,
+                                                 Yeager::WindowRelativePos::MIDDLE)), 
+    m_FolderExplorer(FolderExplorer(app))
+{
+  LaunchImGui(window);
+  CreateImGuiContext();
+  LoadColorscheme();
+    
   m_Control.Initialize = true;
   Yeager::EngineEditorMenuBar.HasMenuBar = true;
-
-  m_ToolboxWindow = Yeager::InterfaceWindow(m_Application, "Toolbox", ImVec2(450, 600), ImVec2(0, 0), true,
-                                            Yeager::WindowRelativePos::LEFT_ABOVE);
-  m_ConsoleWindow = Yeager::InterfaceWindow(m_Application, "Console", ImVec2(1000, 300), &m_ExplorerWindow,
-                                            ImVec2(0, 100), Yeager::WindowRelativePos::RIGHT);
-  m_ExplorerWindow = Yeager::InterfaceWindow(m_Application, "Explorer", ImVec2(450, 450), &m_ToolboxWindow,
-                                             ImVec2(0, 0), Yeager::WindowRelativePos::UNDER);
-  m_DebuggerWindow = Yeager::InterfaceWindow(m_Application, "Debugger", ImVec2(400, 300), ImVec2(0, 0), true,
-                                             Yeager::WindowRelativePos::RIGHT_UNDER);
-  m_ExplorerWindow.SetRule(Yeager::EWindowFollowUnder, true);
-  m_ConsoleWindow.SetRule(Yeager::EWindowFollowUnder, true);
-
-  m_ScreenShotWindow = Yeager::InterfaceWindow(m_Application, "ScreenShot", ImVec2(400, 400), ImVec2(0, 0), true,
-                                               Yeager::WindowRelativePos::MIDDLE);
-
   m_LauncherInformation = SpaceFitText(
       "This is a small project built by one developer. It`s a game / renderer engine, that supports 2D and 3D "
       "creations. It uses OpenGL 3.3 and in the near future, it will supports OpenGL 4, Vulkan and DirectX rendering. "
@@ -483,10 +484,10 @@ void Interface::DrawConsole()
 void Interface::DrawExplorer()
 {
   //m_ExplorerWindow.Begin(m_Control.DontMoveWindowsEditor ? kWindowStatic : kWindowMoveable);
-  Begin(ICON_FA_ADDRESS_BOOK " Explorer");
+  Begin(ICON_FA_ADDRESS_BOOK " Explorer", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBackground);
   m_Application->GetExplorer()->DrawExplorer();
   End();
-}
+} 
 
 void Interface::DrawToolbox()
 {
@@ -558,6 +559,7 @@ void Interface::RenderEditor()
 #endif
     DrawEditorMenu();
     DrawConsole();
+    m_FolderExplorer.DrawWindow();
 
     PhysXHandleControlWindow();
 
@@ -593,56 +595,49 @@ void Interface::OpenProjectWindow(Yeager::Launcher* launcher, InterfaceButton& b
 {
   if (button.AddButton()) {
     m_OpenProjectWindowOpen = true;
-
-#ifdef YEAGER_SYSTEM_LINUX
     m_OpenProjectToDisplay = Yeager::ReadProjectsToDisplay(
-        GetExternalFolderPath() + "/.YeagerEngine/External/LoadedProjectsPath.yml", m_Application);
-#elif defined(YEAGER_SYSTEM_WINDOWS_x64)
-    m_OpenProjectToDisplay = Yeager::ReadProjectsToDisplay(
-        GetExternalFolderPath() + "\\YeagerEngine\\External\\LoadedProjectsPath.yml", m_Application);
-#endif
+        GetPathFromLocal("/Configuration/Projects/LoadedProjectsPath.yml").value(), m_Application);
   }
 
   if (m_OpenProjectWindowOpen && !m_NewProjectWindowOpen) {
     window.Begin(YEAGER_WINDOW_STATIC);
 
-    if (m_OpenProjectToDisplay.empty()) {
-      Text("No projects :(");
-    }
+    if (m_OpenProjectToDisplay.empty()) 
+      CenteredText("No projects have been created!");
+    
     for (Uint index = 0; index < m_OpenProjectToDisplay.size(); index++) {
+      
       OpenProjectsDisplay project = m_OpenProjectToDisplay.at(index);
+      
       Text("[%s] By: %s", project.Name.c_str(), project.Author.c_str());
       Text("[%s] [%s]", project.RendererType.c_str(), project.SceneType.c_str());
       Text("[Folder path]: %s", project.FolderPath.c_str());
       Text("[Created at]: %s", ProjectTimeOfCreationToString(project.TimeOfCreation).c_str());
-      String labelWithID = "Open##" + project.Name;
-      String labelDeleteID = "Delete##" + project.Name;
-      if (Button(labelWithID.c_str())) {
+ 
+      if (Button(String("Open##" + project.Name).c_str())) {
         launcher->SetUserHasSelect(true);
-        launcher->GetCurrentProjectPicked()->m_Name = project.Name;
-        launcher->GetCurrentProjectPicked()->m_SceneRenderer = StringToSceneRenderer(project.RendererType);
-        launcher->GetCurrentProjectPicked()->m_SceneType = StringToSceneType(project.SceneType);
-        launcher->GetCurrentProjectPicked()->m_ProjectFolderPath = project.FolderPath;
-        launcher->GetCurrentProjectPicked()->m_ProjectConfigurationPath = project.Path;
+        launcher->GetCurrentProjectPicked()->ConstructorFrom(project);
         m_SceneFileText = FileContentToString(project.Path);
       }
+
       SameLine();
-      if (Button(labelDeleteID.c_str())) {
+      
+      if (Button(String("Delete##" + project.Name).c_str())) {
         m_WindowUserIsSureDeletingProject = true;
         project.SelectedToDelete = true;
         m_ProjectSelectedToDelete.first = project;
         m_ProjectSelectedToDelete.second = index;
       }
+
       Separator();
     }
 
-    if (Button("Cancel")) {
+    if (Button("Cancel")) 
       m_OpenProjectWindowOpen = false;
-    }
-
-    if (m_WindowUserIsSureDeletingProject) {
+    
+    if (m_WindowUserIsSureDeletingProject) 
       WindowUserIsSureDeletingProject();
-    }
+    
 
     window.End();
   }
@@ -653,17 +648,21 @@ void Interface::NewProjectWindow(Yeager::Launcher* launcher, InterfaceButton& bu
   if (button.AddButton()) {
     m_NewProjectWindowOpen = true;
     m_NewProjectHandle = new Yeager::LauncherProjectPicker();
+    m_TemplatesAvaliable =
+        m_Application->GetSerial()->FindTemplatesFromSharedFolder(GetPathFromShared("/Templates").value());
+    m_TemplateWasSelected = false;
   }
 
   if (m_NewProjectWindowOpen && !m_OpenProjectWindowOpen) {
 
     window.Begin(YEAGER_WINDOW_STATIC);
 
-    std::vector<const char*> RendererType = {"OpenGL3_3", "OpenGL4"};
-    const char* SceneType[] = {"Scene2D", "Scene3D"};
-    const char* PlataformTarget[] = {"Linux System", "Windows 10/11", "Android SDK", "MacOS", "IOS", "Universal"};
+    const std::vector<Cchar> RendererType = {"OpenGL3_3", "OpenGL4"};
+    const std::vector<Cchar> SceneType = {"Scene2D", "Scene3D"};
+    const std::vector<Cchar> PlataformTarget = {"Linux System", "Windows 10/11", "Android SDK", "MacOS", "IOS", "Universal"};
 
     InputText("Project`s Name", &m_NewProjectHandle->m_Name);
+    
     for (const auto& str : m_ProjectsNamesAlreadyTaken) {
       if (m_NewProjectHandle->m_Name == str) {
         TextColored(IMGUI_RED_ERROR_COLOR, "Name already taken! Please input another one");
@@ -673,7 +672,7 @@ void Interface::NewProjectWindow(Yeager::Launcher* launcher, InterfaceButton& bu
       }
     }
     if (Button("Select folder")) {
-      auto selection = pfd::select_folder("Select project folder", GetExternalFolderPath()).result();
+      auto selection = pfd::select_folder("Select project folder", GetExternalLocalFolderPath()).result();
       if (!selection.empty()) {
         /* This should always return true, but we are making sure the user or the machine deletes the folder selected during the midtime */
         if (Yeager::ValidatesPath(selection)) {
@@ -681,10 +680,12 @@ void Interface::NewProjectWindow(Yeager::Launcher* launcher, InterfaceButton& bu
         }
       }
     }
+    
     SameLine();
     Text("Project Folder: %s", m_NewProjectHandle->m_ProjectFolderPath.c_str());
     SameLine();
     Checkbox("Create Directory", &m_NewProjectCreateDirectory);
+    
     if (m_NewProjectCreateDirectory &&
         ValidatesPath(m_NewProjectHandle->m_ProjectFolderPath + m_NewProjectHandle->m_Name)) {
       TextColored(IMGUI_RED_ERROR_COLOR, "Directory already exists!");
@@ -694,10 +695,9 @@ void Interface::NewProjectWindow(Yeager::Launcher* launcher, InterfaceButton& bu
     }
 
     InputText("Author`s Name", &m_NewProjectAuthorName);
-    m_NewProjectHandle->m_AuthorName = m_NewProjectAuthorName;
 
     if (BeginCombo("Renderer Type", m_NewProjectCurrentRenderer.c_str())) {
-      for (Uint x = 0; x < 2; x++) {
+      for (Uint x = 0; x < RendererType.size(); x++) {
         bool is_selected = (m_NewProjectCurrentRenderer.c_str() == RendererType[x]);
         if (Selectable(RendererType[x], is_selected)) {
           m_NewProjectCurrentRenderer = RendererType[x];
@@ -708,8 +708,9 @@ void Interface::NewProjectWindow(Yeager::Launcher* launcher, InterfaceButton& bu
       }
       EndCombo();
     }
+
     if (BeginCombo("Scene Type", m_NewProjectCurrentSceneType.c_str())) {
-      for (Uint x = 0; x < 2; x++) {
+      for (Uint x = 0; x < SceneType.size(); x++) {
         bool is_selected = (m_NewProjectCurrentSceneType.c_str() == SceneType[x]);
         if (Selectable(SceneType[x], is_selected)) {
           m_NewProjectCurrentSceneType = SceneType[x];
@@ -722,7 +723,7 @@ void Interface::NewProjectWindow(Yeager::Launcher* launcher, InterfaceButton& bu
     }
 
     if (BeginCombo("Plataform Target", m_NewProjectCurrentPlataformTarget.c_str())) {
-      for (Uint x = 0; x < 6; x++) {
+      for (Uint x = 0; x < PlataformTarget.size(); x++) {
         bool is_selected = (m_NewProjectCurrentPlataformTarget.c_str() == PlataformTarget[x]);
         if (Selectable(PlataformTarget[x], is_selected))
           m_NewProjectCurrentPlataformTarget = PlataformTarget[x];
@@ -733,15 +734,32 @@ void Interface::NewProjectWindow(Yeager::Launcher* launcher, InterfaceButton& bu
       EndCombo();
     }
 
+    CenteredText("Templates Avaliable");
+    for (const auto& t : m_TemplatesAvaliable) {
+      Text("Name: %s. Description: %s ", t.Name.c_str(), t.Description.c_str());
+      SameLine();
+      if (Button(String("Select##" + t.Name).c_str())) {
+        m_TemplateSelected = t;
+        m_TemplateWasSelected = true;
+      }
+    }
+    if (m_TemplateWasSelected) {
+      Text(m_TemplateSelected.Name.c_str());
+    }
+
     if (Button("Create")) {
       if (m_NewProjectIsOkayToCreate) {
-        YgTime_t current_time = CurrentTimeToTimeType();
+        TimePointType current_time = TimePointType::CurrentTimeToTimeType();
         m_NewProjectHandle->m_ProjectDateOfCreation = current_time;
         if (m_NewProjectCreateDirectory) {
           m_NewProjectHandle->m_ProjectFolderPath = NewProjectCreateDirectory(m_NewProjectHandle->m_ProjectFolderPath);
         }
         m_NewProjectHandle->m_ProjectConfigurationPath =
             m_NewProjectHandle->m_ProjectFolderPath + m_NewProjectHandle->m_Name + ".yml";
+        m_NewProjectHandle->m_AuthorName = m_NewProjectAuthorName;
+        
+        if (m_TemplateWasSelected)
+          m_NewProjectHandle->m_TemplateHandle = m_TemplateSelected;
 
         launcher->BuildNewProject(*m_NewProjectHandle);
         launcher->SetUserHasSelect(true);
@@ -873,6 +891,7 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
   Yeager::InterfaceWindow settings_window(m_Application, "Launcher Settings", ImVec2(1000, 400),
                                           ImVec2(wnd->LauncherSize.x / 2, wnd->LauncherSize.y / 2), true,
                                           Yeager::WindowRelativePos::MIDDLE);
+
 
   const Vector2 windowSize = m_Application->GetWindow()->GetWindowSize();
   SetNextWindowPos(ImVec2(0, 0));
@@ -1065,6 +1084,8 @@ void Interface::RenderDebugger()
 
   Separator();
 
+  InputVector3("OpenGL clear color", &m_OpenGLDebugClearScreenColor);
+
   WindowInfo* wnd = m_Application->GetWindow()->GetWindowInformationPtr();
   Text("Window Editor Size: x: %f y: %f", wnd->EditorSize.x, wnd->EditorSize.y);
   Text("Window Launcher Size: x: %f y: %f", wnd->LauncherSize.x, wnd->LauncherSize.y);
@@ -1131,7 +1152,7 @@ void Interface::ScreenShotWindow()
 }
 void Interface::PrepareAndMakeScreenShot()
 {
-  String output = GetPath("/Configuration/") + m_NewScreenShootName + ".jpg";
+  String output = GetPathFromSourceCode("/Configuration/") + m_NewScreenShootName + ".jpg";
   switch (m_ScreenShotMode) {
     case ScreenShotMode::ECustomSizedAndPosition:
       MakeScreenShotInPosition(m_Application, output.c_str(), m_ScreenShotPosition[0], m_ScreenShotPosition[1],

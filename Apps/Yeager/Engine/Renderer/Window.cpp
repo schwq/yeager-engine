@@ -103,6 +103,7 @@ bool Window::RegenerateMainWindow(Uint window_x, Uint window_y, String title, GL
     glfwSetInputMode(m_WindowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     glfwSwapInterval(1);
     glfwSetWindowUserPointer(m_WindowHandle, m_Application);
+    
     return true;
   } else {
     Yeager::Log(WARNING, "Window pointer does not exist!");

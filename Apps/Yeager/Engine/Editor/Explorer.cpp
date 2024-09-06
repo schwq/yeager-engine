@@ -254,6 +254,18 @@ void EditorExplorer::AddGeometryObjectWindow()
   }
 }
 
+void EditorExplorer::QuickLoadObject(const std::filesystem::path& path) {
+    
+    /* Forces the windows to open */
+    if (!m_AddGeometryWindowOpen && !m_AddAudioWindowOpen) {
+        m_AddImportedObjectWindowOpen = true;
+        m_SelectableOptions = m_Application->GetScene()->VerifyImportedModelsOptionsInAssetsFolder();
+    }
+    
+    m_NewObjectPath = path.string(); // Adds the path loaded
+    m_NewObjectName = RemoveExtensionFromFilename(path.filename().string()); // Gives the file name to the object
+}
+
 void EditorExplorer::AddImportedObjectWindow()
 {
   if (Button(ICON_FA_DOWNLOAD " Add Imported Object")) {
@@ -267,7 +279,6 @@ void EditorExplorer::AddImportedObjectWindow()
     m_Application->GetInterface()->CenteredWindow(600, 300);
 
     Begin("Add Imported Object", NULL, YEAGER_WINDOW_STATIC);
-    PushID("Hrllo wlrd");
     InputText("Object's name", &m_NewObjectName, YEAGER_EXPLORER_MAX_STRING_INPUT);
 
     if (Button("Select Imported Object file")) {
@@ -313,7 +324,6 @@ void EditorExplorer::AddImportedObjectWindow()
     if (Button("Cancel")) {
       CleanupAfterObjectCreation();
     }
-    PopID();
     End();
   }
 }
@@ -322,7 +332,7 @@ void EditorExplorer::StartFolderSelectionFromTexture(const String& title)
 {
   if (!m_AwaitingUserChoiceFile && !m_AwaitingUserChoiceFile) {
     m_FolderSelection = std::make_shared<pfd::select_folder>(
-        title, m_Application->GetScene()->GetContext()->m_ProjectFolderPath.c_str());
+        title, m_Application->GetScene()->GetContext()->ProjectFolderPath.c_str());
     m_AwaintingUserChoiceFolder = true;
   }
 }
@@ -330,7 +340,7 @@ void EditorExplorer::StartFolderSelectionFromTexture(const String& title)
 void EditorExplorer::StartFolderSelection(const String& title)
 {
   if (!m_AwaitingUserChoiceFile && !m_AwaintingUserChoiceFolder) {
-    const String path = m_Application->GetScene()->GetContext()->m_ProjectFolderPath;
+    const String path = m_Application->GetScene()->GetContext()->ProjectFolderPath;
     m_FileSelection = std::make_shared<pfd::open_file>(title, path);
     m_AwaitingUserChoiceFile = true;
   }

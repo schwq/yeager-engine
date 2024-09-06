@@ -19,7 +19,8 @@
 #pragma once
 
 #include "Common.h"
-
+#include "DirectorySystem.h"
+#include "Time.h"
 #include <assimp/matrix4x4.h>
 #include <assimp/quaternion.h>
 #include <assimp/vector3.h>
@@ -111,63 +112,9 @@ struct YgPadding {
   }
 };
 
-enum FileExtensionType {
-  EExtensitonType3DModel,
-  EExtensionTypeAudio,
-  EExtensionTypeImage,
-  EExtensionTypeVideo,
-  EExtensionTypeSource,
-  EExtensionTypeConfiguration
-};
-
-struct FileType {
-  FileType() {}
-  FileType(String type, FileExtensionType ext, bool supported = false)
-  {
-    Typename = type;
-    ExtType = ext;
-    Supported = supported;
-  }
-  String Typename = YEAGER_NULL_LITERAL;
-  FileExtensionType ExtType = FileExtensionType::EExtensionTypeSource;
-  bool Supported = false;
-};
-
-std::pair<bool, FileType> CheckFileExtensionType(String path, FileExtensionType type);
-
-extern std::map<String, FileType> ExtensionTypesToRawExtensions;
-extern String ExtractExtensionTypenameFromPath(String filename);
-
 extern bool EvaluateIntToBool(const int i);
 
-struct YgDate_t {
-  Uint Month = 0;
-  Uint WeekDay = 0;
-  Uint Day = 0;
-  Uint Year = 0;
-};
-
-struct YgClock_t {
-  long long Millis = 0;
-  Uint Seconds = 0;
-  Uint Minutes = 0;
-  Uint Hours = 0;
-};
-
-extern String MonthNumberToString(int month);
-extern String WeekDayNumberToString(int weekday);
-
-struct YgTime_t {
-  YgDate_t Date;
-  YgClock_t Time;
-};
-
 extern Cchar g_OperatingSystemString;
-extern String GetPath(String path);
-extern String GetPathFromShared(String path);
-extern Cchar GetShaderPath(String shader);
-
-extern String GetExternalFolderPath();
 
 /**
  * @brief Used in switch statements with String
@@ -176,57 +123,39 @@ extern String GetExternalFolderPath();
  * @param h Part of the String to start off, leave it blank!
  * @return constexpr Uint 
  */
-constexpr Uint StringToInteger(const char* str, int h = 0)
+YEAGER_CONSTEXPR Uint StringToInteger(const char* str, int h = 0)
 {
   return !str[h] ? 5381 : (StringToInteger(str, h + 1) * 33) ^ str[h];
 }
 
 extern glm::mat4 ConvertAssimpMatrixToGLMFormat(const aiMatrix4x4& from);
-constexpr inline glm::vec3 GetGLMVec(const aiVector3D& vec)
+YEAGER_CONSTEXPR YEAGER_FORCE_INLINE glm::vec3 GetGLMVec(const aiVector3D& vec)
 {
   return glm::vec3(vec.x, vec.y, vec.z);
 }
 
-constexpr inline glm::quat GetGLMQuat(const aiQuaternion& qa)
+YEAGER_CONSTEXPR YEAGER_FORCE_INLINE glm::quat GetGLMQuat(const aiQuaternion& qa)
 {
   return glm::quat(qa.w, qa.x, qa.y, qa.z);
 }
 
-/** Checks if the directory already exists, if not, it creates it */
-extern bool ValidatesAndCreateDirectory(const std::filesystem::path& p);
-/** Creates a directory and thrown an error if cannot creates it */
-extern bool CreateDirectoryAndValidate(const std::filesystem::path& p);
-
-extern bool ValidatesPath(const std::filesystem::path& p, bool declare = true,
-                          std::filesystem::file_status s = std::filesystem::file_status());
-
-/** Given a path, it convert all the text (content) inside the file to a string */
-extern String FileContentToString(const std::filesystem::path& p);
+extern uint64_t Convert32BitsTo64Bits(uint32_t high, uint32_t low);
 
 extern String RemoveSuffixUntilCharacter(String expression, char characterToStop);
 extern String RemovePreffixUntilCharacter(String expression, char characterToStop);
 extern String ReadSuffixUntilCharacter(String expression, char characterToStop);
-extern size_t NumberOfFilesInDir(String path);
 
-extern String RemoveExtensionFromFilename(String filename);
-extern String ExtractExtensionFromFilename(String filename);
+/** 
+    @brief Returns a vector of string with phrases that are between a specific character for example, the String passes as "usr/share/bin/YeagerEngine"     
+    and the character '/', it returns a vector with { "usr", "share", "bin", "YeagerEngine" }
+*/
+YEAGER_NODISCARD extern std::vector<String> RetrievePhrasesBetweenChar(String str, const char ch);
 
-/** Used in the quick serialization of files, creates a file, writes the data and closes it. Returns a boolean represeting the success of the operation */
-template <typename Type>
-bool CreateFileAndWrites(const String& path, const Type& data)
-{
-  std::ofstream file(path);
+/**
+  @brief Displays a message box warning about the engine panic! It shows the cause of the failure and the log that is the path to the crash report generated!
+  In windows system, it calls the function MessageBox from winuser.h
+  TODO: Make the message box for linux systems 
+*/
+extern int DisplayWarningPanicMessageBox(const String& cause, const std::filesystem::path& log);
 
-  if (!file.is_open()) {
-    Yeager::LogDebug(ERROR, "Cannot opens file for writing: {}", path);
-    return false;
-  }
-
-  file << data;
-  file.close();
-  return true;
-}
-
-extern String CurrentTimeFormatToString();
-extern YgTime_t CurrentTimeToTimeType();
 }  // namespace Yeager

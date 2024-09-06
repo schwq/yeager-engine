@@ -43,6 +43,8 @@ class EditorExplorer {
   YEAGER_CONSTEXPR YEAGER_FORCE_INLINE ToolboxHandle* GetSelectedToolbox() const { return m_ToolboxSelected; }
   YEAGER_FORCE_INLINE void ResetSelectedToolbox() { m_ToolboxSelected = YEAGER_NULLPTR; }
 
+  void QuickLoadObject(const std::filesystem::path& path);
+
  private:
   void AddGeometryObjectWindow();
   void HandleObjectCreation();

@@ -119,8 +119,15 @@ class AudioHandle : public GameEntity {
   bool m_stopped = true;
 };
 
-extern Vector3 Vec3df_to_YgVec3(irrklang::vec3df vec);
-extern irrklang::vec3df YgVec3_to_Vec3df(Vector3 vec);
+/**
+    @brief Converts the irrklang::vec3df to the glm::vec3 that the engine uses by default 
+*/
+YEAGER_NODISCARD extern Vector3 Vec3dfToGLMVec3(irrklang::vec3df vec);
+
+/**
+    @brief Converts the glm::vec3 that the engine uses by default to the irrklang::vec3df
+*/
+YEAGER_NODISCARD extern irrklang::vec3df GLMVec3ToVec3df(Vector3 vec);
 
 class Audio3DHandle : public AudioHandle {
  public:

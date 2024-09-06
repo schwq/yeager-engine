@@ -38,7 +38,7 @@ class AnimationEngine {
   void PlayAnimation(Uint index);
   void CalculateBoneTransform(const AssimpNodeData* node, Matrix4 parentTrans);
   std::vector<Matrix4> GetFinalBoneMatrices() const { return m_FinalBoneMatrices; }
-  std::vector<Animation>* GetAnimations() { &m_Animations; }
+  std::vector<Animation>* GetAnimations() { return &m_Animations; }
 
   bool IsAnimationsLoaded() const { return m_AnimationsLoaded; }
   bool IsPlayingAnimation() const { return m_PlayingAnimation; }

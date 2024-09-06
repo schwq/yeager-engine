@@ -51,7 +51,7 @@ class Animation {
 
   Bone* FindBone(const String& name);
 
-  inline float GetTicksPerSecond() { return m_TicksPerSecond; }
+  inline int GetTicksPerSecond() { return m_TicksPerSecond; }
   inline float GetDuration() { return m_Duration; }
   inline const AssimpNodeData& GetRootNode() { return m_RootNode; }
   inline const std::map<String, BoneInfo>& GetBoneIDMap() { return m_BoneInfoMap; }

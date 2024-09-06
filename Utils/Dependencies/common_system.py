@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-import shutil, os, sys, subprocess, pwd, getpass
+import shutil, os, sys, subprocess, getpass
 import pathlib
 import platform
 from enum import Enum
+if os.name == "posix": import pwd
 
+import linux_x64
 
 class OperatingSystem(Enum):
     WINDOWS_32 = 1
@@ -11,74 +13,70 @@ class OperatingSystem(Enum):
     DARWIN = 3
     UNDEFINED = 4
 
-
 password = None
 currentOperatingSystem = OperatingSystem.UNDEFINED
 
 
-# for files
-def _verify_if_exits(path) -> bool:
+
+def createLoadedProjectsConfiguration(path : str):
+    if verifyFileExists(path):
+       return 
+
+    file = open(str(os.path.join(path,"LoadedProjectsPath.yml")), 'w')
+    file.write("ProjectsLoaded: \n []")
+    file.close()
+
+def createEngineConfigurationFile(path : str):
+    file = open(str(os.path.join(path, "EngineConfiguration.yml")), "w")
+    file.write("YeagerLauncherWindowWidth: 1920 \nYeagerLauncherWindowHeight: 1080 \nYeagerEditorWindowWidth: 1920 \nYeagerEditorWindowHeight: 1080")
+    file.close()
+
+def copyFilesFromDir(src : str, dst : str, anounce : bool = False):
+    files = os.listdir(src)
+    for file in files:
+        shutil.copy(os.path.join(src, file), dst)
+        if anounce: print("[INFO] Copied {} from {} to {}".format(file, src, dst))
+
+def verifyFileExists(path) -> bool:
     return os.path.isfile(str(path))
 
-
-# for directories
-def _verify_if_dir_exists(dir) -> bool:
+def verifyDirExists(dir) -> bool:
     return os.path.isdir(str(dir))
 
+def verifyItemExists(path) -> tuple[bool, str]:
+    if verifyDirExists(path): return True, "Dir"
+    if verifyFileExists(path): return True, "File"
+    return False, None
 
-def _remove_file(path) -> bool:
-    if _verify_if_exits(path) and _is_root():
+def removeFile(path) -> bool:
+    if verifyFileExists(path) and linux_x64.isRoot():
         os.remove(path)
         return True
-    elif _verify_if_exits(path):
-        _sudo_command("rm -r {}".format(path))
+    elif verifyFileExists(path):
+        linux_x64.sudoCommand("rm -r {}".format(path))
         return True
     return False
 
-
-def _remove_dir(dir) -> bool:
-    if _verify_if_dir_exists(dir) and _is_root():
+def removeDir(dir) -> bool:
+    if verifyDirExists(dir) and linux_x64.isRoot():
         shutil.rmtree(dir, ignore_errors=True)
         return True
-    elif _verify_if_dir_exists(dir):
+    elif verifyDirExists(dir):
         if len(os.listdir(dir)) > 0:
-            _sudo_command("rm -r {}".format(dir))
+            linux_x64.sudoCommand("rm -r {}".format(dir))
         else:
-            _sudo_command("rmdir {}".format(dir))
+            linux_x64.sudoCommand("rmdir {}".format(dir))
         return True
     return False
 
-
-def _is_root() -> bool:
-    return os.geteuid() == 0
-
-
 # retrieves a path in the unix format of /folder/file and converts to the windows version \folder\file
-def _path_compatible(path) -> str:
+def pathCompatible(path) -> str:
     if currentOperatingSystem == OperatingSystem.WINDOWS_32:
         path = str(path).replace("/", "\\")
         return path
     return path
 
-
-def _get_sudo_password() -> str:
-    password = getpass.getpass(prompt="Enter sudo password: ")
-    process = subprocess.Popen(
-        ["sudo", "-S", "ls"],
-        stderr=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stdin=subprocess.PIPE,
-    )
-    try:
-        out, err = process.communicate(input=(password + "\n").encode(), timeout=5)
-    except subprocess.TimeoutExpired:
-        process.kill()
-        print("[ERROR] Timeout awaiting the password!")
-        sys.exit(0)
-    return password
-
-
-def _check_platform():
+def checkPlatform():
     global currentOperatingSystem
     if platform.system() == "Linux":
         currentOperatingSystem = OperatingSystem.LINUX
@@ -90,8 +88,7 @@ def _check_platform():
         print("[ERROR] Unknown operating system!")
         sys.exit(0)
 
-
-def _safe_from_argv(n) -> str:
+def safeFromArgv(n) -> str:
     if not n > len(sys.argv) - 1:
         return sys.argv[n]
     print(
@@ -102,16 +99,15 @@ def _safe_from_argv(n) -> str:
     )
     return None
 
-
-def _check_if_user_exists(user):
+def checkIfUserExists(user):
     try:
-        pwd.getpwnam(user)
+        if os.name == "posix":
+            pwd.getpwnam(user)
     except KeyError:
         print("User " + user + " does not exits")
         sys.exit(0)
 
-
-def _check_if_cmake_installed() -> bool:
+def checkIfCmakeInstalled() -> bool:
     return (
         subprocess.call(
             ["cmake", "--version"],
@@ -122,68 +118,27 @@ def _check_if_cmake_installed() -> bool:
         == 0
     )
 
-
-def _public_permissions(file: str) -> bool:
-    return (
-        subprocess.call(
-            ["sudo", "chmod", "777", file],
-            shell=False,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.STDOUT,
-        )
-        == 0
-    )
-
-
-def _sudo_command(command: str) -> int:
-    global password
-    cmd = "echo {}|sudo -S {}".format(password, command)
-    if password is not None:
-        return _command_system(cmd)
-    print("[ERROR] Password not defined")
-    return -1
-
-
-def _command_system(command: str) -> int:
+def commandSystem(command: str) -> int:
     return os.system(command)
 
-
-def _validade_command(command: str) -> tuple[bool, str]:
+def validateCommand(command: str) -> tuple[bool, str]:
     n, msg = subprocess.getstatusoutput(command)
     return n == 0, msg
 
-
-# dont use the fucking mv command, or the directories and the files will dissapear from the engine source code
-def _cp_sudo_command(src: str, dst: str, is_dir=False) -> int:
-    command = "cp {} {}".format(src, dst)
-    if is_dir:
-        command = "cp -r {} {}".format(src, dst)
-    return _sudo_command(command)
-
-
-def _cp_command(src: str, dst: str, is_dir=False) -> int:
-    command = "cp {} {}".format(src, dst)
-    if is_dir:
-        command = "cp -r {} {}".format(src, dst)
-    return _command_system(command)
-
-
-def _copy_tree(src, dst):
+def copyType(src, dst):
     try:
         shutil.copytree(src=src, dst=dst, dirs_exist_ok=True)
     except PermissionError:
         print("[ERROR] Permissions error on {} to {}".format(src, dst))
         sys.exit(0)
 
-
-def _change_dir(dir: str):
-    if _verify_if_dir_exists(dir):
+def changeDirectory(dir: str):
+    if verifyDirExists(dir):
         os.chdir(dir)
 
-
-def _git_clone_link(link: str, dir: str = None) -> bool:
+def gitCloneLink(link: str, dir: str = None) -> bool:
     current = os.getcwd()
-    _change_dir(dir)
+    changeDirectory(dir)
     print("[INFO] Cloning {} on {}".format(link, dir))
     process = (
         subprocess.call(
@@ -194,5 +149,5 @@ def _git_clone_link(link: str, dir: str = None) -> bool:
         )
         == 0
     )
-    _change_dir(current)
+    changeDirectory(current)
     return process

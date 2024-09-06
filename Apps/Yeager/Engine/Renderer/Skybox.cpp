@@ -11,6 +11,15 @@ Skybox::Skybox(String name, ObjectGeometryType::Enum type, ApplicationCore* appl
   m_Texture = std::make_shared<MaterialTexture2D>(application, name, MaterialTextureType::eDIFFUSE);
 }
 
+Skybox::Skybox(ApplicationCore* application) : EditorEntity(EntityObjectType::SKYBOX, application, YEAGER_SKYBOX_DEFAULT_NAME)
+{
+  Yeager::Log(INFO, "Loading skybox {}", YEAGER_SKYBOX_DEFAULT_NAME);
+  m_Texture =
+      std::make_shared<MaterialTexture2D>(application, YEAGER_SKYBOX_DEFAULT_NAME, MaterialTextureType::eDIFFUSE);
+}
+
+
+
 bool Skybox::BuildSkyboxFromImport(String path, bool flip)
 {
   if (!m_SkyboxDataLoaded) {

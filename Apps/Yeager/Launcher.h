@@ -32,25 +32,18 @@ class ApplicationCore;
 
 struct LauncherProjectPicker {
   LauncherProjectPicker() {}
-  LauncherProjectPicker(const OpenProjectsDisplay& other)
-  {
-    m_Name = other.Name;
-    m_AuthorName = other.Author;
-    m_ProjectFolderPath = other.FolderPath;
-    m_ProjectConfigurationPath = other.Path;
-    m_ProjectDateOfCreation = other.TimeOfCreation;
-    m_SceneType = StringToSceneType(other.SceneType);
-    m_SceneRenderer = StringToSceneRenderer(other.RendererType);
-  }
+  LauncherProjectPicker(const OpenProjectsDisplay& other);
+  void ConstructorFrom(const OpenProjectsDisplay& other);
   String m_Name = "Default";
   String m_AuthorName = "Default";
   String m_ProjectFolderPath = "Default";
   String m_ProjectConfigurationPath = "Default";
   String m_PlataformTarget = "Universal";
-  YgTime_t m_ProjectDateOfCreation;
+  TimePointType m_ProjectDateOfCreation;
   Yeager::SceneType m_SceneType;
   Yeager::SceneRenderer m_SceneRenderer;
   bool UserWantToExit = false;
+  std::optional<TemplateHandle> m_TemplateHandle;
 };
 
 class Launcher {
@@ -66,7 +59,7 @@ class Launcher {
 
   YEAGER_CONSTEXPR LauncherProjectPicker* GetSelectedProjectPtr() noexcept { return &m_ProjectCurrentSelected; }
   YEAGER_CONSTEXPR YEAGER_FORCE_INLINE bool UserHasSelect() noexcept { return m_UserDoneSelecting; }
-  YEAGER_CONSTEXPR YEAGER_FORCE_INLINE bool GetNewProjectLaoded() noexcept { return m_IsNewProjectLoaded; }
+  YEAGER_CONSTEXPR YEAGER_FORCE_INLINE bool GetNewProjectLoaded() noexcept { return m_IsNewProjectLoaded; }
   YEAGER_CONSTEXPR YEAGER_FORCE_INLINE void SetUserHasSelect(bool selected) noexcept { m_UserDoneSelecting = selected; }
   YEAGER_CONSTEXPR YEAGER_FORCE_INLINE void SetNewProjectLoaded(bool loaded) noexcept { m_IsNewProjectLoaded = loaded; }
 

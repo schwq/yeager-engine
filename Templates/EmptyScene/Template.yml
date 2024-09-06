@@ -1,0 +1,4 @@
+TemplateName: EmptyScene
+TemplateDescription: A simple and empty template!
+TemplateAssetsConfigurationPath: Assets/Assets.yml
+

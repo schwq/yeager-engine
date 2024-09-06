@@ -1,6 +1,7 @@
 #include "Serialization.h"
 #include "Application.h"
 #include "Scene.h"
+#include "Engine/Renderer/Skybox.h"
 using namespace Yeager;
 
 /* TODO Remake this struct about project`s information, there are already 3 of them in the engine, must refactor*/
@@ -59,6 +60,48 @@ std::vector<OpenProjectsDisplay> Yeager::ReadProjectsToDisplay(String dir, Yeage
     Yeager::Log(WARNING, "The current state of the engine does not have any project saved!");
   }
   return proj;
+}
+
+
+std::vector<Yeager::TemplateHandle> Serialization::FindTemplatesFromSharedFolder(const std::filesystem::path& path)
+{
+  if (!std::filesystem::is_directory(path))
+    return std::vector<Yeager::TemplateHandle>();
+
+  std::vector<Yeager::TemplateHandle> templates;
+
+  for (const auto& dir : std::filesystem::directory_iterator{path}) {
+    const String p = dir.path().string() + YG_PS + "Template.yml";
+    if (std::filesystem::is_directory(dir) && Yeager::ValidatesPath(p)) {
+      templates.push_back(ReadTemplateConfiguration(p, dir));
+    }
+  }
+  return templates;
+}
+
+Yeager::TemplateHandle Serialization::ReadTemplateConfiguration(const std::filesystem::path& path,
+                                                 const std::filesystem::path& folder)
+{
+  TemplateHandle handle;
+  handle.FolderPath = folder;
+  handle.TemplateConfigurationPath = path;
+  
+  YAML::Node node = YAML::LoadFile(path.string());
+  
+  if (node["TemplateName"]) 
+    handle.Name = node["TemplateName"].as<String>();
+  
+  if (node["TemplateDescription"])
+    handle.Description = node["TemplateDescription"].as<String>();
+
+  if (node["TemplateAssetsConfigurationPath"]) {
+    String p = node["TemplateAssetsConfigurationPath"].as<String>();
+    if (g_OperatingSystemString == YEAGER_WINDOWS32_OS_STRING)
+      std::replace(p.begin(), p.end(), '/', '\\');
+    handle.AssetsConfigurationPath =
+        std::filesystem::path(folder.string() + YG_PS + p);
+  }
+  return handle;
 }
 
 YAML::Emitter& operator<<(YAML::Emitter& out, const Vector3& vector)
@@ -150,6 +193,14 @@ void YEAGER_FORCE_INLINE Serialization::SerializeBasicEntity(YAML::Emitter& out,
   out << YAML::Key << "Type" << YAML::Value << type;
 }
 
+template <typename Type>
+std::optional<Type> Serialization::DeserializeObject(const YAML::Node& node, Cchar key)
+{
+  if (node[key])
+    return node[key].as<Type>();
+  return std::nullopt;
+}
+
 void YEAGER_FORCE_INLINE Serialization::SerializeObjectTransformation(YAML::Emitter& out, String name,
                                                                       Yeager::Transformation3D& transf) noexcept
 {
@@ -172,14 +223,22 @@ void Serialization::SerializeScene(Yeager::Scene* scene, String path)
       "understand the architeture of the save file!)");
 
   SerializeSystemInfo(out, scene);
-  SerializeObject(out, "Scene", scene->GetContext()->m_name);
+  SerializeObject(out, "Scene", scene->GetContext()->Name);
   SerializeProjectTimeOfCreation(out, scene, "TimeOfCreation");
-  SerializeObject(out, "Author", scene->GetContext()->m_ProjectAuthor);
-  SerializeObject(out, "Renderer", SceneRendererToString(scene->GetContext()->m_renderer));
-  SerializeObject(out, "SceneType", SceneTypeToString(scene->GetContext()->m_ExplorerType));
+  SerializeObject(out, "Author", scene->GetContext()->ProjectAuthor);
+  SerializeObject(out, "Renderer", SceneRendererToString(scene->GetContext()->ProjectSceneRenderer));
+  SerializeObject(out, "SceneType", SceneTypeToString(scene->GetContext()->ProjectSceneType));
   SerializeObject(out, "Camera Position", m_Application->GetCamera()->GetPosition());
   SerializeObject(out, "Camera Direction", m_Application->GetCamera()->GetFront());
   SerializeBegin(out, "SceneEntities", YAML::BeginSeq);
+
+  if (scene->GetSkybox()->CanBeSerialize() && scene->GetSkybox()->IsLoaded()) {
+    out << YAML::BeginMap;
+    SerializeBasicEntity(out, scene->GetSkybox()->GetName(), scene->GetSkybox()->GetEntityID(), "Skybox");
+    SerializeObject(out, "Path", scene->GetSkybox()->GetPath());
+    SerializeObject(out, "FromTemplate", false);
+    out << YAML::EndMap;
+  }
 
   for (Uint x = 0; x < scene->GetAudios()->size(); x++) {
     AudioHandle* audio = scene->GetAudios()->at(x).get();
@@ -320,7 +379,7 @@ void Serialization::SerializeScene(Yeager::Scene* scene, String path)
 ColorschemeConfig Serialization::ReadColorschemeConfig()
 {
   ColorschemeConfig colorscheme;
-  YAML::Node node = YAML::LoadFile(GetPath("/Configuration/Editor/Colorschemes/dark_mode.yaml"));
+  YAML::Node node = YAML::LoadFile(GetPathFromSourceCode("/Configuration/Editor/Colorschemes/dark_mode.yaml"));
 
   if (node["WindowRounding"]) {
     colorscheme.WindowRounding = node["WindowRounding"].as<float>();
@@ -489,7 +548,7 @@ void Serialization::ReadSceneShadersConfig(String path)
         String fragment = shader["FragmentPath"].as<String>();
         String vertex = shader["VertexPath"].as<String>();
         String var = shader["VarName"].as<String>();
-        auto ps_shader = std::make_shared<Yeager::Shader>(GetPath(fragment).c_str(), GetPath(vertex).c_str(), name);
+        auto ps_shader = std::make_shared<Yeager::Shader>(GetPathFromSourceCode(fragment).c_str(), GetPathFromSourceCode(vertex).c_str(), name);
         ps_shader->SetVarName(var);
         std::pair<std::shared_ptr<Shader>, String> sh;
         sh.first = ps_shader;
@@ -513,7 +572,7 @@ bool Serialization::ReadEditorSoundsConfiguration(const String& path)
       String name = s["Name"].as<String>();
       String filename = s["Filename"].as<String>();
 
-      const String path = Yeager::GetPath("/Assets/Sounds/" + filename);
+      const String path = Yeager::GetPathFromSourceCode("/Assets/Sounds/" + filename);
 
       EngineSoundHandle handle(name, path);
       if (m_Application->GetAudioFromEngine()->AddSound(handle)) {
@@ -524,6 +583,26 @@ bool Serialization::ReadEditorSoundsConfiguration(const String& path)
 
   } else {
     return false;
+  }
+}
+
+void Serialization::DeserializeTemplateAssetsIntoScene(Yeager::Scene* scene, const std::filesystem::path& path) {
+  YAML::Node node = YAML::LoadFile(path.string());
+  if (node["TemplateEntities"]) {
+    auto entities = node["TemplateEntities"];
+    for (auto entity : entities) {
+      try {
+        DeserializeEntity(scene, node, entity);
+      }
+      catch (YAML::BadConversion& exc) {
+        Yeager::Log(ERROR, "Exception: YAML::BadConversion, Something went wrong reading the template assets configuration! {}", exc.what());
+      }
+      catch (YAML::BadSubscript& exc) {
+        Yeager::Log(
+            ERROR, "Exception: YAML::BadSubscript, Something went wrong reading the template assets configuration! {}",
+            exc.what());
+      }
+    }
   }
 }
 
@@ -550,7 +629,7 @@ void YEAGER_FORCE_INLINE Serialization::DeserializeSceneInfo(Yeager::Scene* scen
 {
   if (node) {
     if (node["Scene"]) {
-      scene->GetContext()->m_name = node["Scene"].as<String>();
+      scene->GetContext()->Name = node["Scene"].as<String>();
     }
     if (node["Renderer"]) {
       scene->SetContextRenderer(StringToSceneRenderer(node["Renderer"].as<String>()));
@@ -565,7 +644,7 @@ void YEAGER_FORCE_INLINE Serialization::DeserializeSceneInfo(Yeager::Scene* scen
       m_Application->GetCamera()->SetFront(node["Camera Direction"].as<Vector3>());
     }
     if (node["TimeOfCreation"]) {
-      scene->GetContext()->m_TimeOfCreation = DeserializeProjectTimeOfCreation(node["TimeOfCreation"]);
+      scene->GetContext()->TimeOfCreation = DeserializeProjectTimeOfCreation(node["TimeOfCreation"]);
     }
   }
 }
@@ -627,11 +706,34 @@ void YEAGER_FORCE_INLINE Serialization::DeserializeEntity(Yeager::Scene* scene, 
     case StringToInteger("LightSource"): {
       DeserializeLightSource(entity, scene, name, type, id);
     } break;
+    
+    case StringToInteger("Skybox"): {
+      DeserializeSkybox(entity, scene, name, type, id);
+    } break;
 
     default:
       Yeager::Log(WARNING, "Entity Type cannot been found! Value [{}]", type);
   }
 }
+
+void Serialization::DeserializeSkybox(YAML::detail::iterator_value& entity, Yeager::Scene* scene, const String& name,
+    const String& type, const Uint id) {
+  
+    bool fromTemplate = entity["FromTemplate"].as<bool>();
+    String path;
+    
+    if (fromTemplate) 
+      path += scene->GetTemplateHandle().FolderPath.string();
+    
+    String p = entity["Path"].as<String>();
+    if (g_OperatingSystemString == YEAGER_WINDOWS32_OS_STRING)
+      std::replace(p.begin(), p.end(), '/', '\\');
+    path += p;
+    
+    auto skybox = std::make_shared<Skybox>(name, ObjectGeometryType::eCUSTOM, m_Application);
+    skybox->BuildSkyboxFromImport(path, true);
+    scene->SetSkybox(skybox);
+ }
 
 void Serialization::DeserializeAudioHandle(YAML::detail::iterator_value& entity, Yeager::Scene* scene,
                                            const String& name, const String& type, const Uint id)
@@ -648,7 +750,7 @@ void Serialization::DeserializeAudio3DHandle(YAML::detail::iterator_value& entit
   String path = entity["Path"].as<String>();
   Vector3 position = entity["Position"].as<Vector3>();
   auto audio = std::make_shared<Yeager::Audio3DHandle>(path, name, m_Application->GetAudioEngineHandle(), false,
-                                                       YgVec3_to_Vec3df(position), m_Application);
+                                                       GLMVec3ToVec3df(position), m_Application);
   scene->GetAudios3D()->push_back(audio);
 };
 
@@ -808,7 +910,7 @@ void Serialization::ReadEngineConfiguration(const String& path)
   Yeager::WindowInfo* wnd = m_Application->GetWindow()->GetWindowInformationPtr();
 
   if (node["YeagerLauncherWindowWidth"]) {
-    uint launcherWindowWidth = node["YeagerLauncherWindowWidth"].as<uint>();
+    Uint launcherWindowWidth = node["YeagerLauncherWindowWidth"].as<Uint>();
     if (launcherWindowWidth < 300) {
       launcherWindowWidth = 300;
     }
@@ -821,7 +923,7 @@ void Serialization::ReadEngineConfiguration(const String& path)
   }
 
   if (node["YeagerLauncherWindowHeight"]) {
-    uint launcherWindowHeight = node["YeagerLauncherWindowHeight"].as<uint>();
+    Uint launcherWindowHeight = node["YeagerLauncherWindowHeight"].as<Uint>();
     if (launcherWindowHeight < 300) {
       launcherWindowHeight = 300;
     }
@@ -834,7 +936,7 @@ void Serialization::ReadEngineConfiguration(const String& path)
   }
 
   if (node["YeagerEditorWindowWidth"]) {
-    uint editorWindowWidth = node["YeagerEditorWindowWidth"].as<uint>();
+    Uint editorWindowWidth = node["YeagerEditorWindowWidth"].as<Uint>();
     if (editorWindowWidth < 800) {
       editorWindowWidth = 800;
     }
@@ -847,7 +949,7 @@ void Serialization::ReadEngineConfiguration(const String& path)
   }
 
   if (node["YeagerEditorWindowHeight"]) {
-    uint editorWindowHeight = node["YeagerEditorWindowHeight"].as<uint>();
+    Uint editorWindowHeight = node["YeagerEditorWindowHeight"].as<Uint>();
     if (editorWindowHeight < 800) {
       editorWindowHeight = 800;
     }
@@ -905,9 +1007,9 @@ void Serialization::WriteLoadedProjectsHandles(String externalFolder)
   Yeager::CreateFileAndWrites(externalFolder + YG_PS + "LoadedProjectsPath.yml", out.c_str());
 }
 
-YgTime_t Serialization::DeserializeProjectTimeOfCreation(YAML::Node node)
+TimePointType Serialization::DeserializeProjectTimeOfCreation(YAML::Node node)
 {
-  YgTime_t time;
+  TimePointType time;
   time.Date.Year = node["Year"].as<int>();
   time.Date.Month = node["Month"].as<int>();
   time.Date.Day = node["Day"].as<int>();
@@ -921,12 +1023,13 @@ void Serialization::SerializeProjectTimeOfCreation(YAML::Emitter& out, Yeager::S
   out << YAML::Flow;
   out << YAML::Key << key << YAML::Value << YAML::BeginMap;
 
-  SerializeObject(out, "Year", scene->GetContext()->m_TimeOfCreation.Date.Year);
-  SerializeObject(out, "Month", scene->GetContext()->m_TimeOfCreation.Date.Month);
-  SerializeObject(out, "Day", scene->GetContext()->m_TimeOfCreation.Date.Day);
+  SerializeObject(out, "Year", scene->GetContext()->TimeOfCreation.Date.Year);
+  SerializeObject(out, "Month", scene->GetContext()->TimeOfCreation.Date.Month);
+  SerializeObject(out, "Day", scene->GetContext()->TimeOfCreation.Date.Day);
 
-  SerializeObject(out, "Hour", scene->GetContext()->m_TimeOfCreation.Time.Hours);
-  SerializeObject(out, "Minutes", scene->GetContext()->m_TimeOfCreation.Time.Minutes);
+  SerializeObject(out, "Hour", scene->GetContext()->TimeOfCreation.Time.Hours);
+  SerializeObject(out, "Minutes", scene->GetContext()->TimeOfCreation.Time.Minutes);
 
   out << YAML::EndMap;
 }
+

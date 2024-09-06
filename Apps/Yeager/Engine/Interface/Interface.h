@@ -28,7 +28,8 @@
 #include "../Renderer/TextureHandle.h"
 #include "../Renderer/Window.h"
 #include "IconsFontAwesome6.h"
-#include "UIManagement.h"
+#include "FolderExplorer.h"
+
 
 namespace Yeager {
 class ApplicationCore;
@@ -40,6 +41,14 @@ struct LauncherProjectPicker;
       ImGuiWindowFlags_NoTitleBar
 
 #define YEAGER_IMGUI_OPENGL_VERSION "#version 330"
+
+struct TemplateHandle {
+  std::filesystem::path FolderPath;
+  std::filesystem::path TemplateConfigurationPath;
+  std::filesystem::path AssetsConfigurationPath;
+  String Name = YEAGER_NULL_LITERAL;
+  String Description = YEAGER_NULL_LITERAL;
+};
 
 /// @brief Struct of the Imgui Colorscheme, the defaults values are for the dark mode,
 /// @brief colorschemes can been readed from the colorscheme configuration folder
@@ -140,13 +149,14 @@ struct LauncherProjectPicker;
 struct OpenProjectsDisplay {
   OpenProjectsDisplay() {}
   OpenProjectsDisplay(const LauncherProjectPicker& other);
+  void ConstructorFrom(const LauncherProjectPicker& other); 
   String Name;
   String Author;
   String SceneType;
   String RendererType;
   String Path;
   String FolderPath;
-  YgTime_t TimeOfCreation;
+  TimePointType TimeOfCreation;
   InterfaceImage ScreenShot;
   bool SelectedToDelete = false;
 };
@@ -272,6 +282,8 @@ class Interface {
 
   void SetSceneFileText(const String& text) { m_SceneFileText = text; }
 
+  Vector3 GetOpenGLDebugClearColor() const { return m_OpenGLDebugClearScreenColor; }
+
  private:
   String m_NewProjectCurrentRenderer = "Default";
   String m_NewProjectAuthorName = "Default";
@@ -279,6 +291,8 @@ class Interface {
   String m_NewProjectCurrentPlataformTarget = "Default";
   String m_NewProjectFolder = "NONE";
   String m_NewScreenShootName;
+
+  FolderExplorer m_FolderExplorer;
 
   /* The Drawing render frame is set to true when the imgui ui is being draw between the calls InitRenderFrame and TerminateRenderFrame*/
   bool m_DrawingRenderFrame = false;
@@ -298,6 +312,8 @@ class Interface {
   bool m_EditorSettingsWindowOpen = false;
   bool m_DebugControlWindowOpen = false;
 
+  Vector3 m_OpenGLDebugClearScreenColor = Vector3(0.0f);
+
   InterfaceControl m_Control;
   InterfaceFonts m_Fonts;
   ColorschemeConfig m_Colorscheme;
@@ -305,10 +321,6 @@ class Interface {
   ScreenShotMode m_ScreenShotMode = ScreenShotMode::EFullScreen;
 
   Yeager::ApplicationCore* m_Application;
-  Yeager::InterfaceWindow m_ConsoleWindow;
-  Yeager::InterfaceWindow m_ToolboxWindow;
-  Yeager::InterfaceWindow m_ExplorerWindow;
-  Yeager::InterfaceWindow m_DebuggerWindow;
   Yeager::InterfaceWindow m_ScreenShotWindow;
   Yeager::LauncherProjectPicker* m_NewProjectHandle = YEAGER_NULLPTR;
 
@@ -316,13 +328,17 @@ class Interface {
   std::vector<String> m_ProjectsNamesAlreadyTaken;
   std::pair<OpenProjectsDisplay, int> m_ProjectSelectedToDelete;
 
+  std::vector<TemplateHandle> m_TemplatesAvaliable; 
+  TemplateHandle m_TemplateSelected; // The template selected in the m_TemplateAvaliable
+  bool m_TemplateWasSelected; // The user want to use a template for the creation of the project
+
   static Uint m_Frames;
   int m_ScreenShotPosition[2] = {0};
   int m_ScreenShotSize[2] = {0};
 
   SpaceFitText m_LauncherInformation;
 
-  String* m_ImGuiConfigurationPath;
+  std::shared_ptr<String> m_ImGuiConfigurationPath;
 
   void OpenProjectWindow(Yeager::Launcher* launcher, InterfaceButton& button, Yeager::InterfaceWindow& window);
   void NewProjectWindow(Yeager::Launcher* launcher, InterfaceButton& button, Yeager::InterfaceWindow& window);
@@ -338,6 +354,8 @@ class Interface {
 
   String m_SceneFileText = YEAGER_NULL_LITERAL;
 
+  void CreateImGuiContext();
+
   void LaunchImGui(Window* window);
   void DrawExplorer();
   void DrawToolbox();
@@ -350,13 +368,13 @@ class Interface {
   void WindowUserIsSureDeletingProject();
 
   String NewProjectCreateDirectory(String folder_path);
-  /*
-   When deleting a project handle from the LoadedProject.yml configuration of the engine (the file that handles all the projects 
-   name and path to directories) the vector that handles the projects been displayed in the interface isnt the same as the application 
-   project handle, so, when the user deletes a project handle, this function is called with the project given path, to delete it in the application
-   vector 
-   */
+  /**
+    @brief When deleting a project handle from the LoadedProject.yml configuration of the engine (the file that handles all the projects 
+    name and path to directories) the vector that handles the projects been displayed in the interface isnt the same as the application 
+    project handle, so, when the user deletes a project handle, this function is called with the project given path, to delete it in the application
+    vector 
+  */
   bool FindProjectHandleInApplicationAndDelete(String path);
-  String ProjectTimeOfCreationToString(YgTime_t time);
+  String ProjectTimeOfCreationToString(TimePointType time);
 };
 }  // namespace Yeager

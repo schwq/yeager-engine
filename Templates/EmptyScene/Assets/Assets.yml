@@ -1,0 +1,6 @@
+TemplateEntities: 
+  - Entity: 1
+    Name: Default Skybox
+    Type: Skybox 
+    FromTemplate: true 
+    Path: /Assets/Skybox/skybox.obj

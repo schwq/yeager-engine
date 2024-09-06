@@ -33,6 +33,7 @@
 
 namespace Yeager {
 class ApplicationCore;
+class Skybox;
 
 template <typename Type>
 using VecSharedPtr = std::vector<std::shared_ptr<Type>>;
@@ -47,19 +48,19 @@ extern SceneType StringToSceneType(String str);
 extern SceneRenderer StringToSceneRenderer(String str);
 
 struct SceneContext {
-  String m_name = YEAGER_NULL_LITERAL;
-  String m_file_path = YEAGER_NULL_LITERAL;
-  String m_ProjectFolderPath = YEAGER_NULL_LITERAL;
-  String m_ProjectRelativeConfigurationPath = YEAGER_NULL_LITERAL;
-  String m_ProjectSavePath = YEAGER_NULL_LITERAL;
-  String m_ProjectAuthor = YEAGER_NULL_LITERAL;
-  SceneType m_ExplorerType = SceneType::Scene2D;
-  SceneRenderer m_renderer = SceneRenderer::OpenGL3_3;
-  YgTime_t m_TimeOfCreation;
+  String Name = YEAGER_NULL_LITERAL;
+  String FilePath = YEAGER_NULL_LITERAL;
+  String ProjectFolderPath = YEAGER_NULL_LITERAL;
+  String ProjectRelativeConfigurationPath = YEAGER_NULL_LITERAL;
+  String ProjectSavePath = YEAGER_NULL_LITERAL;
+  String ProjectAuthor = YEAGER_NULL_LITERAL;
+  SceneType ProjectSceneType = SceneType::Scene2D;
+  SceneRenderer ProjectSceneRenderer = SceneRenderer::OpenGL3_3;
+  TimePointType TimeOfCreation;
 };
 
 static SceneContext InitializeContext(String name, String author, SceneType type, String folderPath,
-                                      SceneRenderer renderer, YgTime_t dateOfCreation);
+                                      SceneRenderer renderer, TimePointType dateOfCreation);
 
 class Scene {
  public:
@@ -68,8 +69,7 @@ class Scene {
   ~Scene();
   Scene() {}
 
-  void BuildScene(String name, String Author, SceneType type, String folder_path, SceneRenderer renderer,
-                  YgTime_t dateOfCreation);
+  void BuildScene(const LauncherProjectPicker& project);
 
   void Save();
   void Load(String path);
@@ -80,7 +80,6 @@ class Scene {
   void SetContextType(SceneType type);
   void SetContextRenderer(SceneRenderer renderer);
   void LoadSceneSave();
-  String GetPathRelative(String path);
   String GetAssetsPath() { return m_AssetsFolderPath; }
 
   /**
@@ -169,7 +168,18 @@ class Scene {
 
   String GetTextureCacheFolderPath() const;
 
+  void BuildSceneFromTemplate(const TemplateHandle& handle);
+
+  void DrawSkybox(Yeager::Shader* shader, const Matrix3& view, const Matrix4& projection);
+  std::shared_ptr<Yeager::Skybox> GetSkybox() { return m_Skybox; }
+
+  TemplateHandle GetTemplateHandle() const { return m_Template;  }
+
+  void SetSkybox(std::shared_ptr<Yeager::Skybox> skybox) { m_Skybox = skybox; }
+
  private:
+  TemplateHandle m_Template;
+
   // The toolbox destroryed can be the selected one, if its stays selected after deletion, it will cause a read to nullptr!
   // This function disable the selected toolbox in the Explorer
   void CheckToolboxIsSelectedAndDisable(Yeager::ToolboxHandle* toolbox);
@@ -179,6 +189,8 @@ class Scene {
   void VerifyCacheSubFolders();
   void InitializeRootNode();
 
+
+  std::shared_ptr<Yeager::Skybox> m_Skybox; // Every scene must have a skybox!
   String GetConfigurationFilePath(String path) const;
 
   SceneContext m_Context;

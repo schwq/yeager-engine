@@ -31,7 +31,6 @@
 
 #define YEAGER_API
 
-// Version is written as (major version * 100 + minor version)
 #define YEAGER_VERSION 100
 #define YEAGER_BETA_VERSION true
 #define YEAGER_ALPHA_VERSION false
@@ -135,6 +134,8 @@
 #include <glad/glad.h>
 
 #include <GLFW/glfw3.h>
+
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -146,7 +147,6 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "imgui_stdlib.h"
-#include "loguru.hpp"
 #include "portable-file-dialogs.h"
 #include "implot.h"
 
@@ -181,6 +181,9 @@ typedef uint64_t DFlags; // defined flags with the #define YEAGER_
 #elif defined(YEAGER_SYSTEM_LINUX)
 #define YG_PS '/'
 #endif
+
+#define YEAGER_WINDOWS32_OS_STRING "WIN32"
+#define YEAGER_LINUX_OS_STRING "LINUX"
 
 // Logguru defines
 #define INFO 0

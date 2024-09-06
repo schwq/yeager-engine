@@ -26,7 +26,7 @@ void PhysXActor::BuildActor(const ObjectPhysXCreationBase& creation)
   if (creation.Type == ObjectPhysicsType::eUNDEFINED)
     return;  // No physics linked to the object
 
-  m_Material = m_Application->GetPhysXHandle()->GetPxPhysics()->createMaterial(PX_MAX_F32, PX_MAX_F32, 0.5f);
+  m_Material = m_Application->GetPhysXHandle()->GetPxPhysics()->createMaterial(0.1f, 0.1f, 0.1f);
 
   switch (m_Object->GetGeometry()) {
     case ObjectGeometryType::eCUBE: {

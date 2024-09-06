@@ -77,6 +77,21 @@ ApplicationMode::Enum ApplicationMode::ToEnum(const String& str)
   }
 }
 
+std::optional<Yeager::LauncherProjectPicker> ProgramArguments::SearchForcedEntryProject(
+    Yeager::ApplicationCore* application)
+{
+  std::vector<OpenProjectsDisplay> projects =
+      Yeager::ReadProjectsToDisplay(GetPathFromLocal("/Configuration/Projects/LoadedProjectsPath.yml").value(), application);
+
+  for (const auto& proj : projects) {
+    if (proj.Name == ForcedEntry.ProjectName) {
+      LauncherProjectPicker project(proj);
+      return project;
+    }
+  }
+  return std::nullopt;
+}
+
 ApplicationCore::ApplicationCore(int argc, char* argv[])
     : m_Serial(std::make_shared<Serialization>(this)),
       m_Scene(std::make_shared<Scene>(this)),
@@ -85,7 +100,7 @@ ApplicationCore::ApplicationCore(int argc, char* argv[])
 {
   ProcessArguments(argc, argv);
   ValidatesExternalEngineFolder();
-  m_Serial->ReadLoadedProjectsHandles(m_EngineExternalFolder);
+  m_Serial->ReadLoadedProjectsHandles(GetPathFromLocal("/Configuration/Projects").value());
   Setup();
 }
 
@@ -123,20 +138,21 @@ Uint ApplicationCore::IterateArguments(const String& arg, Uint index)
         Yeager::Log(ERROR, "Cannot process arguments properly, trying to access array from undefined index!");
         return 1;
       }
-      m_ForcedEntry.Activated = true;
-      m_ForcedEntry.ProjectName = entry.value();
+      m_Arguments.ForcedEntry.Activated = true;
+      m_Arguments.ForcedEntry.ProjectName = entry.value();
       return 2;
-    }
-    case StringToInteger("-DebugTitleString"): {
+    }    case StringToInteger("-DebugTitleString"): {
+
       std::optional<const String> title = AcessableArgumentArray(index + 1);
       if (!title.has_value()) {
         Yeager::Log(ERROR, "Cannot process arguments properly, trying to access array from undefined index!");
         return 1;
       }
-      m_DebugTitleString.Activated = true;
-      m_DebugTitleString.Title = title.value();
+      m_Arguments.DebugTitle.Activated = true;
+      m_Arguments.DebugTitle.Title = title.value();
       return 2;
     }
+
     default:
       Yeager::Log(WARNING, "Invalid argument {}, ignoring it", arg);
   }
@@ -144,96 +160,26 @@ Uint ApplicationCore::IterateArguments(const String& arg, Uint index)
   return 1;
 }
 
-String ApplicationCore::GetPathRelativeToExternalFolder(String path) const
-{
-  return m_EngineExternalFolder + path;
-}
-
-void ApplicationCore::ValidatesExternalEngineFolder()
-{
-  String osFolder;
-#ifdef YEAGER_SYSTEM_LINUX
-  osFolder = "/.YeagerEngine";
-#elif defined(YEAGER_SYSTEM_WINDOWS_x64)
-  osFolder = "\\YeagerEngine";
-#endif
-
-  if (!Yeager::ValidatesPath(GetExternalFolderLocation() + osFolder)) {
-    Yeager::Log(WARNING, "Could not find the YeagerEngine external folder!");
-    if (std::filesystem::create_directory(GetExternalFolderLocation() + osFolder)) {
-      Yeager::Log(INFO, "Created the Engine external folder!");
-      CreateDirectoriesAndFiles();
-    } else {
-      Yeager::Log(ERROR, "std::filesystem::create_directory cannot create the Engine external folder!");
-    }
-  }
-
-  m_EngineExternalFolder = GetExternalFolderLocation() + osFolder + YG_PS + "External";
-}
-
-String ApplicationCore::GetExternalFolderLocation()
-{
-  return GetExternalFolderPath();
-}
-
-void ApplicationCore::CreateDirectoriesAndFiles()
-{
-  String osFolder;
-#ifdef YEAGER_SYSTEM_LINUX
-  osFolder = "/.YeagerEngine/External";
-#elif defined(YEAGER_SYSTEM_WINDOWS_x64)
-  osFolder = "\\YeagerEngine\\External";
-#endif
-
-  /** External folder for projects paths and information about the engine loaded in the OS */
-  std::filesystem::create_directory(GetExternalFolderLocation() + osFolder);
-  std::ofstream LoadedProjectsPathFile(GetExternalFolderLocation() + osFolder + "/LoadedProjectsPath.yml");
-  if (LoadedProjectsPathFile.is_open()) {
-    LoadedProjectsPathFile << "ProjectsLoaded: \n []";
-  } else {
-    Yeager::Log(ERROR, "Could not open the {}/LoadedProjectsPath.yml for writing!", osFolder);
-  }
-  LoadedProjectsPathFile.close();
-}
-
-std::optional<Yeager::LauncherProjectPicker> ApplicationCore::SearchForcedEntryProject()
-{
-  std::vector<OpenProjectsDisplay> projects;
-#ifdef YEAGER_SYSTEM_LINUX
-  projects =
-      Yeager::ReadProjectsToDisplay(GetExternalFolderPath() + "/.YeagerEngine/External/LoadedProjectsPath.yml", this);
-#elif defined(YEAGER_SYSTEM_WINDOWS_x64)
-  projects =
-      Yeager::ReadProjectsToDisplay(GetExternalFolderPath() + "\\YeagerEngine\\External\\LoadedProjectsPath.yml", this);
-#endif
-
-  for (const auto& proj : projects) {
-    if (proj.Name == m_ForcedEntry.ProjectName) {
-      LauncherProjectPicker project(proj);
-      return project;
-    }
-  }
-  return std::nullopt;
-}
+void ApplicationCore::ValidatesExternalEngineFolder() {}
 
 std::optional<LauncherProjectPicker> ApplicationCore::RequestLauncher()
 {
   String title = "Yeager Launcher";
-  if (m_DebugTitleString.Activated) {
-    title += " " + m_DebugTitleString.Title;
+  if (m_Arguments.DebugTitle.Activated) {
+    title += " " + m_Arguments.DebugTitle.Title;
   }
 
   const ImVec2 launcherWindowSize = m_Settings->GetEngineConfiguration()->LauncherWindowSize;
   m_Window->GetWindowInformationPtr()->LauncherSize = Vector2(launcherWindowSize.x, launcherWindowSize.y);
   m_Launcher = std::make_shared<Yeager::Launcher>(launcherWindowSize.x, launcherWindowSize.y, title, this);
 
-  if (m_ForcedEntry.Activated) {
-    std::optional<Yeager::LauncherProjectPicker> project = SearchForcedEntryProject();
+  if (m_Arguments.ForcedEntry.Activated) {
+    std::optional<Yeager::LauncherProjectPicker> project = m_Arguments.SearchForcedEntryProject(this);
     if (project.has_value()) {
       m_Interface->SetSceneFileText(Yeager::FileContentToString(project.value().m_ProjectConfigurationPath));
       return project.value();
     }
-    Yeager::Log(ERROR, "Cannot find project in configuration file: {}", m_ForcedEntry.ProjectName);
+    Yeager::Log(ERROR, "Cannot find project in configuration file: {}", m_Arguments.ForcedEntry.ProjectName);
   }
 
   m_Launcher->Render();
@@ -253,9 +199,8 @@ String ApplicationCore::RequestWindowEngineName(const LauncherProjectPicker& pro
   String scene_renderer_str = Yeager::SceneRendererToString(project.m_SceneRenderer);
   std::replace(scene_renderer_str.begin(), scene_renderer_str.end(), '_', ' ');
   String engine_new_name = "Yeager Engine : " + project.m_Name + " / " + scene_renderer_str;
-  if (m_DebugTitleString.Activated) {
-    engine_new_name += " " + m_DebugTitleString.Title;
-  }
+  if (m_Arguments.DebugTitle.Activated) 
+    engine_new_name += " " + m_Arguments.DebugTitle.Title;
   return engine_new_name;
 }
 
@@ -264,16 +209,15 @@ void ApplicationCore::BuildApplicationCoreCompoments()
   m_Settings = std::make_shared<Settings>(this);
   m_Request = std::make_shared<RequestHandle>(this);
   m_Input = std::make_shared<Input>(this);
-
-  m_EngineConfigurationPath = String(m_EngineExternalFolder + YG_PS + "Conf/EngineConfiguration.yml");
-  m_Serial->ReadEngineConfiguration(m_EngineConfigurationPath);
+ 
+  m_Serial->ReadEngineConfiguration(GetPathFromLocal("/Configuration/Variables/EngineConfiguration.yml").value());
 
   m_Window->GenerateWindow("Yeager Engine", m_Input->MouseCallback, YEAGER_GENERATE_LAUNCHER_WINDOW);
   m_Input->InitializeCallbacks();
   m_AudioEngine = std::make_shared<AudioEngineHandle>();
   m_AudioEngine->InitAudioEngine();
   m_AudiosFromEngine = std::make_shared<AudioEngine>(this, m_AudioEngine.get());
-  m_Serial->ReadEditorSoundsConfiguration(GetPath("/Configuration/Editor/Private/Sound/EditorSounds.yml"));
+  m_Serial->ReadEditorSoundsConfiguration(GetPathFromShared("/Configuration/Theme/Sound/EditorSounds.yml").value());
   CheckGLADIntegrity();
 
   m_Defaults = std::make_shared<DefaultValues>(this);
@@ -285,7 +229,7 @@ void ApplicationCore::BuildApplicationCoreCompoments()
     Yeager::Log(ERROR, "PhysX cannot initialize correctly, something must went wrong!");
   }
   m_CommonTextOnScreen.Initialize();
-  m_CommonTextOnScreen.LoadFont(GetPath("/Assets/Fonts/firacode.ttf"), 48);
+  m_CommonTextOnScreen.LoadFont(GetPathFromShared("/Resources/Fonts/Editor/firacode.ttf").value(), 48);
 }
 
 void ApplicationCore::SetupCamera()
@@ -305,14 +249,14 @@ void ApplicationCore::UpdateCamera()
 
 void ApplicationCore::Setup()
 {
-
   BuildApplicationCoreCompoments();
 
   const std::optional<LauncherProjectPicker> project = RequestLauncher();
 
+
   if (project.has_value()) {
 
-    m_mode = ApplicationMode::eAPPLICATION_EDITOR;
+    m_CurrentMode = ApplicationMode::eAPPLICATION_EDITOR;
     m_Window->RegenerateMainWindow(m_Window->GetWindowInformationPtr()->EditorSize.x,
                                    m_Window->GetWindowInformationPtr()->EditorSize.y,
                                    RequestWindowEngineName(project.value()), m_Input->MouseCallback);
@@ -328,19 +272,9 @@ void ApplicationCore::Setup()
 
 void ApplicationCore::PrepareSceneToLoad(const LauncherProjectPicker& project)
 {
-  m_Scene->BuildScene(project.m_Name, project.m_AuthorName, project.m_SceneType, project.m_ProjectFolderPath,
-                      project.m_SceneRenderer, project.m_ProjectDateOfCreation);
-
-  m_Serial->ReadSceneShadersConfig(GetPath("/Configuration/Editor/Private/Shaders/default_shaders.yaml"));
-
-  if (m_Launcher->GetNewProjectLaoded()) {
-    /* New project have been loaded*/
-    m_Scene->Save();
-
-  } else {
-    /* The project already exists! */
-    m_Scene->Load(project.m_ProjectConfigurationPath);
-  }
+  m_Scene->BuildScene(project);
+  m_Serial->ReadSceneShadersConfig(GetPathFromSourceCode("/Configuration/Editor/Private/Shaders/default_shaders.yaml"));
+  m_Launcher->GetNewProjectLoaded() ? m_Scene->Save() : m_Scene->Load(project.m_ProjectConfigurationPath); // Check if project is new or already exists
 }
 
 bool ApplicationCore::ShouldRender()
@@ -350,7 +284,7 @@ bool ApplicationCore::ShouldRender()
 
 ApplicationCore::~ApplicationCore()
 {
-  m_Serial->WriteLoadedProjectsHandles(m_EngineExternalFolder);
+  m_Serial->WriteLoadedProjectsHandles(GetPathFromLocal("/Configuration/Projects").value());
   m_Serial.reset();
 
   m_BaseCamera = YEAGER_NULLPTR;
@@ -390,8 +324,8 @@ void ApplicationCore::UpdateWorldMatrices()
 
 void ApplicationCore::UpdateListenerPosition()
 {
-  const irrklang::vec3df cameraPos = Yeager::YgVec3_to_Vec3df(m_WorldMatrices.ViewerPos);
-  const irrklang::vec3df cameraDir = Yeager::YgVec3_to_Vec3df(GetCamera()->GetDirection());
+  const irrklang::vec3df cameraPos = Yeager::GLMVec3ToVec3df(m_WorldMatrices.ViewerPos);
+  const irrklang::vec3df cameraDir = Yeager::GLMVec3ToVec3df(GetCamera()->GetDirection());
   m_AudioEngine->SetListernerPos(cameraPos, cameraDir, irrklang::vec3df(0.0f, 0.0f, 0.0f),
                                  irrklang::vec3df(0.0f, 1.0f, 0.0f));
 }
@@ -426,10 +360,6 @@ void ApplicationCore::UpdateTheEngine()
   m_Scene->GetLightSources()->push_back(light);
 
   BeginEngineTimer();
-
-  auto skybox = std::make_shared<Yeager::Skybox>("Skybox", ObjectGeometryType::eCUSTOM, this);
-  skybox->BuildSkyboxFromImport("/home/schwq/.YeagerEngine/External/Default/Skybox/skybox.obj", true);
-
   while (ShouldRender()) {
 
     glfwPollEvents();
@@ -445,15 +375,14 @@ void ApplicationCore::UpdateTheEngine()
     UpdateCamera();
 
     m_AudioEngine->Engine->update();
-    skybox->Draw(ShaderFromVarName("Skybox"), Matrix3(m_WorldMatrices.View), m_WorldMatrices.Projection);
 
     m_PhysXHandle->StartSimulation(m_DeltaTime);
     m_PhysXHandle->EndSimulation();
 
     DrawObjects();
-    BuildAndDrawLightSources();
+    BuildAndDrawLightSources(); 
 
-    ShowCommonTextOnScreen();
+    m_Scene->DrawSkybox(ShaderFromVarName("Skybox"), m_WorldMatrices.View, m_WorldMatrices.Projection);
 
     GetInterface()->RenderUI();
     GetScene()->CheckScheduleDeletions();
@@ -475,7 +404,7 @@ void ApplicationCore::TerminatePosRender()
   m_AudioEngine->TerminateAudioEngine();
   m_PhysXHandle->TerminateEngine();
 
-  m_Serial->WriteEngineConfiguration(m_EngineConfigurationPath);
+  m_Serial->WriteEngineConfiguration(GetPathFromLocal("/Configuration/Variables/EngineConfiguration.yml").value());
 
   m_PhysXHandle.reset();
 }
@@ -573,20 +502,20 @@ Yeager::Scene* ApplicationCore::GetScene()
 
 ApplicationMode::Enum ApplicationCore::GetMode() const noexcept
 {
-  return m_mode;
+  return m_CurrentMode;
 }
 ApplicationState::Enum ApplicationCore::GetState() const noexcept
 {
-  return m_state;
+  return m_CurrentState;
 }
 
 void ApplicationCore::SetMode(ApplicationMode::Enum mode) noexcept
 {
-  m_mode = mode;
+  m_CurrentMode = mode;
 }
 void ApplicationCore::SetState(ApplicationState::Enum state) noexcept
 {
-  m_state = state;
+  m_CurrentState = state;
 }
 
 void ApplicationCore::ManifestShaderProps(Yeager::Shader* shader)
@@ -608,7 +537,26 @@ void ApplicationCore::CheckGLADIntegrity()
 {
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
     Yeager::Log(ERROR, "Cannot load GLAD!");
+    /* That is a big problem here, are you sure that OpenGL and the video drivers are installed correctly?*/
+    PanicCrashReport(std::runtime_error("Cannot load GLAD!"));  // Panic!!
   }
+}
+
+void Yeager::PanicCrashReport(const std::exception& exc) {
+  String p = GetPathFromLocal("/Logs/CrashReport").value();
+  String time_point = TimePointType::CurrentTimeFormatToFileFormat();
+  String path = String(p + YG_PS + time_point + "_CrashReport.txt");
+  gGlobalConsole.SetLogString(ConsoleLogSender(exc.what()));
+  DumpConsoleDataInFile(path);
+  DisplayWarningPanicMessageBox(exc.what(), path);
+  try {
+    throw exc;
+  }
+  catch (std::exception exc) {
+    Yeager::Log(ERROR, exc.what());
+    exit(0);
+  }
+  
 }
 
 void ApplicationCore::OpenGLFunc()
@@ -623,7 +571,8 @@ void ApplicationCore::OpenGLFunc()
 
 void ApplicationCore::OpenGLClear()
 {
-  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  const Vector3 color = m_Interface->GetOpenGLDebugClearColor();
+  glClearColor(color.x, color.y, color.z, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
@@ -644,28 +593,10 @@ Shader* ApplicationCore::ShaderFromVarName(String var)
 
 void ApplicationCore::AddConfigShader(std::shared_ptr<Yeager::Shader> shader, const String& var) noexcept
 {
-  std::pair<std::shared_ptr<Yeager::Shader>, String> config;
-  config.first = shader;
-  config.second = var;
+  std::pair<std::shared_ptr<Yeager::Shader>, String> config(shader, var);
   m_ConfigShaders.push_back(config);
 }
 
-String ApplicationCore::GetSettingsExternalFolder() const
-{
-  return m_EngineExternalFolder + YG_PS + "Settings";
-}
-Matrix4 ApplicationCore::GetProjection() const
-{
-  return m_WorldMatrices.Projection;
-}
-Matrix4 ApplicationCore::GetView() const
-{
-  return m_WorldMatrices.View;
-}
-String ApplicationCore::GetExternalFolder() const
-{
-  return m_EngineExternalFolder;
-}
 std::vector<LoadedProjectHandle>* ApplicationCore::GetLoadedProjectsHandles()
 {
   return &m_LoadedProjectsHandles;

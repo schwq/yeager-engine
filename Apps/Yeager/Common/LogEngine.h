@@ -41,8 +41,16 @@ struct MessageTypeVerbosity {
 };
 
 struct ConsoleLogSender {
+  ConsoleLogSender(const String& msg) { message = msg; }
+  ConsoleLogSender(const String& msg, MessageTypeVerbosity::Enum ty, int verb, ImVec4 color){
+    message = msg;
+    type = ty;
+    verbosity = verb;
+    text_color = color;
+  }
   String message = YEAGER_NULL_LITERAL;
-  MessageTypeVerbosity::Enum type = MessageTypeVerbosity::Info_Message;
+  MessageTypeVerbosity::Enum type
+      = MessageTypeVerbosity::Info_Message;
   int verbosity = -1;
   ImVec4 text_color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 };
@@ -66,7 +74,7 @@ extern EditorConsole gGlobalConsole;
 
 namespace Yeager {
 
-static String FormatTimeString(const YgTime_t& time)
+static String FormatTimeString(const TimePointType& time)
 {
   return String("[ " + std::to_string(time.Time.Hours) + ":" + std::to_string(time.Time.Minutes) + ":" +
                 std::to_string(time.Time.Seconds) + " ]");
@@ -94,13 +102,13 @@ template <typename... T>
 void Log(int verbosity, fmt::format_string<T...> fmt, T&&... args)
 {
   String str(fmt::format(fmt, std::forward<T>(args)...));
-  ConsoleLogSender message = {str, MessageTypeVerbosity::VerbosityToEnum(verbosity), verbosity,
-                              VerbosityToColor(verbosity)};
+  ConsoleLogSender message(str, MessageTypeVerbosity::VerbosityToEnum(verbosity), verbosity,
+                              VerbosityToColor(verbosity));
   String symbol, verbose, color;
   AttributeLogCompoments(verbosity, &symbol, &verbose, &color);
   message.message = String(verbose + message.message);
   gGlobalConsole.SetLogString(message);
-  std::cout << color << FormatTimeString(CurrentTimeToTimeType()) << symbol << str << std::endl;
+  std::cout << color << FormatTimeString(TimePointType::CurrentTimeToTimeType()) << symbol << str << std::endl;
 }
 
 template <typename... T>

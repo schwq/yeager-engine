@@ -8,85 +8,6 @@
 #endif
 using namespace Yeager;
 
-std::map<String, FileType> Yeager::ExtensionTypesToRawExtensions = {
-    {"ERROR", FileType("ERROR_NOT_FILETYPE", EExtensionTypeSource, false)},
-    {".obj", FileType("3D Model Object", EExtensitonType3DModel, true)},
-    {".fbx", FileType("3D Model Object", EExtensitonType3DModel, true)},
-    {".dae", FileType("3D Model Object", EExtensitonType3DModel, true)},
-    {".blend", FileType("3D Model Blender Object", EExtensitonType3DModel)},
-    {".yml", FileType("Configuration Serialization Data", EExtensionTypeConfiguration)},
-    {".yaml", FileType("Configuration Serialization Data", EExtensionTypeConfiguration)},
-    {".wav", FileType("Audio File", EExtensionTypeAudio, true)},
-    {".mp3", FileType("Audio File", EExtensionTypeAudio, true)},
-    {".cpp", FileType("C++ Source File", EExtensionTypeSource)},
-    {".cc", FileType("C++ Source File", EExtensionTypeSource)},
-    {".cxx", FileType("C++ Source File", EExtensionTypeSource)},
-    {".c", FileType("C Source File", EExtensionTypeSource)},
-    {".h", FileType("C Header File", EExtensionTypeSource)},
-    {".hpp", FileType("C++ Header File", EExtensionTypeSource)},
-    {".hxx", FileType("C++ Header File", EExtensionTypeSource)},
-    {".hh", FileType("C++ Header File", EExtensionTypeSource)}};
-
-bool Yeager::CreateDirectoryAndValidate(const std::filesystem::path& p)
-{
-  if (!std::filesystem::create_directory(p)) {
-    Yeager::Log(ERROR, "Cannot create directory in path: %s", p.string());
-    return false;
-  }
-  return true;
-}
-bool Yeager::ValidatesAndCreateDirectory(const std::filesystem::path& p)
-{
-  bool exists = Yeager::ValidatesPath(p);
-  bool dir = true;
-  if (!exists) {
-    dir = Yeager::CreateDirectoryAndValidate(p);
-  }
-  return exists || dir;
-}
-
-String Yeager::ExtractExtensionTypenameFromPath(String filename)
-{
-  return ExtensionTypesToRawExtensions[ExtractExtensionFromFilename(filename)].Typename;
-}
-
-/* Checks if the extension of the path is list among the ExtensionTypesToRawExtensions, 
-returns if true. This doesnt check if the extensions is  supported by the engine */
-std::pair<bool, FileType> Yeager::CheckFileExtensionType(String path, FileExtensionType type)
-{
-  const String ext = ExtractExtensionFromFilename(path);
-  if (auto search = ExtensionTypesToRawExtensions.find(ext); search != ExtensionTypesToRawExtensions.end()) {
-    return std::pair<bool, FileType>(search->second.ExtType == type, search->second);
-  }
-  return std::pair<bool, FileType>(false, ExtensionTypesToRawExtensions["ERROR"]);
-}
-
-String Yeager::RemoveExtensionFromFilename(String filename)
-{
-  if (filename.empty())
-    return String(YEAGER_STRING_ERROR("RemoveExtensionFromFilename, String empty"));
-
-  size_t pos = filename.find_last_of('.');
-  if (pos == String::npos) {
-    Yeager::Log(ERROR, "Remove extension from filename {}, . character cannot be found in the expression!", filename);
-    return String(YEAGER_STRING_ERROR("Character not found!"));
-  }
-  return filename.substr(0, pos);
-}
-
-String Yeager::ExtractExtensionFromFilename(String filename)
-{
-  if (filename.empty())
-    return String(YEAGER_STRING_ERROR("ExtractExtensionFromFilename, String empty"));
-
-  size_t pos = filename.find_last_of('.');
-  if (pos == String::npos) {
-    Yeager::Log(ERROR, "Extract extension from filename {}, . character cannot be found in the expression!", filename);
-    return String(YEAGER_STRING_ERROR("Character not found!"));
-  }
-  return filename.substr(pos, filename.length());
-}
-
 glm::mat4 Yeager::ConvertAssimpMatrixToGLMFormat(const aiMatrix4x4& from)
 {
   glm::mat4 to;
@@ -109,11 +30,32 @@ glm::mat4 Yeager::ConvertAssimpMatrixToGLMFormat(const aiMatrix4x4& from)
   return to;
 }
 
-size_t Yeager::NumberOfFilesInDir(String path)
+#ifdef YEAGER_SYSTEM_WINDOWS_x64
+Cchar Yeager::g_OperatingSystemString = YEAGER_WINDOWS32_OS_STRING;
+#elif defined(YEAGER_SYSTEM_LINUX)
+Cchar Yeager::g_OperatingSystemString = YEAGER_LINUX_OS_STRING;
+#endif
+
+
+
+uint64_t Yeager::Convert32BitsTo64Bits(uint32_t high, uint32_t low) {return (uint64_t) high << 32 | low;}
+
+
+bool Yeager::EvaluateIntToBool(const int i)
 {
-  std::filesystem::path check_p = path;
-  using std::filesystem::directory_iterator;
-  return std::distance(directory_iterator(check_p), directory_iterator{});
+  return i == 0 ? false : true;
+}
+
+std::vector<String> Yeager::RetrievePhrasesBetweenChar(String str, const char ch) {
+  std::vector<String> phrases;
+  while (str.find(ch) != String::npos) {
+    String ph = ReadSuffixUntilCharacter(str, ch);
+    phrases.push_back(ph.substr(1, ph.size()));
+    str = str.substr(0, str.size() - ph.size());
+  }
+  phrases.push_back(str);
+  std::reverse(phrases.begin(), phrases.end());
+  return phrases;
 }
 
 String Yeager::RemoveSuffixUntilCharacter(String expression, char characterToStop)
@@ -127,6 +69,7 @@ String Yeager::RemoveSuffixUntilCharacter(String expression, char characterToSto
   }
   return expression;
 }
+
 String Yeager::RemovePreffixUntilCharacter(String expression, char characterToStop)
 {
   bool finished = false;
@@ -137,177 +80,6 @@ String Yeager::RemovePreffixUntilCharacter(String expression, char characterToSt
     }
   }
   return expression;
-}
-
-String kPath = std::filesystem::current_path().string();
-
-#ifdef YEAGER_SYSTEM_WINDOWS_x64
-Cchar Yeager::g_OperatingSystemString = "WIN32";
-#elif defined(YEAGER_SYSTEM_LINUX)
-Cchar Yeager::g_OperatingSystemString = "LINUX";
-#endif
-
-Cchar Yeager::GetShaderPath(String shader)
-{
-  String path = GetPath("Assets/shader") + YG_PS + shader;
-  Cchar rt = path.c_str();
-  return rt;
-}
-
-String Yeager::FileContentToString(const std::filesystem::path& p)
-{
-  if (!ValidatesPath(p)) {
-    return String(YEAGER_STRING_ERROR("File doesnt exists!"));
-  }
-  std::ifstream in;
-  String s;
-  String result;
-  in.open(p.c_str());
-  while (!in.eof()) {
-    getline(in, s);
-    result += s + '\n';
-  }
-  in.close();
-  return result;
-}
-
-String Yeager::GetPath(String path)
-{
-  if (g_OperatingSystemString == "LINUX") {
-
-    if (!Yeager::ValidatesPath(kPath + "/Apps/Yeager" + path))
-      return GetPathFromShared(path);  // The engine is installed, and the assets must be retrieve from the correct dir
-
-    return kPath + "/Apps/Yeager" + path;
-  } else if (g_OperatingSystemString == "WIN32") {
-
-    std::replace(kPath.begin(), kPath.end(), '/', '\\');
-    std::replace(path.begin(), path.end(), '/', '\\');
-
-    if (!Yeager::ValidatesPath(kPath + "\\apps\\Yeager" + path))
-      return GetPathFromShared(path);  // The engine is installed, and the assets must be retrieve from the correct dir
-
-    return kPath + "\\apps\\Yeager" + path;
-  } else {
-    String respond = kPath + path;
-    VLOG_F(ERROR,
-           "GetPath function and this program does not support other OS that "
-           "arent Windows and Linux system! Returing: %s",
-           respond.c_str());
-    Yeager::ValidatesPath(respond);
-    return respond;
-  }
-};
-
-String Yeager::GetPathFromShared(String path)
-{
-  if (g_OperatingSystemString == "LINUX") {
-    const String respond = "/usr/share/yeager" + path;
-    Yeager::ValidatesPath(respond);
-    return String(respond);
-  }
-
-  if (g_OperatingSystemString == "WIN32") {
-    // TODO: make this
-  }
-}
-
-extern String Yeager::CurrentTimeFormatToString()
-{
-  std::time_t current_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-  String s_time = std::ctime(&current_time);
-  return s_time;
-}
-
-String Yeager::MonthNumberToString(int month)
-{
-  switch (month) {
-    case 0:
-      return "January";
-    case 1:
-      return "February";
-    case 2:
-      return "March";
-    case 3:
-      return "April";
-    case 4:
-      return "May";
-    case 5:
-      return "June";
-    case 6:
-      return "July";
-    case 7:
-      return "August";
-    case 8:
-      return "September";
-    case 9:
-      return "October";
-    case 10:
-      return "November";
-    case 11:
-      return "December";
-    default:
-      return "INVALID_MONTH_NUMBER";
-  }
-}
-
-String Yeager::WeekDayNumberToString(int weekday)
-{
-  switch (weekday) {
-    case 0:
-      return "Sunday";
-    case 1:
-      return "Monday";
-    case 2:
-      return "Tuesday";
-    case 3:
-      return "Wednesday";
-    case 4:
-      return "Thursday";
-    case 5:
-      return "Friday";
-    case 6:
-      return "Saturday";
-    default:
-      return "INVALID_WEEKDAY_NUMBER";
-  }
-}
-
-extern Yeager::YgTime_t Yeager::CurrentTimeToTimeType()
-{
-  YgTime_t time;
-
-  std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-  time_t tt = std::chrono::system_clock::to_time_t(now);
-  tm utc_tm = *gmtime(&tt);
-  tm local_tm = *localtime(&tt);
-
-  time.Date.Year = local_tm.tm_year + 1900;
-  time.Date.Month = local_tm.tm_mon;
-  time.Date.Day = local_tm.tm_mday;
-  time.Date.WeekDay = local_tm.tm_wday;
-
-  time.Time.Hours = local_tm.tm_hour;
-  time.Time.Minutes = local_tm.tm_min;
-  time.Time.Seconds = local_tm.tm_sec;
-
-  return time;
-}
-
-bool Yeager::EvaluateIntToBool(const int i)
-{
-  return i == 0 ? false : true;
-}
-
-bool Yeager::ValidatesPath(const std::filesystem::path& p, bool declare, std::filesystem::file_status s)
-{
-  bool known = std::filesystem::status_known(s) ? std::filesystem::exists(s) : std::filesystem::exists(p);
-  String status = known ? "Validated!" : "Not Validated!";
-#ifdef YEAGER_DEBUG
-  if (declare)
-  //Yeager::Log((status == "Validated!" ? INFO : ERROR), "File validation: Path: {}, Status [{}]", p.c_str(), status);
-#endif
-    return known;
 }
 
 String Yeager::ReadSuffixUntilCharacter(String expression, char characterToStop)
@@ -324,26 +96,14 @@ String Yeager::ReadSuffixUntilCharacter(String expression, char characterToStop)
   return expression;
 }
 
-String Yeager::GetExternalFolderPath()
-{
-#ifdef YEAGER_SYSTEM_LINUX
-  const char* homeDir;
-  /* The $HOME env varaible does not exist */
-  if ((homeDir = getenv("HOME")) == NULL) {
-    homeDir = getpwuid(getuid())->pw_dir;
-    return String(homeDir);
-  } else {
-    /* The $HOME env variable exists!*/
-    return String(getenv("HOME"));
-  }
-#elif defined(YEAGER_SYSTEM_WINDOWS_x64)
 
-  TCHAR szPath[MAX_PATH];
-  if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, szPath))) {
-    return szPath;
-  } else {
-    Yeager::Log(ERROR, "SHGetFolderPath from win32 api cannot find appdata folder!");
-    return String();
+int Yeager::DisplayWarningPanicMessageBox(const String& cause, const std::filesystem::path& log) {
+    if (g_OperatingSystemString == YEAGER_WINDOWS32_OS_STRING) {
+    return MessageBoxW(NULL,
+                      (LPCWSTR)String("A problem have occurs that causes the Yeager Engine to panic! Cause: " + cause +
+                                      "\nPlease check the log generated in the path: \n" + log.string())
+                          .c_str(),
+                         (LPCWSTR)String("Yeager Engine panic!").c_str(), MB_ICONHAND | MB_APPLMODAL | MB_OK);
   }
-#endif
+    return -1;
 }

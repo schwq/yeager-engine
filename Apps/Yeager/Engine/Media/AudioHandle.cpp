@@ -449,13 +449,13 @@ irrklang::vec3df Audio3DHandle::GetIrrklangPosition()
 Vector3 Audio3DHandle::GetVector3Position()
 {
   if (m_sound) {
-    return Vec3df_to_YgVec3(m_sound->getPosition());
+    return Vec3dfToGLMVec3(m_sound->getPosition());
   } else {
     return Vector3(0.0f);
   }
 }
 
-Vector3 Yeager::Vec3df_to_YgVec3(irrklang::vec3df vec)
+Vector3 Yeager::Vec3dfToGLMVec3(irrklang::vec3df vec)
 {
   Vector3 vector;
   vector.x = vec.X;
@@ -464,7 +464,7 @@ Vector3 Yeager::Vec3df_to_YgVec3(irrklang::vec3df vec)
   return vector;
 }
 
-irrklang::vec3df Yeager::YgVec3_to_Vec3df(Vector3 vec)
+irrklang::vec3df Yeager::GLMVec3ToVec3df(Vector3 vec)
 {
   irrklang::vec3df vector;
   vector.X = vec.x;
