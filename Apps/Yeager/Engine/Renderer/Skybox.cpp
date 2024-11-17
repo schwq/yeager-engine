@@ -4,28 +4,20 @@
 #include "TextureHandle.h"
 using namespace Yeager;
 
-Skybox::Skybox(String name, ObjectGeometryType::Enum type, ApplicationCore* application)
-    : EditorEntity(EntityObjectType::SKYBOX, application, name), m_Geometry(type)
+Skybox::Skybox(const EntityBuilder& builder, ObjectGeometryType::Enum type)
+    : EditorEntity(EntityBuilder(builder.Application, builder.Name, EntityObjectType::SKYBOX, builder.UUID)),
+      m_Geometry(type)
 {
-  Yeager::Log(INFO, "Loading skybox {}", name);
-  m_Texture = std::make_shared<MaterialTexture2D>(application, name, MaterialTextureType::eDIFFUSE);
+  Yeager::Log(INFO, "Loading skybox {}", mName);
+  m_Texture = std::make_shared<MaterialTexture2D>(EntityBuilder(mApplication, mName), MaterialTextureType::eDIFFUSE);
 }
-
-Skybox::Skybox(ApplicationCore* application) : EditorEntity(EntityObjectType::SKYBOX, application, YEAGER_SKYBOX_DEFAULT_NAME)
-{
-  Yeager::Log(INFO, "Loading skybox {}", YEAGER_SKYBOX_DEFAULT_NAME);
-  m_Texture =
-      std::make_shared<MaterialTexture2D>(application, YEAGER_SKYBOX_DEFAULT_NAME, MaterialTextureType::eDIFFUSE);
-}
-
-
 
 bool Skybox::BuildSkyboxFromImport(String path, bool flip)
 {
   if (!m_SkyboxDataLoaded) {
     Path = path;
 
-    Importer imp("Skybox", m_Application);
+    Importer imp("Skybox", mApplication);
     ObjectCreationConfiguration configuration = ObjectCreationConfiguration();
     m_Model = imp.Import(path.c_str(), configuration, flip);
 
@@ -180,7 +172,7 @@ void Skybox::Draw(Yeager::Shader* shader, Matrix4 view, Matrix4 projection)
 {
   glDisable(GL_CULL_FACE);
 
-  if (m_SkyboxDataLoaded && m_Render) {
+  if (m_SkyboxDataLoaded && bRender) {
     glDepthFunc(GL_LEQUAL);
     shader->UseShader();
     shader->SetMat4("view", view);

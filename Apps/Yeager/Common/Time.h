@@ -1,7 +1,7 @@
 // Yeager Engine, free and open source 3D / 2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
 //    Repo : https://github.com/schwq/YeagerEngine
-//    Copyright (C) 2023
+//    Copyright (C) 2023 - Present
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -20,8 +20,7 @@
 
 #include "Common.h"
 
-namespace Yeager
-{
+namespace Yeager {
 /**
 	@brief Represents a human readable date, month, weekday, day and year
 */
@@ -68,4 +67,12 @@ YEAGER_NODISCARD extern TimePointType WindowsFILETIMEToTimePoint(const FILETIME&
 
 #endif
 
-}
+/**
+ * @brief Given a number, returns a string with a zero in front if number > 10 or the number itself if not
+ * This is useful when displaying time in text, for example (9 hours and 8 minutes) is normally converted to 9:8, the 
+ * function fixs its and converts to 09:08
+ */
+
+YEAGER_NODISCARD static String FormatFrontZeroStr(Uint number);
+
+}  // namespace Yeager

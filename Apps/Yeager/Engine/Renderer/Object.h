@@ -1,7 +1,7 @@
-//    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
+                                                                                                                                                                                                                                                                                                                      //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
 //    Repo : https://github.com/schwq/YeagerEngine
-//    Copyright (C) 2023
+//    Copyright (C) 2023 - Present
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -173,8 +173,8 @@ extern void SpawnSphereObject(Yeager::ApplicationCore* application, const String
 
 class Object : public GameEntity {
  public:
-  Object(String name, ApplicationCore* application);
-  Object(String name, ApplicationCore* application, GLuint amount);
+  Object(const EntityBuilder& builder);
+  Object(const EntityBuilder& builder, GLuint amount);
   ~Object();
 
   virtual bool ImportObjectFromFile(Cchar path,
@@ -207,7 +207,7 @@ class Object : public GameEntity {
     if (m_InstancedType == ObjectInstancedType::eINSTANCED) {
       return m_InstancedObjs;
     }
-    Yeager::Log(WARNING, "Getting instanced object number from a non instanced object! {}", m_Name);
+    Yeager::Log(WARNING, "Getting instanced object number from a non instanced object! {}", mName);
     return 1;
   }
 
@@ -216,7 +216,7 @@ class Object : public GameEntity {
     if (m_InstancedType == ObjectInstancedType::eINSTANCED) {
       return &m_Props;
     }
-    Yeager::Log(WARNING, "Getting instanced props from a non instanced object! {}", m_Name);
+    Yeager::Log(WARNING, "Getting instanced props from a non instanced object! {}", mName);
     return YEAGER_NULLPTR;
   }
 
@@ -255,8 +255,8 @@ class Object : public GameEntity {
 
 class AnimatedObject : public Object {
  public:
-  AnimatedObject(String name, ApplicationCore* application);
-  AnimatedObject(String name, ApplicationCore* application, GLuint amount);
+  AnimatedObject(const EntityBuilder& builder);
+  AnimatedObject(const EntityBuilder& builder, GLuint amount);
   ~AnimatedObject();
   bool ImportObjectFromFile(Cchar path, const ObjectCreationConfiguration configuration = ObjectCreationConfiguration(),
                             bool flip_image = false);

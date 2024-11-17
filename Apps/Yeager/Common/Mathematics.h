@@ -1,7 +1,7 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
 //    Repo : https://github.com/schwq/YeagerEngine
-//    Copyright (C) 2023
+//    Copyright (C) 2023 - Present
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -27,6 +27,12 @@
 namespace Yeager {
 namespace Math {
 
+#define YEAGER_TYPE_IS_ARITHMETIC \
+  template <typename Type, typename = typename std::enable_if<std::is_arithmetic<Type>::value, Type>::type>
+
+#define YEAGER_TYPE_IS_INTEGRAL \
+  template <typename Type, typename = typename std::enable_if<std::is_integral<Type>::value, Type>::type>
+
 /* Predefined planes in mathematics locks one of the coordinates of the 3d world to 0, 
 and is used to draw 2d figures in the tridimensional space on the engine  */
 struct PredefinedPlanes {
@@ -40,7 +46,13 @@ extern int CalculateNextPowerOfTwo(int x);
 extern float RandomFloat();
 extern float RandomFloatRange(float Start, float End);
 
-template <typename Type, typename = typename std::enable_if<std::is_arithmetic<Type>::value, Type>::type>
+YEAGER_TYPE_IS_ARITHMETIC
+Uint FloorDivision(Type n1, Type n2)
+{
+  return floor(n1 / n2);
+}
+
+YEAGER_TYPE_IS_ARITHMETIC
 Type SafeDivide(Type n1, Type n2)
 {
   if (n2 == 0)
@@ -49,9 +61,10 @@ Type SafeDivide(Type n1, Type n2)
 }
 
 /* This template only accepts arithmetics values as type (float, int, double.. ) */
-template <typename Type, typename = typename std::enable_if<std::is_arithmetic<Type>::value, Type>::type>
+YEAGER_TYPE_IS_ARITHMETIC
 Type ArithmeticMean(const std::vector<Type>& sequence)
 {
+
   if (sequence.empty())
     return 0;
 
@@ -63,7 +76,7 @@ Type ArithmeticMean(const std::vector<Type>& sequence)
   return sum / sequence.size();
 }
 
-template <typename Type, typename = typename std::enable_if<std::is_arithmetic<Type>::value, Type>::type>
+YEAGER_TYPE_IS_ARITHMETIC
 std::pair<Type, Type> MaxMin(const std::vector<Type>& list)
 {
   if (list.empty())
@@ -83,7 +96,7 @@ std::pair<Type, Type> MaxMin(const std::vector<Type>& list)
   return std::pair<Type, Type>(maxValue, minValue);
 }
 
-template <typename Type, typename = typename std::enable_if<std::is_integral<Type>::value, Type>::type>
+YEAGER_TYPE_IS_INTEGRAL
 Type GreatestCommonDivisor(const std::vector<Type>& list)
 {
   if (list.empty())
@@ -105,7 +118,7 @@ Type GreatestCommonDivisor(const std::vector<Type>& list)
   return divisor;
 }
 
-template <typename Type, typename = typename std::enable_if<std::is_integral<Type>::value, Type>::type>
+YEAGER_TYPE_IS_INTEGRAL
 Type LeastCommonMultiple(const std::vector<Type>& list)
 {
   if (list.empty())

@@ -2,7 +2,7 @@
 //    In case of questions and bugs, please, refer to the issue tab on github
 //    Repo : https://github.com/schwq/YeagerEngine
 //
-//    Copyright (C) 2023
+//    Copyright (C) 2023 - Present
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "Common/Algorithm/String/BruteForceSearch.h"
 #include "Common/Common.h"
 #include "Common/LogEngine.h"
 #include "Common/Utilities.h"
@@ -26,12 +27,14 @@
 #include "Engine/Editor/Camera.h"
 #include "Engine/Editor/Explorer.h"
 #include "Engine/Interface/Interface.h"
+#include "Engine/Interface/Locale.h"
 #include "Engine/Physics/PhysXHandle.h"
 #include "Engine/Renderer/Player/PlayableObject.h"
 #include "Engine/Renderer/Text/TextRendering.h"
 #include "Engine/Renderer/Window.h"
 #include "InputHandle.h"
 #include "Kernel/Caching/Cache.h"
+#include "Kernel/Network/NetworkSocket.h"
 #include "Launcher.h"
 #include "Request.h"
 #include "Scene.h"
@@ -84,10 +87,26 @@ struct DebugTitleString {
   String Title = YEAGER_NULL_LITERAL;
 };
 
+struct DebugVirtualMachine {
+  bool Activated = false;
+  float Timer = 10.0f;
+};
+
+struct NetworkStartupConnection {
+  void Start() { Socket.Initialize(IpAddr, Port); }
+  bool Activated = false;
+  String IpAddr = YEAGER_DEFAULT_IP_ADDR;
+  Uint Port = YEAGER_DEFAULT_NET_PORT;
+  NetworkCommunicationRole::Enum Role = NetworkCommunicationRole::UNDEFINED;
+  NetworkSocket Socket = NetworkSocket();
+};
+
 struct ProgramArguments {
   ForcedEntryProject ForcedEntry;
   std::optional<Yeager::LauncherProjectPicker> SearchForcedEntryProject(Yeager::ApplicationCore* application);
   DebugTitleString DebugTitle;
+  DebugVirtualMachine VirtualMachine;
+  NetworkStartupConnection StartupNetwork;
 };
 
 struct UsableVariables {
@@ -129,7 +148,7 @@ class ApplicationCore {
   void CheckGLADIntegrity();
 
   /** Some getters functions so the other classes have access to the application */
-  
+
   ApplicationMode::Enum GetMode() const noexcept;
   ApplicationState::Enum GetState() const noexcept;
 
@@ -147,24 +166,27 @@ class ApplicationCore {
   AudioEngineHandle* GetAudioEngineHandle();
   physx::PxController* GetController();
   AudioEngine* GetAudioFromEngine();
-  
+
+  Locale GetLocale() { return mCurrentLocale; }
+
   float GetTimeBeforeLoop() const;
   long long GetFrameCurrentCount() const;
 
   void DetachPlayerCamera();
   void AttachPlayerCamera(std::shared_ptr<PlayerCamera> camera);
   void AddConfigShader(std::shared_ptr<Yeager::Shader> shader, const String& var) noexcept;
-  
+
   void BeginEngineTimer();
   float GetSecondsElapsedSinceStart() const;
-  
+
   /**
     @brief World matrices represent the projection, view and the position of the viewer 
     TODO: this must be in the player class, so multiple views can be created, for example for multiplayer
   */
   YEAGER_NODISCARD WorldCharacterMatrices GetWorldMatrices() const { return m_WorldMatrices; }
-  
-  using ConfigShaders = std::vector<std::pair<std::shared_ptr<Shader>, String>>; // Big type name, better way of making functions declaration smaller 
+
+  using ConfigShaders = std::vector<
+      std::pair<std::shared_ptr<Shader>, String>>;  // Big type name, better way of making functions declaration smaller
 
   /** 
     @brief Returns the configuration shaders been used by the application,  its a vector of pairs with shared_ptr<Shader> and a string represeting the name
@@ -181,20 +203,21 @@ class ApplicationCore {
     @brief During startup, the engine looks into the loaded projects configuration file to find about the projects created in the machine current running
   */
   YEAGER_NODISCARD std::vector<LoadedProjectHandle>* GetLoadedProjectsHandles();
- 
+
   /**
     @brief The arguments are evaluated during the startup of this class, the ProgramArguments struct holds the values set to each type of argument option
     For example, the option of forced entry in a project (quick way to bypass the launcher screen) holds if this options is turn on and which project to forced entry 
   */
   YEAGER_NODISCARD ProgramArguments* GetArguments() { &m_Arguments; }
- 
+
   /**
     @brief Engine variables are mostly defined paths for configuration or serialization  to be used
   */
   YEAGER_NODISCARD UsableVariables GetVariables() const { return m_EngineVariables; }
 
+  Uint GetReturnCode() { return mApplicationReturnCode; }
+
  private:
- 
   String RequestWindowEngineName(const LauncherProjectPicker& project);
   void ValidatesExternalEngineFolder();
   void ManifestShaderProps(Yeager::Shader* shader);
@@ -212,8 +235,9 @@ class ApplicationCore {
   void UpdateCamera();
   void PrepareSceneToLoad(const LauncherProjectPicker& project);
 
+  void ProcessArgumentsDuringRender();
+
  private:
-  
   UsableVariables m_EngineVariables;
   ProgramArguments m_Arguments;
   TextRenderer m_CommonTextOnScreen;
@@ -257,5 +281,9 @@ class ApplicationCore {
   WorldCharacterMatrices m_WorldMatrices;
   ApplicationState::Enum m_CurrentState = ApplicationState::eAPPLICATION_RUNNING;
   ApplicationMode::Enum m_CurrentMode = ApplicationMode::eAPPLICATION_LAUNCHER;
+
+  Locale mCurrentLocale;
+
+  Uint mApplicationReturnCode = 0;
 };
 }  // namespace Yeager

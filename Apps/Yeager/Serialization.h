@@ -2,7 +2,7 @@
 //    In case of questions and bugs, please, refer to the issue tab on github
 //    Repo : https://github.com/schwq/YeagerEngine
 
-//    Copyright (C) 2023
+//    Copyright (C) 2023 - Present
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -88,7 +88,6 @@ struct TemplateHandle;
 
 extern std::vector<OpenProjectsDisplay> ReadProjectsToDisplay(String dir, Yeager::ApplicationCore* app);
 
-
 /***
  * @brief Serialize and deserialize mostly of the engine required information, like scenes props, configurations files, and more. Every GameEntity is serialize 
  * with the needed information about itself */
@@ -113,12 +112,15 @@ class Serialization {
   TimePointType DeserializeProjectTimeOfCreation(YAML::Node node);
 
   std::vector<Yeager::TemplateHandle> FindTemplatesFromSharedFolder(const std::filesystem::path& path);
-  Yeager::TemplateHandle ReadTemplateConfiguration(const std::filesystem::path& path, const std::filesystem::path& folder);
+  Yeager::TemplateHandle ReadTemplateConfiguration(const std::filesystem::path& path,
+                                                   const std::filesystem::path& folder);
 
   void DeserializeTemplateAssetsIntoScene(Yeager::Scene* scene, const std::filesystem::path& path);
 
- private:
+  typedef std::map<String, String> LocaleData;
+  std::optional<LocaleData> DeserializeLocaleData(const std::filesystem::path& path);
 
+ private:
   Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
 
   void YEAGER_FORCE_INLINE DeserializeEntity(Yeager::Scene* scene, YAML::Node& node,
@@ -129,7 +131,7 @@ class Serialization {
 
   YEAGER_FORCE_INLINE std::vector<std::shared_ptr<Transformation3D>> DeserializeObjectProperties(
       YAML::detail::iterator_value& entity);
-  void YEAGER_FORCE_INLINE SerializeBasicEntity(YAML::Emitter& out, String name, Uint id, String type);
+  void YEAGER_FORCE_INLINE SerializeBasicEntity(YAML::Emitter& out, String name, uuids::uuid uuid, String type);
   void YEAGER_FORCE_INLINE SerializeObjectTransformation(YAML::Emitter& out, String name,
                                                          Yeager::Transformation3D& transf) noexcept;
 
@@ -139,22 +141,31 @@ class Serialization {
   void YEAGER_FORCE_INLINE SerializeBegin(YAML::Emitter& out, const char* key, YAML::EMITTER_MANIP manip);
   void YEAGER_FORCE_INLINE SerializeSystemInfo(YAML::Emitter& out, Yeager::Scene* scene);
 
-  template<typename Type>
+  template <typename Type>
   std::optional<Type> DeserializeObject(const YAML::Node& node, Cchar key);
+
+  /**
+   * @brief Given a node and a key, ensures that the key exists in the node, if so, the reference of
+   * the given type T is assign to the value of the item stored inside the node with the given key.
+   * @return True if the reference holds the correct value, false if not
+   * @attention This function handles all YAML::Exception exceptions inside of it
+   */
+  template <typename T>
+  bool DeserializeIfExistsIntoRef(const YAML::Node& node, const String& key, T& hold);
 
   void SerializeProjectTimeOfCreation(YAML::Emitter& out, Yeager::Scene* scene, const char* key);
 
   void DeserializeAudioHandle(YAML::detail::iterator_value& entity, Yeager::Scene* scene, const String& name,
-                              const String& type, const Uint id);
+                              const String& type, const uuids::uuid uuid);
   void DeserializeAudio3DHandle(YAML::detail::iterator_value& entity, Yeager::Scene* scene, const String& name,
-                                const String& type, const Uint id);
+                                const String& type, const uuids::uuid uuid);
   void DeserializeObject(YAML::detail::iterator_value& entity, Yeager::Scene* scene, const String& name,
-                         const String& type, const Uint id);
+                         const String& type, const uuids::uuid uuid);
   void DeserializeAnimatedObject(YAML::detail::iterator_value& entity, Yeager::Scene* scene, const String& name,
-                                 const String& type, const Uint id);
+                                 const String& type, const uuids::uuid uuid);
   void DeserializeLightSource(YAML::detail::iterator_value& entity, Yeager::Scene* scene, const String& name,
-                              const String& type, const Uint id);
+                              const String& type, const uuids::uuid uuid);
   void DeserializeSkybox(YAML::detail::iterator_value& entity, Yeager::Scene* scene, const String& name,
-                         const String& type, const Uint id);
+                         const String& type, const uuids::uuid uuid);
 };
 }  // namespace Yeager

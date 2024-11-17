@@ -1,7 +1,7 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
 //    Repo : https://github.com/schwq/YeagerEngine
-//    Copyright (C) 2023
+//    Copyright (C) 2023 - Present
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@ extern String CameraOrientationToString(const Vector3& orientation);
  */
 class BaseCamera : public EditorEntity {
  public:
-  BaseCamera(Yeager::ApplicationCore* app, Vector3 cameraPosition = Vector3(0.0f, 0.0f, 0.0f),
+  BaseCamera(const EntityBuilder& builder, Vector3 cameraPosition = Vector3(0.0f, 0.0f, 0.0f),
              Vector3 cameraFront = Vector3(0.0f, 0.0f, -1.0f), Vector3 cameraUp = Vector3(0.0f, 1.0f, 0.0f));
   ~BaseCamera() {}
 
@@ -80,6 +80,8 @@ class BaseCamera : public EditorEntity {
   when we call the attach or detach camera, the information (position, direction ect) is pass out to the next camera */
   void TransferInformation(Yeager::BaseCamera* other);
 
+  Vector3 InFront(float mag = 1.0f) const { return (m_Position + m_CameraDirection) * mag; }
+
  protected:
   Vector3 m_Position = YEAGER_ZERO_VECTOR3;
   Vector3 m_CameraFront = YEAGER_ZERO_VECTOR3;
@@ -103,7 +105,7 @@ class BaseCamera : public EditorEntity {
  */
 class EditorCamera : public BaseCamera {
  public:
-  EditorCamera(Yeager::ApplicationCore* app, Vector3 cameraPosition = Vector3(0.0f, 0.0f, 0.0f),
+  EditorCamera(const EntityBuilder& builder, Vector3 cameraPosition = Vector3(0.0f, 0.0f, 0.0f),
                Vector3 cameraFront = Vector3(0.0f, 0.0f, -1.0f), Vector3 cameraUp = Vector3(0.0f, 1.0f, 0.0f));
   /** TODO implement this function properlly */
   void RayCasting(int mouse_x, int mouse_y, Matrix4 projection, Matrix4 view);
@@ -115,7 +117,7 @@ class EditorCamera : public BaseCamera {
 
 class PlayerCamera : public BaseCamera {
  public:
-  PlayerCamera(Yeager::ApplicationCore* app, Vector3 cameraPosition = Vector3(0.0f, 0.0f, 0.0f),
+  PlayerCamera(const EntityBuilder& builder, Vector3 cameraPosition = Vector3(0.0f, 0.0f, 0.0f),
                Vector3 cameraFront = Vector3(0.0f, 0.0f, -1.0f), Vector3 cameraUp = Vector3(0.0f, 1.0f, 0.0f));
   ~PlayerCamera();
 

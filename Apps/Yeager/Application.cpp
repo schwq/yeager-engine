@@ -24,15 +24,15 @@ String ApplicationState::ToString(ApplicationState::Enum type)
 
 ApplicationState::Enum ApplicationState::ToEnum(const String& str)
 {
-  switch (StringToInteger(str.c_str())) {
-    case StringToInteger("Running"):
+  switch (StringToInterger(str.c_str())) {
+    case StringToInterger("Running"):
       return eAPPLICATION_RUNNING;
-    case StringToInteger("Stopped"):
+    case StringToInterger("Stopped"):
       return eAPPLICATION_STOPPED;
-    case StringToInteger("Crashed"):
+    case StringToInterger("Crashed"):
       return eAPPLICATION_CRASHED;
-    case StringToInteger("Undefined"):
-    case StringToInteger(YEAGER_NULL_LITERAL):
+    case StringToInterger("Undefined"):
+    case StringToInterger(YEAGER_NULL_LITERAL):
     default:
       return eAPPLICATION_UNDEFINED;
   }
@@ -59,19 +59,19 @@ String ApplicationMode::ToString(ApplicationMode::Enum type)
 
 ApplicationMode::Enum ApplicationMode::ToEnum(const String& str)
 {
-  switch (StringToInteger(str.c_str())) {
-    case StringToInteger("Editor"):
+  switch (StringToInterger(str.c_str())) {
+    case StringToInterger("Editor"):
       return eAPPLICATION_EDITOR;
-    case StringToInteger("Game"):
+    case StringToInterger("Game"):
       return eAPPLICATION_GAME;
-    case StringToInteger("Launcher"):
+    case StringToInterger("Launcher"):
       return eAPPLICATION_LAUNCHER;
-    case StringToInteger("Loading"):
+    case StringToInterger("Loading"):
       return eAPPLICATION_LOADING;
-    case StringToInteger("Settings"):
+    case StringToInterger("Settings"):
       return eAPPLICATION_SETTINGS;
-    case StringToInteger("Undefined"):
-    case StringToInteger(YEAGER_NULL_LITERAL):
+    case StringToInterger("Undefined"):
+    case StringToInterger(YEAGER_NULL_LITERAL):
     default:
       return eAPPLICATION_UNDEFINED;
   }
@@ -80,8 +80,8 @@ ApplicationMode::Enum ApplicationMode::ToEnum(const String& str)
 std::optional<Yeager::LauncherProjectPicker> ProgramArguments::SearchForcedEntryProject(
     Yeager::ApplicationCore* application)
 {
-  std::vector<OpenProjectsDisplay> projects =
-      Yeager::ReadProjectsToDisplay(GetPathFromLocal("/Configuration/Projects/LoadedProjectsPath.yml").value(), application);
+  std::vector<OpenProjectsDisplay> projects = Yeager::ReadProjectsToDisplay(
+      GetPathFromLocal("/Configuration/Projects/LoadedProjectsPath.yml").value(), application);
 
   for (const auto& proj : projects) {
     if (proj.Name == ForcedEntry.ProjectName) {
@@ -96,8 +96,10 @@ ApplicationCore::ApplicationCore(int argc, char* argv[])
     : m_Serial(std::make_shared<Serialization>(this)),
       m_Scene(std::make_shared<Scene>(this)),
       m_Window(std::make_shared<Window>(this)),
-      m_CommonTextOnScreen(this)
+      m_CommonTextOnScreen(this),
+      mCurrentLocale(this, ELanguangeRegion::EN_US, true)
 {
+  InitializeRandomGenerator();
   ProcessArguments(argc, argv);
   ValidatesExternalEngineFolder();
   m_Serial->ReadLoadedProjectsHandles(GetPathFromLocal("/Configuration/Projects").value());
@@ -131,8 +133,8 @@ void ApplicationCore::ProcessArguments(int argc, char* argv[])
 
 Uint ApplicationCore::IterateArguments(const String& arg, Uint index)
 {
-  switch (StringToInteger(arg.c_str())) {
-    case StringToInteger("-ForcedEntry"): {
+  switch (StringToInterger(arg.c_str())) {
+    case StringToInterger("-ForcedEntry"): {
       std::optional<const String> entry = AcessableArgumentArray(index + 1);
       if (!entry.has_value()) {
         Yeager::Log(ERROR, "Cannot process arguments properly, trying to access array from undefined index!");
@@ -141,16 +143,50 @@ Uint ApplicationCore::IterateArguments(const String& arg, Uint index)
       m_Arguments.ForcedEntry.Activated = true;
       m_Arguments.ForcedEntry.ProjectName = entry.value();
       return 2;
-    }    case StringToInteger("-DebugTitleString"): {
+    }
+    case StringToInterger("-DebugTitleString"): {
 
       std::optional<const String> title = AcessableArgumentArray(index + 1);
       if (!title.has_value()) {
         Yeager::Log(ERROR, "Cannot process arguments properly, trying to access array from undefined index!");
         return 1;
       }
+
       m_Arguments.DebugTitle.Activated = true;
       m_Arguments.DebugTitle.Title = title.value();
       return 2;
+    }
+    case StringToInterger("-DebugVirtualMachine"): {
+      std::optional<const String> vm = AcessableArgumentArray(index + 1);
+      if (vm.has_value() && vm.value() == "valgrind") {
+        Yeager::Log(INFO, "Current debugging virtual machine is set to VALGRIND!");
+        m_Arguments.VirtualMachine.Activated = true;
+        return 2;
+      }
+      Yeager::Log(ERROR, "Cannot process arguments properly, trying to access array from undefined index!");
+      return 1;
+    }
+    case StringToInterger("-FromSource"): {
+      g_FromSourceCode = true;
+      Yeager::LogDebug(INFO, "The engine is being called from the source code!");
+      return 1;
+    }
+
+    case StringToInterger("-NetworkSocket"): {
+      std::optional<const String> role = AcessableArgumentArray(index + 1);
+      std::optional<const String> ip = AcessableArgumentArray(index + 2);
+      std::optional<const String> port = AcessableArgumentArray(index + 3);
+      if (role.has_value() && ip.has_value() && port.has_value()) {
+        m_Arguments.StartupNetwork.IpAddr = ip.value();
+        m_Arguments.StartupNetwork.Port = std::stoi(port.value());
+        m_Arguments.StartupNetwork.Role = NetworkCommunicationRole::CLIENT;
+        m_Arguments.StartupNetwork.Start();
+        m_Arguments.StartupNetwork.Socket.Send("Hello from Yeager Engine!");
+        std::vector<unsigned int> v = {1, 2, 3, 4, 5};
+        m_Arguments.StartupNetwork.Socket.Send(v);
+        return 4;
+      }
+      return 1;
     }
 
     default:
@@ -199,7 +235,7 @@ String ApplicationCore::RequestWindowEngineName(const LauncherProjectPicker& pro
   String scene_renderer_str = Yeager::SceneRendererToString(project.m_SceneRenderer);
   std::replace(scene_renderer_str.begin(), scene_renderer_str.end(), '_', ' ');
   String engine_new_name = "Yeager Engine : " + project.m_Name + " / " + scene_renderer_str;
-  if (m_Arguments.DebugTitle.Activated) 
+  if (m_Arguments.DebugTitle.Activated)
     engine_new_name += " " + m_Arguments.DebugTitle.Title;
   return engine_new_name;
 }
@@ -209,7 +245,7 @@ void ApplicationCore::BuildApplicationCoreCompoments()
   m_Settings = std::make_shared<Settings>(this);
   m_Request = std::make_shared<RequestHandle>(this);
   m_Input = std::make_shared<Input>(this);
- 
+
   m_Serial->ReadEngineConfiguration(GetPathFromLocal("/Configuration/Variables/EngineConfiguration.yml").value());
 
   m_Window->GenerateWindow("Yeager Engine", m_Input->MouseCallback, YEAGER_GENERATE_LAUNCHER_WINDOW);
@@ -234,8 +270,8 @@ void ApplicationCore::BuildApplicationCoreCompoments()
 
 void ApplicationCore::SetupCamera()
 {
-  m_EditorCamera = std::make_shared<EditorCamera>(this);
-  m_BaseCamera = std::make_shared<BaseCamera>(this);
+  m_EditorCamera = std::make_shared<EditorCamera>(EntityBuilder(this));
+  m_BaseCamera = std::make_shared<BaseCamera>(EntityBuilder(this));
   m_BaseCamera = static_cast<std::shared_ptr<BaseCamera>>(m_EditorCamera);
 }
 
@@ -253,7 +289,6 @@ void ApplicationCore::Setup()
 
   const std::optional<LauncherProjectPicker> project = RequestLauncher();
 
-
   if (project.has_value()) {
 
     m_CurrentMode = ApplicationMode::eAPPLICATION_EDITOR;
@@ -267,14 +302,17 @@ void ApplicationCore::Setup()
 
   } else {
     m_AudioEngine->TerminateAudioEngine();
+    m_Serial->WriteEngineConfiguration(GetPathFromLocal("/Configuration/Variables/EngineConfiguration.yml").value());
   }
 }
 
 void ApplicationCore::PrepareSceneToLoad(const LauncherProjectPicker& project)
 {
   m_Scene->BuildScene(project);
-  m_Serial->ReadSceneShadersConfig(GetPathFromSourceCode("/Configuration/Editor/Private/Shaders/default_shaders.yaml"));
-  m_Launcher->GetNewProjectLoaded() ? m_Scene->Save() : m_Scene->Load(project.m_ProjectConfigurationPath); // Check if project is new or already exists
+  m_Serial->ReadSceneShadersConfig(GetPathFromShared("/Configuration/Shader/default_shaders.yaml").value());
+  m_Launcher->GetNewProjectLoaded()
+      ? m_Scene->Save()
+      : m_Scene->Load(project.m_ProjectConfigurationPath);  // Check if project is new or already exists
 }
 
 bool ApplicationCore::ShouldRender()
@@ -346,6 +384,15 @@ void ApplicationCore::ShowCommonTextOnScreen()
   }
 }
 
+void ApplicationCore::ProcessArgumentsDuringRender()
+{
+  if (m_Arguments.VirtualMachine.Activated) {
+    if (GetSecondsElapsedSinceStart() > m_Arguments.VirtualMachine.Timer) {
+      glfwSetWindowShouldClose(m_Window->GetGLFWwindow(), GLFW_TRUE);
+    }
+  }
+}
+
 void ApplicationCore::UpdateTheEngine()
 {
   OpenGLFunc();
@@ -353,7 +400,8 @@ void ApplicationCore::UpdateTheEngine()
   m_TimeBeforeRender = static_cast<float>(glfwGetTime());
 
   auto light = std::make_shared<PhysicalLightHandle>(
-      "main", this, std::vector<Shader*>{ShaderFromVarName("Simple"), ShaderFromVarName("SimpleAnimated")},
+      EntityBuilder(this, "main"),
+      std::vector<Shader*>{ShaderFromVarName("Simple"), ShaderFromVarName("SimpleAnimated")},
       ShaderFromVarName("Light"));
   light->SetCanBeSerialize(false);
   light->GetDirectionalLight()->Ambient = Vector3(1);
@@ -361,7 +409,7 @@ void ApplicationCore::UpdateTheEngine()
 
   BeginEngineTimer();
   while (ShouldRender()) {
-
+    ProcessArgumentsDuringRender();
     glfwPollEvents();
     OpenGLClear();
 
@@ -380,7 +428,7 @@ void ApplicationCore::UpdateTheEngine()
     m_PhysXHandle->EndSimulation();
 
     DrawObjects();
-    BuildAndDrawLightSources(); 
+    BuildAndDrawLightSources();
 
     m_Scene->DrawSkybox(ShaderFromVarName("Skybox"), m_WorldMatrices.View, m_WorldMatrices.Projection);
 
@@ -393,7 +441,6 @@ void ApplicationCore::UpdateTheEngine()
   }
 
   TerminatePosRender();
-  m_Scene->Terminate();
 }
 
 void ApplicationCore::TerminatePosRender()
@@ -407,6 +454,9 @@ void ApplicationCore::TerminatePosRender()
   m_Serial->WriteEngineConfiguration(GetPathFromLocal("/Configuration/Variables/EngineConfiguration.yml").value());
 
   m_PhysXHandle.reset();
+  m_Scene->Terminate();
+  m_Interface->Terminate();
+  m_Window->Terminate();
 }
 
 void ApplicationCore::BuildAndDrawLightSources()
@@ -542,7 +592,8 @@ void ApplicationCore::CheckGLADIntegrity()
   }
 }
 
-void Yeager::PanicCrashReport(const std::exception& exc) {
+void Yeager::PanicCrashReport(const std::exception& exc)
+{
   String p = GetPathFromLocal("/Logs/CrashReport").value();
   String time_point = TimePointType::CurrentTimeFormatToFileFormat();
   String path = String(p + YG_PS + time_point + "_CrashReport.txt");
@@ -551,12 +602,9 @@ void Yeager::PanicCrashReport(const std::exception& exc) {
   DisplayWarningPanicMessageBox(exc.what(), path);
   try {
     throw exc;
-  }
-  catch (std::exception exc) {
-    Yeager::Log(ERROR, exc.what());
+  } catch (std::exception exc) {
     exit(0);
   }
-  
 }
 
 void ApplicationCore::OpenGLFunc()

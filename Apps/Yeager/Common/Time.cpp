@@ -1,7 +1,6 @@
 #include "Time.h"
 using namespace Yeager;
 
-
 String TimePointType::CurrentTimeFormatToString()
 {
   std::time_t current_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -82,7 +81,7 @@ Yeager::TimePointType TimePointType::CurrentTimeToTimeType()
 
   return time;
 }
-
+#ifdef YEAGER_SYSTEM_WINDOWS_x64
 TimePointType Yeager::WindowsFILETIMEToTimePoint(const FILETIME& time)
 {
   SYSTEMTIME systime = {0};
@@ -98,7 +97,7 @@ TimePointType Yeager::WindowsFILETIMEToTimePoint(const FILETIME& time)
   time_point.Time.Millis = systime.wMilliseconds;
   return time_point;
 }
-
+#endif
 
 String TimePointType::CurrentTimeFormatToFileFormat()
 {
@@ -111,7 +110,12 @@ String TimePointType::CurrentTimeFormatToFileFormat()
 
 String TimePointType::FormatTimeToString(const TimePointType& time)
 {
-  return String(std::to_string(time.Date.Day) + "/" + std::to_string(time.Date.Month) + "/" +
-                std::to_string(time.Date.Year) + " " + std::to_string(time.Time.Hours) + ":" +
-                std::to_string(time.Time.Minutes) + ":" + std::to_string(time.Time.Seconds));
+  return String(FormatFrontZeroStr(time.Date.Day) + "/" + FormatFrontZeroStr(time.Date.Month) + "/" +
+                FormatFrontZeroStr(time.Date.Year) + " " + FormatFrontZeroStr(time.Time.Hours) + ":" +
+                FormatFrontZeroStr(time.Time.Minutes) + ":" + FormatFrontZeroStr(time.Time.Seconds));
+}
+
+String Yeager::FormatFrontZeroStr(Uint number)
+{
+  return (number < 10) ? String("0" + std::to_string(number)) : std::to_string(number);
 }

@@ -1,7 +1,7 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
 //    Repo : https://github.com/schwq/YeagerEngine
-//    Copyright (C) 2023
+//    Copyright (C) 2023 - Present
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -37,10 +37,8 @@ enum class SkyboxTextureType { ESamplerCube, ESampler2D };
 class Skybox : public EditorEntity {
 
  public:
-  Skybox(String name, ObjectGeometryType::Enum type, ApplicationCore* application);
-  Skybox(ApplicationCore* application);
+  Skybox(const EntityBuilder& builder, ObjectGeometryType::Enum type);
   ~Skybox();
-
 
   bool BuildSkyboxFromCubemap(String directory, Yeager::ImageExtension ext, bool flip = false);
   bool BuildSkyboxFrom2DTexture(String path, bool flip = false);

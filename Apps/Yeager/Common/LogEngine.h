@@ -1,7 +1,7 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
 //    Repo : https://github.com/schwq/YeagerEngine
-//    Copyright (C) 2023
+//    Copyright (C) 2023 - Present
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 
 #pragma once
 #include "Common.h"
-#include "Utilities.h"
+#include "Time.h"
 
 #define YEAGER_LINUX_RED_TERMINAL_COLOR "\033[31;1m"
 #define YEAGER_LINUX_YELLOW_TERMINAL_COLOR "\033[33;1m"
@@ -42,15 +42,15 @@ struct MessageTypeVerbosity {
 
 struct ConsoleLogSender {
   ConsoleLogSender(const String& msg) { message = msg; }
-  ConsoleLogSender(const String& msg, MessageTypeVerbosity::Enum ty, int verb, ImVec4 color){
+  ConsoleLogSender(const String& msg, MessageTypeVerbosity::Enum ty, int verb, ImVec4 color)
+  {
     message = msg;
     type = ty;
     verbosity = verb;
     text_color = color;
   }
   String message = YEAGER_NULL_LITERAL;
-  MessageTypeVerbosity::Enum type
-      = MessageTypeVerbosity::Info_Message;
+  MessageTypeVerbosity::Enum type = MessageTypeVerbosity::Info_Message;
   int verbosity = -1;
   ImVec4 text_color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 };
@@ -74,10 +74,21 @@ extern EditorConsole gGlobalConsole;
 
 namespace Yeager {
 
+/** in the string format of time, digits that are less that 10 appear without the zero in front of them. 
+ * For example: At 09:01 am, the time will be formatted was 9:1:0, this function fixs this. 
+ * When the decimal is less that 10, the function returns a string with the decimal and the zero in front, 
+ * so the last example will be 09:01:00 now. 
+ */
+static String FormatSingleDecimalTimeDigit(Uint decimal)
+{
+  return (decimal < 10) ? String("0" + std::to_string(decimal)) : std::to_string(decimal);
+}
+
 static String FormatTimeString(const TimePointType& time)
 {
-  return String("[ " + std::to_string(time.Time.Hours) + ":" + std::to_string(time.Time.Minutes) + ":" +
-                std::to_string(time.Time.Seconds) + " ]");
+  return String("[ " + FormatSingleDecimalTimeDigit(time.Time.Hours) + ":" +
+                FormatSingleDecimalTimeDigit(time.Time.Minutes) + ":" +
+                FormatSingleDecimalTimeDigit(time.Time.Seconds) + " ]");
 }
 
 /// TODO: Make the windows version of this
@@ -103,7 +114,7 @@ void Log(int verbosity, fmt::format_string<T...> fmt, T&&... args)
 {
   String str(fmt::format(fmt, std::forward<T>(args)...));
   ConsoleLogSender message(str, MessageTypeVerbosity::VerbosityToEnum(verbosity), verbosity,
-                              VerbosityToColor(verbosity));
+                           VerbosityToColor(verbosity));
   String symbol, verbose, color;
   AttributeLogCompoments(verbosity, &symbol, &verbose, &color);
   message.message = String(verbose + message.message);

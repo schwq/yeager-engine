@@ -4,7 +4,7 @@
 
 using namespace Yeager;
 
-Uint Entity::m_EntityCountID = 0;
+Uint Entity::mEntityCount = 0;
 
 String EntityObjectType::ToString(EntityObjectType::Enum type)
 {
@@ -37,29 +37,28 @@ String EntityObjectType::ToString(EntityObjectType::Enum type)
 
 void EditorEntity::BuildNode(std::shared_ptr<NodeComponent> parent)
 {
-  if (m_Application->GetScene() != YEAGER_NULLPTR) {
-    m_Node = std::make_shared<NodeComponent>(m_Application, this, parent);
-    Yeager::LogDebug(INFO, "Node build for {}, ID {}, parent {}", m_Name, m_EntityID,
+  if (mApplication->GetScene() != YEAGER_NULLPTR) {
+    mNode = std::make_shared<NodeComponent>(mApplication, this, parent);
+    Yeager::LogDebug(INFO, "Node build for {}, UUID {}, parent {}", mName, uuids::to_string(mEntityUUID),
                      parent->IsRoot() ? "Root" : parent->GetEntity()->GetName());
   }
 }
 
-EditorEntity::EditorEntity(EntityObjectType::Enum type, Yeager::ApplicationCore* app, String name)
-    : Entity(type, app, name)
+EditorEntity::EditorEntity(const EntityBuilder& builder) : Entity(builder)
 {
-  if (m_Application) {
-    m_Toolbox = std::make_shared<ToolboxHandle>(this);
-    m_Application->GetScene()->GetToolboxs()->push_back(m_Toolbox);
+  if (mApplication) {
+    mToolbox = std::make_shared<ToolboxHandle>(this);
+    mApplication->GetScene()->GetToolboxs()->push_back(mToolbox);
   }
 }
 
 EditorEntity::~EditorEntity()
 {
-  if (m_Toolbox) {
-    m_Toolbox->SetScheduleDeletion(true);  // Notify the scene vector of the removal of the toolbox
-    m_Toolbox.reset();
+  if (mToolbox) {
+    mToolbox->SetScheduleDeletion(true);  // Notify the scene vector of the removal of the toolbox
+    mToolbox.reset();
   }  // Kills the entity ownership on the toolbox
-  m_Node.reset();
+  mNode.reset();
 }
 
 void Transformation2D::Apply(Transformation2D* transformation)
@@ -135,47 +134,47 @@ Transformation3D Transformation3D::GetDefault()
   return Transformation3D(YEAGER_ZERO_VECTOR3, YEAGER_ZERO_VECTOR3, Vector3(1.0f));
 }
 
-Entity::Entity(EntityObjectType::Enum type, Yeager::ApplicationCore* app, String name)
-    : m_Name(name), m_EntityID(m_EntityCountID++), m_Application(app), m_Type(type)
+Entity::Entity(const EntityBuilder& builder)
+    : mName(builder.Name), mEntityUUID(builder.UUID), mApplication(builder.Application), mType(builder.Type)
 {
-  Yeager::LogDebug(INFO, "Creating Entity name {}, ID {}", m_Name, m_EntityID);
+  Yeager::LogDebug(INFO, "Creating Entity name {}, UUID {}", mName, uuids::to_string(mEntityUUID));
 }
 
 Entity::~Entity()
 {
-  Yeager::LogDebug(INFO, "Destroying Entity name {}, ID {}", m_Name, m_EntityID);
+  Yeager::LogDebug(INFO, "Destroying Entity name {}, UUID {}", mName, uuids::to_string(mEntityUUID));
 }
 
 String Entity::GetName()
 {
-  return m_Name;
+  return mName;
 }
-Uint Entity::GetEntityID()
+uuids::uuid Entity::GetEntityUUID()
 {
-  return m_EntityID;
+  return mEntityUUID;
 }
 
-GameEntity::GameEntity(EntityObjectType::Enum type, Yeager::ApplicationCore* app, String name)
-    : EditorEntity(type, app, name), m_EntityTransformation(Transformation3D::GetDefault())
+GameEntity::GameEntity(const EntityBuilder& builder)
+    : EditorEntity(builder), mEntityTransformation(Transformation3D::GetDefault())
 {
-  Yeager::LogDebug(INFO, "Creating GameEntity name {} ID {}", m_Name, m_EntityID);
+  Yeager::LogDebug(INFO, "Creating GameEntity name {} UUID {}", mName, uuids::to_string(mEntityUUID));
 }
 
 GameEntity::~GameEntity()
 {
-  Yeager::LogDebug(INFO, "Destroying GameEntity name {} ID {}", m_Name, m_EntityID);
+  Yeager::LogDebug(INFO, "Destroying GameEntity name {} UUID {}", mName, uuids::to_string(mEntityUUID));
 }
 Transformation3D GameEntity::GetTransformation()
 {
-  return m_EntityTransformation;
+  return mEntityTransformation;
 }
 
 Transformation3D* GameEntity::GetTransformationPtr()
 {
-  return &m_EntityTransformation;
+  return &mEntityTransformation;
 }
 
 void GameEntity::ApplyTransformation(Yeager::Shader* shader)
 {
-  Transformation3D::Apply(&m_EntityTransformation, shader);
+  Transformation3D::Apply(&mEntityTransformation, shader);
 }

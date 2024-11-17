@@ -1,0 +1,106 @@
+# Launcher 
+Launcher.Version: "1.0.0-beta"
+Launcher.Greetings.Msg: "Wecolme to the Yeager Engine!"
+Launcher.About.Msg: "This is a small project built by one developer. It`s a game / renderer engine, that supports 2D and 3D creations. It uses OpenGL 3.3 and in the near future, it will supports OpenGL 4, Vulkan and DirectX rendering. This project is free and open source, under the GPL 3.0 license, so fell free to make changes and the use of the engine. This project is also open to pull requests and issues on the repository on github."
+Launcher.About.GithubLink: "Link to Github: https://github.com/schwq/YeagerEngine"
+Launcher.OpenProject.Btn: "Open Project"
+Launcher.NewProject.Btn: "New Project"
+Launcher.Settings.Btn: "Settings"
+
+# Yeager Common
+Common.Boolean.True.Txt: "true"
+Common.Boolean.False.Txt: "false"
+Common.Position: "Position"
+Common.Rotation: "Rotation"
+Common.Scale: "Scale"
+Common.Direction: "Direction"
+Common.Color: "Color"
+Common.Active: "Active"
+Common.Cancel: "Cancel"
+Common.Exit: "Exit"
+
+# Yeager Exit Program Dialog
+Exit.Dia.Title: "Exit Program"
+Exit.Dia.Msg1: "Do you really want to exit the program?"
+Exit.Dia.Msg2: "Unsaved work wont been load next time!"
+
+# Yeager Window
+Window.Launcher.Label: "Yeager Launcher"
+Window.Debug.Dev.Label: "Debug Development"
+Window.LS.Label: "Light Control"
+Window.Toolbox.Label: "Toolbox"
+Window.Console.Label: "Console"
+Window.PhysX.Debug.Label: "Physics Debug"
+Window.File.Explorer.Label: "File Explorer"
+Window.Scene.Explorer.Label: "Scene Explorer"
+
+# Yeager Editor Menu Sections
+Editor.Menu.File.Sect: "File"
+Editor.Menu.Build.Sect: "Build"
+Editor.Menu.Plugins.Sect: "Plugins"
+Editor.Menu.Settings.Sect: "Settings"
+
+# Yeager Editor Menu File Section 
+Editor.Menu.File.Sect.Create: "Create"
+Editor.Menu.File.Sect.Open: "Open"
+Editor.Menu.File.Sect.Save: "Save"
+Editor.Menu.File.Sect.SaveAs: "Save as..."
+Editor.Menu.File.Sect.Project.Settings: "Project Settings"
+
+# Yeager Editor Menu Build Section
+Editor.Menu.Build.Sect.Build.Project: "Build Project"
+Editor.Menu.Build.Sect.Link.CPP.Code: "Link C++ Code"
+Editor.Menu.Build.Sect.Open.Project.Editor: "Open Project in Editor"
+
+# Yeager Editor Menu Plugins Section
+Editor.Menu.Plugins.Sect.Plugins.Loaded: "Plugins Loaded"
+Editor.Menu.Plugins.Sect.Load: "Load Plugin"
+Editor.Menu.Plugins.Sect.Unload: "Unload Plugin"
+Editor.Menu.Plugins.Sect.Install: "Install Plugin"
+Editor.Menu.Plugins.Sect.Create: "Create Plugin"
+Editor.Menu.Plugins.Sect.Help: "Help"
+
+# Yeager Editor Menu Settings Section
+
+# Yeager Debug Development
+Debug.Dev.Reset.Cam.Pos.Btn: "Reset camera position"
+Debug.Dev.Detach.Player.Cam.Btn: "Detach player camera"
+Debug.Dev.Attach.Scene.Player.Cam.Btn: "Attach scene player camera"
+Debug.Dev.Toolboxes.Loaded.Txt: "Toolboxes loaded"
+Debug.Dev.Objs.Scene.Txt: "Objects in scene"
+Debug.Dev.Anim.Objs.Scene.Txt: "Animated objects in scene"
+Debug.Dev.Frames.Txt: "Frames"
+Debug.Dev.Time.Elapsed.Since.Start.Txt: "Time elapsed since start"
+Debug.Dev.Cam.Should.Move.Txt: "Camera should move"
+Debug.Dev.Cam.World.Pos.Txt: "Camera world position"
+Debug.Dev.Wnd.Dont.Move.Txt: "Windows dont move"
+Debug.Dev.Cam.Direction.Txt: "Camera direction"
+Debug.Dev.Cam.Direction.Float.Txt: "Camera direction float"
+Debug.Dev.Forced.Change.Cam.Direction.Txt: "Forced change of camera direction"
+Debug.Dev.Throw.Console.Err.Btn: "Throw Console Error"
+Debug.Dev.Throw.Console.Warn.Btn: "Throw Console Warning"
+Debug.Dev.Polygon.Mode.Point.Btn: "Polygon mode: POINT"
+Debug.Dev.Polygon.Mode.Lines.Btn: "Polygon mode: LINES"
+Debug.Dev.Polygon.Mode.Fill.Btn: "Polygon mode: FILL"
+Debug.Dev.OpenGL.Clear.Color.Txt: "OpenGL clear color"
+Debug.Dev.Wnd.Editor.Size.Txt: "Window Editor Size"
+Debug.Dev.Wnd.Launcher.Size.Txt: "Window Launcher Size"
+Debug.Dev.Wnd.Framebuffer.Size.Txt: "Window Framebuffer Size"
+Debug.Dev.Engine.Sounds.Test.Txt: "Engine Sounds Test"
+Debug.Dev.Scene.File.Content.Txt: "Scene File Contents"
+
+# Light Control Panel
+Editor.Panel.LS.Add.LS.Btn: "Add Lighting Source"
+Editor.Panel.LS.Delete.Btn: "Delete"
+Editor.Panel.LS.Linked.Shaders.Label: "Linked Shaders"
+Editor.Panel.LS.Dir.Light.Label: "Direction Light"
+Editor.Panel.LS.Spot.Light.Label: "Spot Light"
+Editor.Panel.LS.Point.Lights.Label: "Point Lights"
+Editor.Panel.LS.Ambient: "Ambient"
+Editor.Panel.LS.Diffuse: "Diffuse"
+Editor.Panel.LS.Specular: "Specular"
+Editor.Panel.LS.CutOff: "CutOff"
+Editor.Panel.LS.OuterCutOff: "OuterCutOff"
+Editor.Panel.LS.Constant: "Constant"
+Editor.Panel.LS.Linear: "Linear"
+Editor.Panel.LS.Quadratic: "Quadratic"

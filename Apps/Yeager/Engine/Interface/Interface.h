@@ -2,7 +2,7 @@
 //    In case of questions and bugs, please, refer to the issue tab on github
 //    Repo : https://github.com/schwq/YeagerEngine
 //
-//    Copyright (C) 2023
+//    Copyright (C) 2023 - Present
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -27,9 +27,8 @@
 #include "../Renderer/ImageUtilities.h"
 #include "../Renderer/TextureHandle.h"
 #include "../Renderer/Window.h"
-#include "IconsFontAwesome6.h"
 #include "FolderExplorer.h"
-
+#include "IconsFontAwesome6.h"
 
 namespace Yeager {
 class ApplicationCore;
@@ -149,7 +148,7 @@ struct LauncherProjectPicker;
 struct OpenProjectsDisplay {
   OpenProjectsDisplay() {}
   OpenProjectsDisplay(const LauncherProjectPicker& other);
-  void ConstructorFrom(const LauncherProjectPicker& other); 
+  void ConstructorFrom(const LauncherProjectPicker& other);
   String Name;
   String Author;
   String SceneType;
@@ -163,11 +162,7 @@ struct OpenProjectsDisplay {
 
 enum class ScreenShotMode { EFullScreen, EMiddleFixedSized, ECustomSizedAndPosition };
 
-extern void InputVector3(const char* label, Vector3* v, const char* format = "%.3f", ImGuiInputTextFlags flags = 0);
-
-static void DisplayDirectionalLightControl(Yeager::PhysicalLightHandle* source);
-static void DisplaySpotLightControl(Yeager::PhysicalLightHandle* source);
-static void DisplayPointLightControl(Yeager::ObjectPointLight* source);
+extern bool InputVector3(const char* label, Vector3* v, const char* format = "%.3f", ImGuiInputTextFlags flags = 0);
 
 /**
  * @brief SpaceFitText is constructed with some big text and a maximum size by line interger, 
@@ -195,6 +190,8 @@ class Interface {
   Interface(Window* window, Yeager::ApplicationCore* app);
   ~Interface();
   Interface() {}
+
+  void Terminate();
 
   void InitRenderFrame();
   void TerminateRenderFrame();
@@ -294,6 +291,8 @@ class Interface {
 
   FolderExplorer m_FolderExplorer;
 
+  bool bTerminated = false;
+
   /* The Drawing render frame is set to true when the imgui ui is being draw between the calls InitRenderFrame and TerminateRenderFrame*/
   bool m_DrawingRenderFrame = false;
 
@@ -328,9 +327,9 @@ class Interface {
   std::vector<String> m_ProjectsNamesAlreadyTaken;
   std::pair<OpenProjectsDisplay, int> m_ProjectSelectedToDelete;
 
-  std::vector<TemplateHandle> m_TemplatesAvaliable; 
-  TemplateHandle m_TemplateSelected; // The template selected in the m_TemplateAvaliable
-  bool m_TemplateWasSelected; // The user want to use a template for the creation of the project
+  std::vector<TemplateHandle> m_TemplatesAvaliable;
+  TemplateHandle m_TemplateSelected;  // The template selected in the m_TemplateAvaliable
+  bool m_TemplateWasSelected;         // The user want to use a template for the creation of the project
 
   static Uint m_Frames;
   int m_ScreenShotPosition[2] = {0};
@@ -375,6 +374,12 @@ class Interface {
     vector 
   */
   bool FindProjectHandleInApplicationAndDelete(String path);
-  String ProjectTimeOfCreationToString(TimePointType time);
+
+  String TranslatableWithIcon(String icon, String translatable) const;
+  String TranslatableWithID(String id, String translatable) const;
+
+  void DisplayDirectionalLightControl(Yeager::PhysicalLightHandle* source);
+  void DisplaySpotLightControl(Yeager::PhysicalLightHandle* source);
+  void DisplayPointLightControl(Yeager::ObjectPointLight* source);
 };
 }  // namespace Yeager

@@ -2,7 +2,7 @@
 //    In case of questions and bugs, please, refer to the issue tab on github
 //    Repo : https://github.com/schwq/YeagerEngine
 
-//    Copyright (C) 2023
+//    Copyright (C) 2023 - Present
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@ class Scene {
 
   void Save();
   void Load(String path);
-  void LoadEditorColorscheme(Interface* intr);
+  void LoadEditorColorscheme();
   void Terminate();
 
   SceneContext* GetContext() { return &m_Context; }
@@ -173,7 +173,7 @@ class Scene {
   void DrawSkybox(Yeager::Shader* shader, const Matrix3& view, const Matrix4& projection);
   std::shared_ptr<Yeager::Skybox> GetSkybox() { return m_Skybox; }
 
-  TemplateHandle GetTemplateHandle() const { return m_Template;  }
+  TemplateHandle GetTemplateHandle() const { return m_Template; }
 
   void SetSkybox(std::shared_ptr<Yeager::Skybox> skybox) { m_Skybox = skybox; }
 
@@ -189,8 +189,7 @@ class Scene {
   void VerifyCacheSubFolders();
   void InitializeRootNode();
 
-
-  std::shared_ptr<Yeager::Skybox> m_Skybox; // Every scene must have a skybox!
+  std::shared_ptr<Yeager::Skybox> m_Skybox;  // Every scene must have a skybox!
   String GetConfigurationFilePath(String path) const;
 
   SceneContext m_Context;

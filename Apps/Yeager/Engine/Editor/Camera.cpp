@@ -35,8 +35,8 @@ void BaseCamera::TransferInformation(Yeager::BaseCamera* other)
   this->m_CameraFront = other->m_CameraFront;
 }
 
-BaseCamera::BaseCamera(Yeager::ApplicationCore* app, Vector3 cameraPosition, Vector3 cameraFront, Vector3 cameraUp)
-    : EditorEntity(EntityObjectType::CAMERA, app, "Camera")
+BaseCamera::BaseCamera(const EntityBuilder& builder, Vector3 cameraPosition, Vector3 cameraFront, Vector3 cameraUp)
+    : EditorEntity(EntityBuilder(builder.Application, "Camera", EntityObjectType::CAMERA, builder.UUID))
 {
   m_Position = cameraPosition;
   m_CameraFront = cameraFront;
@@ -47,8 +47,8 @@ BaseCamera::BaseCamera(Yeager::ApplicationCore* app, Vector3 cameraPosition, Vec
   Yeager::Log(INFO, "Base Camera was created!");
 }
 
-EditorCamera::EditorCamera(Yeager::ApplicationCore* app, Vector3 cameraPosition, Vector3 cameraFront, Vector3 cameraUp)
-    : BaseCamera(app, cameraPosition, cameraFront, cameraUp)
+EditorCamera::EditorCamera(const EntityBuilder& builder, Vector3 cameraPosition, Vector3 cameraFront, Vector3 cameraUp)
+    : BaseCamera(builder, cameraPosition, cameraFront, cameraUp)
 {
   m_CameraType = YgCameraType::eCAMERA_EDITOR;
   Yeager::Log(INFO, "Editor Camera was created!");
@@ -114,7 +114,7 @@ void BaseCamera::UpdateDirection(float xoffset, float yoffset)
 
 void BaseCamera::MouseCallback(bool& firstMouse, float& lastX, float& lastY, double xpos, double ypos)
 {
-  if (m_CameraShouldMove && m_Application->GetMode() == ApplicationMode::eAPPLICATION_EDITOR) {
+  if (m_CameraShouldMove && mApplication->GetMode() == ApplicationMode::eAPPLICATION_EDITOR) {
     if (firstMouse) {
       lastX = static_cast<float>(xpos);
       lastY = static_cast<float>(ypos);
@@ -130,11 +130,11 @@ void BaseCamera::MouseCallback(bool& firstMouse, float& lastX, float& lastY, dou
   }
 }
 
-PlayerCamera::PlayerCamera(Yeager::ApplicationCore* app, Vector3 cameraPosition, Vector3 cameraFront, Vector3 cameraUp)
-    : BaseCamera(app, cameraPosition, cameraFront, cameraUp)
+PlayerCamera::PlayerCamera(const EntityBuilder& builder, Vector3 cameraPosition, Vector3 cameraFront, Vector3 cameraUp)
+    : BaseCamera(builder, cameraPosition, cameraFront, cameraUp)
 {
   m_CameraType = YgCameraType::eCAMERA_PLAYER;
-  m_Controller = m_Application->GetPhysXHandle()->GetCharacterController()->CreateController();
+  m_Controller = mApplication->GetPhysXHandle()->GetCharacterController()->CreateController();
   Yeager::Log(INFO, "Player Camera was created!");
 }
 
@@ -147,7 +147,7 @@ PlayerCamera::~PlayerCamera()
 
 void PlayerCamera::Teleport(const Vector3& globalPose)
 {
-  m_Application->GetPhysXHandle()->GetCharacterController()->SetPosition(
+  mApplication->GetPhysXHandle()->GetCharacterController()->SetPosition(
       m_Controller, physx::PxExtendedVec3(globalPose.x, globalPose.y, globalPose.z));
 }
 
@@ -177,8 +177,8 @@ PhysXCollisionDetection PlayerCamera::CharacterControllerMove(const physx::PxVec
                                                               const physx::PxControllerFilters& filters,
                                                               const physx::PxObstacleContext* obstacles)
 {
-  return m_Application->GetPhysXHandle()->GetCharacterController()->Move(m_Controller, disp, minDist, elapsedTime,
-                                                                         filters, obstacles);
+  return mApplication->GetPhysXHandle()->GetCharacterController()->Move(m_Controller, disp, minDist, elapsedTime,
+                                                                        filters, obstacles);
 }
 
 void PlayerCamera::ApplyGravity(float delta)

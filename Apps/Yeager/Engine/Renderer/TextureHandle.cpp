@@ -5,16 +5,18 @@
 
 using namespace Yeager;
 
-MaterialBase::MaterialBase(Yeager::ApplicationCore* application, const String& name, const MaterialType::Enum type,
+MaterialBase::MaterialBase(const EntityBuilder& builder, const MaterialType::Enum type,
                            const MaterialSurfaceType::Enum surface)
-    : EditorEntity(EntityObjectType::TEXTURE, application, name), m_MaterialType(type), m_SurfaceType(surface)
+    : EditorEntity(EntityBuilder(builder.Application, builder.Name, EntityObjectType::TEXTURE, builder.UUID)),
+      m_MaterialType(type),
+      m_SurfaceType(surface)
 {
-  Yeager::LogDebug(INFO, "Created Material Base {} ID {}!", m_Name, m_EntityID);
+  Yeager::LogDebug(INFO, "Created Material Base {} UUID {}!", mName, uuids::to_string(mEntityUUID));
 }
 
 MaterialBase::~MaterialBase()
 {
-  Yeager::LogDebug(INFO, "Destrorying Material Base {} ID {}!", m_Name, m_EntityID);
+  Yeager::LogDebug(INFO, "Destrorying Material Base {} UUID {}!", mName, uuids::to_string(mEntityUUID));
 }
 
 void MaterialBase::ApplyToShader(Yeager::Shader* shader)
@@ -23,9 +25,8 @@ void MaterialBase::ApplyToShader(Yeager::Shader* shader)
   shader->SetVec4("Color", m_Color);
 }
 
-MaterialTexture2D::MaterialTexture2D(Yeager::ApplicationCore* application, const String& name,
-                                     const MaterialTextureType::Enum texture)
-    : MaterialBase(application, name, MaterialType::eTEXTURE2D, MaterialSurfaceType::eTEXTURED), m_TextureType(texture)
+MaterialTexture2D::MaterialTexture2D(const EntityBuilder& builder, const MaterialTextureType::Enum texture)
+    : MaterialBase(builder, MaterialType::eTEXTURE2D, MaterialSurfaceType::eTEXTURED), m_TextureType(texture)
 {}
 
 MaterialTexture2D::~MaterialTexture2D()
@@ -66,7 +67,7 @@ std::optional<Uint> Yeager::FormatToChannels(GLenum format)
 
 void Yeager::DisplayImageImGui(MaterialTexture2D* texture, Uint resize)
 {
-    
+
   ImDrawList* draw = ImGui::GetWindowDrawList();
   draw->AddCallback(ImDrawCallback_ResetRenderState, NULL);
   if (resize == 0)
@@ -91,6 +92,8 @@ void MaterialTexture2D::GenerateFromData(STBIDataOutput* output, const MateriaTe
   if (m_TextureHandle.Generated)
     Yeager::LogDebug(WARNING, "Material texture already generated! Overrided by a texture 2d!");
 
+  stbi_set_flip_vertically_on_load(output->Flip);
+
   m_MaterialType = MaterialType::eTEXTURE2D;
   m_TextureHandle.Parameter = parameteri;
 
@@ -101,6 +104,7 @@ void MaterialTexture2D::GenerateFromData(STBIDataOutput* output, const MateriaTe
   m_TextureHandle.Generated = true;
   m_TextureHandle.Format = ChannelsToFormat(output->NrComponents);
   m_TextureHandle.BindTarget = parameteri.BindTarget;
+  m_TextureHandle.Flipped = output->Flip;
 
   glTexImage2D(parameteri.BindTarget, 0, m_TextureHandle.Format, output->Width, output->Height, 0,
                m_TextureHandle.Format, GL_UNSIGNED_BYTE, output->Data);
@@ -110,7 +114,7 @@ void MaterialTexture2D::GenerateFromData(STBIDataOutput* output, const MateriaTe
 
   glBindTexture(parameteri.BindTarget, 0);
 
-  Yeager::LogDebug(INFO, "Created Material texture2D {} ID {}", m_Name, m_EntityID);
+  Yeager::LogDebug(INFO, "Created Material texture2D {} UUID {}", mName, uuids::to_string(mEntityUUID));
 }
 
 void MaterialTexture2D::GenerateTextureParameter(const MateriaTextureParameterGL& parameter)
@@ -132,7 +136,8 @@ void MaterialTexture2D::GenerateTextureParameter(const MateriaTextureParameterGL
 bool MaterialTexture2D::RegenerateTextureFlipped(bool flip)
 {
   if (!m_TextureHandle.Generated) {
-    Yeager::Log(WARNING, "Trying to regenerate a unknown texture handle! Name: [{}] ID: [{}]", m_Name, m_EntityID);
+    Yeager::Log(WARNING, "Trying to regenerate a unknown texture handle! Name: [{}] ID: [{}]", mName,
+                uuids::to_string(mEntityUUID));
     return false;
   }
 
@@ -146,7 +151,7 @@ bool MaterialTexture2D::RegenerateTextureFlipped(bool flip)
     Yeager::Log(WARNING,
                 "Texture material type does not support regeneration with the texture flipped!, This is bad code "
                 "written! Name: [{}] ID: [{}]",
-                m_Name, m_EntityID);
+                mName, uuids::to_string(mEntityUUID));
     return false;
   }
 }
@@ -179,7 +184,7 @@ bool MaterialTexture2D::GenerateFromFile(const String& path, bool flip, const Ma
     m_TextureHandle.Path = path;
     m_TextureHandle.Generated = true;
 
-    Yeager::LogDebug(INFO, "Created Material texture2D {} ID {}", m_Name, m_EntityID);
+    Yeager::LogDebug(INFO, "Created Material texture2D {} UUID {}", mName, uuids::to_string(mEntityUUID));
 
     stbi_image_free(data);
 
@@ -188,7 +193,8 @@ bool MaterialTexture2D::GenerateFromFile(const String& path, bool flip, const Ma
     return true;
 
   } else {
-    Yeager::LogDebug(ERROR, "Cannot read data from texture file {}, on {} ID {}", path, m_Name, m_EntityID);
+    Yeager::LogDebug(ERROR, "Cannot read data from texture file {}, on {} UUID {}", path, mName,
+                     uuids::to_string(mEntityUUID));
   }
   return false;
 }
@@ -228,11 +234,11 @@ bool MaterialTexture2D::GenerateCubeMapFromFile(const std::vector<String>& paths
 
       stbi_image_free(data);
 
-      Yeager::LogDebug(INFO, "Created Material texture cube map {} ID {}", m_Name, m_EntityID);
+      Yeager::LogDebug(INFO, "Created Material texture cube map {} UUID {}", mName, uuids::to_string(mEntityUUID));
 
     } else {
-      Yeager::LogDebug(ERROR, "Cannot read data from texture file {}, on {} ID {}", paths[i].c_str(), m_Name,
-                       m_EntityID);
+      Yeager::LogDebug(ERROR, "Cannot read data from texture file {}, on {} UUID {}", paths[i].c_str(), mName,
+                       uuids::to_string(mEntityUUID));
       successed = false;
     }
   }

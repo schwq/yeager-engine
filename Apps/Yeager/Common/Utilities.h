@@ -1,7 +1,7 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
 //    Repo : https://github.com/schwq/YeagerEngine
-//    Copyright (C) 2023
+//    Copyright (C) 2023 - Present
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -18,14 +18,15 @@
 
 #pragma once
 
-#include "Common.h"
-#include "DirectorySystem.h"
-#include "Time.h"
 #include <assimp/matrix4x4.h>
 #include <assimp/quaternion.h>
 #include <assimp/vector3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include "Common.h"
+#include "DirectorySystem.h"
+#include "Random.h"
+#include "Time.h"
 
 namespace std {
 template <typename T>
@@ -52,7 +53,6 @@ const T* cend(const T* arr, size_t N)
   return arr + N;
 }
 }  // namespace std
-
 namespace Yeager {
 
 template <typename... T>
@@ -115,6 +115,7 @@ struct YgPadding {
 extern bool EvaluateIntToBool(const int i);
 
 extern Cchar g_OperatingSystemString;
+extern bool g_FromSourceCode;
 
 /**
  * @brief Used in switch statements with String
@@ -123,9 +124,9 @@ extern Cchar g_OperatingSystemString;
  * @param h Part of the String to start off, leave it blank!
  * @return constexpr Uint 
  */
-YEAGER_CONSTEXPR Uint StringToInteger(const char* str, int h = 0)
+YEAGER_CONSTEXPR Uint StringToInterger(const char* str, int h = 0)
 {
-  return !str[h] ? 5381 : (StringToInteger(str, h + 1) * 33) ^ str[h];
+  return !str[h] ? 5381 : (StringToInterger(str, h + 1) * 33) ^ str[h];
 }
 
 extern glm::mat4 ConvertAssimpMatrixToGLMFormat(const aiMatrix4x4& from);
@@ -157,5 +158,12 @@ YEAGER_NODISCARD extern std::vector<String> RetrievePhrasesBetweenChar(String st
   TODO: Make the message box for linux systems 
 */
 extern int DisplayWarningPanicMessageBox(const String& cause, const std::filesystem::path& log);
+
+#ifdef YEAGER_SYSTEM_WINDOWS_x64
+extern int DisplayWarningPanicMessageBoxWindows(const String& cause, const std::filesystem::path& log);
+#endif
+
+extern String ToLower(const String& str);
+extern String ToUpper(const String& str);
 
 }  // namespace Yeager

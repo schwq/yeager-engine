@@ -1,7 +1,7 @@
 #include "Serialization.h"
 #include "Application.h"
-#include "Scene.h"
 #include "Engine/Renderer/Skybox.h"
+#include "Scene.h"
 using namespace Yeager;
 
 /* TODO Remake this struct about project`s information, there are already 3 of them in the engine, must refactor*/
@@ -29,19 +29,19 @@ std::vector<OpenProjectsDisplay> Yeager::ReadProjectsToDisplay(String dir, Yeage
         exists = Yeager::ValidatesPath(project["ProjectConfigurationPath"].as<String>());
 
         if (exists) {
-          YAML::Node indiv_proj = YAML::LoadFile(project["ProjectConfigurationPath"].as<String>());
+          YAML::Node iproj = YAML::LoadFile(project["ProjectConfigurationPath"].as<String>());
           disp.Path = project["ProjectConfigurationPath"].as<String>();
-          if (indiv_proj["Renderer"]) {
-            disp.RendererType = indiv_proj["Renderer"].as<String>();
+          if (iproj["Renderer"]) {
+            disp.RendererType = iproj["Renderer"].as<String>();
           }
-          if (indiv_proj["SceneType"]) {
-            disp.SceneType = indiv_proj["SceneType"].as<String>();
+          if (iproj["SceneType"]) {
+            disp.SceneType = iproj["SceneType"].as<String>();
           }
-          if (indiv_proj["Author"]) {
-            disp.Author = indiv_proj["Author"].as<String>();
+          if (iproj["Author"]) {
+            disp.Author = iproj["Author"].as<String>();
           }
-          if (indiv_proj["TimeOfCreation"]) {
-            disp.TimeOfCreation = app->GetSerial()->DeserializeProjectTimeOfCreation(indiv_proj["TimeOfCreation"]);
+          if (iproj["TimeOfCreation"]) {
+            disp.TimeOfCreation = app->GetSerial()->DeserializeProjectTimeOfCreation(iproj["TimeOfCreation"]);
           }
         } else {
           Yeager::Log(ERROR,
@@ -62,7 +62,6 @@ std::vector<OpenProjectsDisplay> Yeager::ReadProjectsToDisplay(String dir, Yeage
   return proj;
 }
 
-
 std::vector<Yeager::TemplateHandle> Serialization::FindTemplatesFromSharedFolder(const std::filesystem::path& path)
 {
   if (!std::filesystem::is_directory(path))
@@ -80,17 +79,17 @@ std::vector<Yeager::TemplateHandle> Serialization::FindTemplatesFromSharedFolder
 }
 
 Yeager::TemplateHandle Serialization::ReadTemplateConfiguration(const std::filesystem::path& path,
-                                                 const std::filesystem::path& folder)
+                                                                const std::filesystem::path& folder)
 {
   TemplateHandle handle;
   handle.FolderPath = folder;
   handle.TemplateConfigurationPath = path;
-  
+
   YAML::Node node = YAML::LoadFile(path.string());
-  
-  if (node["TemplateName"]) 
+
+  if (node["TemplateName"])
     handle.Name = node["TemplateName"].as<String>();
-  
+
   if (node["TemplateDescription"])
     handle.Description = node["TemplateDescription"].as<String>();
 
@@ -98,8 +97,7 @@ Yeager::TemplateHandle Serialization::ReadTemplateConfiguration(const std::files
     String p = node["TemplateAssetsConfigurationPath"].as<String>();
     if (g_OperatingSystemString == YEAGER_WINDOWS32_OS_STRING)
       std::replace(p.begin(), p.end(), '/', '\\');
-    handle.AssetsConfigurationPath =
-        std::filesystem::path(folder.string() + YG_PS + p);
+    handle.AssetsConfigurationPath = std::filesystem::path(folder.string() + YG_PS + p);
   }
   return handle;
 }
@@ -186,9 +184,10 @@ ImVec4 NodeVec4ToImVec4(const YAML::Node& node, const char* item)
   return vector;
 }
 
-void YEAGER_FORCE_INLINE Serialization::SerializeBasicEntity(YAML::Emitter& out, String name, Uint id, String type)
+void YEAGER_FORCE_INLINE Serialization::SerializeBasicEntity(YAML::Emitter& out, String name, uuids::uuid uuid,
+                                                             String type)
 {
-  out << YAML::Key << "Entity" << YAML::Value << id;
+  out << YAML::Key << "Entity" << YAML::Value << uuids::to_string(uuid);
   out << YAML::Key << "Name" << YAML::Value << name;
   out << YAML::Key << "Type" << YAML::Value << type;
 }
@@ -234,7 +233,7 @@ void Serialization::SerializeScene(Yeager::Scene* scene, String path)
 
   if (scene->GetSkybox()->CanBeSerialize() && scene->GetSkybox()->IsLoaded()) {
     out << YAML::BeginMap;
-    SerializeBasicEntity(out, scene->GetSkybox()->GetName(), scene->GetSkybox()->GetEntityID(), "Skybox");
+    SerializeBasicEntity(out, scene->GetSkybox()->GetName(), scene->GetSkybox()->GetEntityUUID(), "Skybox");
     SerializeObject(out, "Path", scene->GetSkybox()->GetPath());
     SerializeObject(out, "FromTemplate", false);
     out << YAML::EndMap;
@@ -245,7 +244,7 @@ void Serialization::SerializeScene(Yeager::Scene* scene, String path)
     if (!audio->CanBeSerialize())
       continue;
     out << YAML::BeginMap;
-    SerializeBasicEntity(out, audio->GetName(), audio->GetEntityID(), "AudioHandle");
+    SerializeBasicEntity(out, audio->GetName(), audio->GetEntityUUID(), "AudioHandle");
     SerializeObject(out, "Path", audio->GetPath());
     out << YAML::EndMap;
   }
@@ -255,7 +254,7 @@ void Serialization::SerializeScene(Yeager::Scene* scene, String path)
     if (!audio->CanBeSerialize())
       continue;
     out << YAML::BeginMap;
-    SerializeBasicEntity(out, audio->GetName(), audio->GetEntityID(), "Audio3DHandle");
+    SerializeBasicEntity(out, audio->GetName(), audio->GetEntityUUID(), "Audio3DHandle");
     SerializeObject(out, "Path", audio->GetPath());
     SerializeObject(out, "Position", audio->GetVector3Position());
     out << YAML::EndMap;
@@ -269,7 +268,7 @@ void Serialization::SerializeScene(Yeager::Scene* scene, String path)
     }
     out << YAML::BeginMap;
 
-    SerializeBasicEntity(out, obj->GetName(), obj->GetEntityID(), "Object");
+    SerializeBasicEntity(out, obj->GetName(), obj->GetEntityUUID(), "Object");
     SerializeObject(out, "InstancedType", ObjectInstancedType::EnumToString(obj->GetInstancedType()));
     if (obj->IsInstanced()) {
       SerializeObject(out, "InstancedCount", obj->GetInstancedNum());
@@ -290,7 +289,7 @@ void Serialization::SerializeScene(Yeager::Scene* scene, String path)
       continue;
     out << YAML::BeginMap;
 
-    SerializeBasicEntity(out, obj->GetName(), obj->GetEntityID(), "AnimatedObject");
+    SerializeBasicEntity(out, obj->GetName(), obj->GetEntityUUID(), "AnimatedObject");
     SerializeBasicObjectType(out, obj);
     SerializeObject(out, "InstancedType", ObjectInstancedType::EnumToString(obj->GetInstancedType()));
     if (obj->IsInstanced()) {
@@ -311,7 +310,7 @@ void Serialization::SerializeScene(Yeager::Scene* scene, String path)
       continue;
     out << YAML::BeginMap;
 
-    SerializeBasicEntity(out, obj->GetName(), obj->GetEntityID(), "LightSource");
+    SerializeBasicEntity(out, obj->GetName(), obj->GetEntityUUID(), "LightSource");
     SerializeObject(out, "DrawableShaderVar", obj->GetDrawableShader()->GetVarName());
 
     SerializeBegin(out, "LinkedShaderVar", YAML::BeginSeq);
@@ -352,7 +351,7 @@ void Serialization::SerializeScene(Yeager::Scene* scene, String path)
     for (Uint x = 0; x < obj->GetObjectPointLights()->size(); x++) {
       ObjectPointLight light = obj->GetObjectPointLights()->at(x);
       out << YAML::BeginMap;
-      SerializeBasicEntity(out, light.ObjSource->GetName(), light.ObjSource->GetEntityID(), "ObjectPointLight");
+      SerializeBasicEntity(out, light.ObjSource->GetName(), light.ObjSource->GetEntityUUID(), "ObjectPointLight");
       SerializeBasicObjectType(out, light.ObjSource);
       /** Remember, this object point light, have a base class point light, which have a position variable, 
        * the object point light ONLY serialize the position of its engine object */
@@ -376,160 +375,69 @@ void Serialization::SerializeScene(Yeager::Scene* scene, String path)
   Yeager::CreateFileAndWrites(path.c_str(), out.c_str());
 }
 
+template <typename T>
+bool Serialization::DeserializeIfExistsIntoRef(const YAML::Node& node, const String& key, T& hold)
+{
+  try {
+    if (node[key.c_str()]) {
+      hold = node[key.c_str()].as<T>();
+      return true;
+    } else {
+      Yeager::Log(WARNING, "Key {} does not exists in the node! Cannot deserialize!", key);
+    }
+  } catch (const YAML::Exception& exc) {
+    Yeager::Log(ERROR, "YAML exception raised! What: {}", exc.what());
+  }
+  return false;
+}
+
 ColorschemeConfig Serialization::ReadColorschemeConfig()
 {
   ColorschemeConfig colorscheme;
-  YAML::Node node = YAML::LoadFile(GetPathFromSourceCode("/Configuration/Editor/Colorschemes/dark_mode.yaml"));
+  YAML::Node node = YAML::LoadFile(GetPathFromShared("/Configuration/Theme/Colorscheme/dark_mode.yaml").value());
 
-  if (node["WindowRounding"]) {
-    colorscheme.WindowRounding = node["WindowRounding"].as<float>();
-  }
-  if (node["FrameRounding"]) {
-    colorscheme.FrameRounding = node["FrameRounding"].as<float>();
-  }
-  if (node["ScrollbarRounding"]) {
-    colorscheme.ScrollbarRounding = node["ScrollbarRounding"].as<float>();
-  }
-  if (node["Colors_ImGuiCol_Text"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_Text");
-    colorscheme.Colors_ImGuiCol_Text = vector;
-  }
-  if (node["Colors_ImGuiCol_TextDisabled"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_TextDisabled");
-    colorscheme.Colors_ImGuiCol_TextDisabled = vector;
-  }
-  if (node["Colors_ImGuiCol_WindowBg"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_WindowBg");
-    colorscheme.Colors_ImGuiCol_WindowBg = vector;
-  }
-  if (node["Colors_ImGuiCol_ChildBg"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_ChildBg");
-    colorscheme.Colors_ImGuiCol_ChildBg = vector;
-  }
-  if (node["Colors_ImGuiCol_PopupBg"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_PopupBg");
-    colorscheme.Colors_ImGuiCol_PopupBg = vector;
-  }
-  if (node["Colors_ImGuiCol_Border"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_Border");
-    colorscheme.Colors_ImGuiCol_Border = vector;
-  }
-  if (node["Colors_ImGuiCol_BorderShadow"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_BorderShadow");
-    colorscheme.Colors_ImGuiCol_BorderShadow = vector;
-  }
-  if (node["Colors_ImGuiCol_FrameBg"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_FrameBg");
-    colorscheme.Colors_ImGuiCol_FrameBg = vector;
-  }
-  if (node["Colors_ImGuiCol_FrameBgHovered"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_FrameBgHovered");
-    colorscheme.Colors_ImGuiCol_FrameBgHovered = vector;
-  }
-  if (node["Colors_ImGuiCol_FrameBgActive"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_FrameBgActive");
-    colorscheme.Colors_ImGuiCol_FrameBgActive = vector;
-  }
-  if (node["Colors_ImGuiCol_TitleBg"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_TitleBg");
-    colorscheme.Colors_ImGuiCol_TitleBg = vector;
-  }
-  if (node["Colors_ImGuiCol_TitleBgCollapsed"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_TitleBgCollapsed");
-    colorscheme.Colors_ImGuiCol_TitleBgCollapsed = vector;
-  }
-  if (node["Colors_ImGuiCol_TitleBgActive"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_TitleBgActive");
-    colorscheme.Colors_ImGuiCol_TitleBgActive = vector;
-  }
-  if (node["Colors_ImGuiCol_MenuBarBg"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_MenuBarBg");
-    colorscheme.Colors_ImGuiCol_MenuBarBg = vector;
-  }
-  if (node["Colors_ImGuiCol_ScrollbarBg"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_ScrollbarBg");
-    colorscheme.Colors_ImGuiCol_ScrollbarBg = vector;
-  }
-  if (node["Colors_ImGuiCol_ScrollbarGrab"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_ScrollbarGrab");
-    colorscheme.Colors_ImGuiCol_ScrollbarGrab = vector;
-  }
-  if (node["Colors_ImGuiCol_ScrollbarGrabHovered"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_ScrollbarGrabHovered");
-    colorscheme.Colors_ImGuiCol_ScrollbarGrabHovered = vector;
-  }
-  if (node["Colors_ImGuiCol_ScrollbarGrabActive"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_ScrollbarGrabActive");
-    colorscheme.Colors_ImGuiCol_ScrollbarGrabActive = vector;
-  }
-  if (node["Colors_ImGuiCol_CheckMark"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_CheckMark");
-    colorscheme.Colors_ImGuiCol_CheckMark = vector;
-  }
-  if (node["Colors_ImGuiCol_SliderGrab"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_SliderGrab");
-    colorscheme.Colors_ImGuiCol_SliderGrab = vector;
-  }
-  if (node["Colors_ImGuiCol_SliderGrabActive"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_SliderGrabActive");
-    colorscheme.Colors_ImGuiCol_SliderGrabActive = vector;
-  }
-  if (node["Colors_ImGuiCol_Button"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_Button");
-    colorscheme.Colors_ImGuiCol_Button = vector;
-  }
-  if (node["Colors_ImGuiCol_ButtonHovered"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_ButtonHovered");
-    colorscheme.Colors_ImGuiCol_ButtonHovered = vector;
-  }
-  if (node["Colors_ImGuiCol_ButtonActive"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_ButtonActive");
-    colorscheme.Colors_ImGuiCol_ButtonActive = vector;
-  }
-  if (node["Colors_ImGuiCol_Header"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_Header");
-    colorscheme.Colors_ImGuiCol_Header = vector;
-  }
-  if (node["Colors_ImGuiCol_HeaderHovered"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_HeaderHovered");
-    colorscheme.Colors_ImGuiCol_HeaderHovered = vector;
-  }
-  if (node["Colors_ImGuiCol_HeaderActive"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_HeaderActive");
-    colorscheme.Colors_ImGuiCol_HeaderActive = vector;
-  }
-  if (node["Colors_ImGuiCol_ResizeGrip"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_ResizeGrip");
-    colorscheme.Colors_ImGuiCol_ResizeGrip = vector;
-  }
-  if (node["Colors_ImGuiCol_ResizeGripHovered"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_ResizeGripHovered");
-    colorscheme.Colors_ImGuiCol_ResizeGripHovered = vector;
-  }
-  if (node["Colors_ImGuiCol_ResizeGripActive"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_ResizeGripActive");
-    colorscheme.Colors_ImGuiCol_ResizeGripActive = vector;
-  }
-  if (node["Colors_ImGuiCol_PlotLines"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_PlotLines");
-    colorscheme.Colors_ImGuiCol_PlotLines = vector;
-  }
-  if (node["Colors_ImGuiCol_PlotLinesHovered"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_PlotLinesHovered");
-    colorscheme.Colors_ImGuiCol_PlotLinesHovered = vector;
-  }
-  if (node["Colors_ImGuiCol_PlotHistogram"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_PlotHistogram");
-    colorscheme.Colors_ImGuiCol_PlotHistogram = vector;
-  }
-  if (node["Colors_ImGuiCol_PlotHistogramHovered"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_PlotHistogramHovered");
-    colorscheme.Colors_ImGuiCol_PlotHistogramHovered = vector;
-  }
-  if (node["Colors_ImGuiCol_TextSelectedBg"]) {
-    ImVec4 vector = NodeVec4ToImVec4(node, "Colors_ImGuiCol_TextSelectedBg");
-    colorscheme.Colors_ImGuiCol_TextSelectedBg = vector;
-  }
+  DeserializeIfExistsIntoRef(node, "WindowRounding", colorscheme.WindowRounding);
+  DeserializeIfExistsIntoRef(node, "FrameRounding", colorscheme.FrameRounding);
+  DeserializeIfExistsIntoRef(node, "ScrollbarRounding", colorscheme.ScrollbarRounding);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_Text", colorscheme.Colors_ImGuiCol_Text);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_TextDisabled", colorscheme.Colors_ImGuiCol_TextDisabled);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_WindowBg", colorscheme.Colors_ImGuiCol_WindowBg);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_ChildBg", colorscheme.Colors_ImGuiCol_ChildBg);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_PopupBg", colorscheme.Colors_ImGuiCol_PopupBg);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_Border", colorscheme.Colors_ImGuiCol_Border);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_BorderShadow", colorscheme.Colors_ImGuiCol_BorderShadow);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_FrameBg", colorscheme.Colors_ImGuiCol_FrameBg);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_FrameBgHovered", colorscheme.Colors_ImGuiCol_FrameBgHovered);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_FrameBgActive", colorscheme.Colors_ImGuiCol_FrameBgActive);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_TitleBg", colorscheme.Colors_ImGuiCol_TitleBg);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_TitleBgCollapsed", colorscheme.Colors_ImGuiCol_TitleBgCollapsed);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_TitleBgActive", colorscheme.Colors_ImGuiCol_TitleBgActive);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_MenuBarBg", colorscheme.Colors_ImGuiCol_MenuBarBg);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_ScrollbarBg", colorscheme.Colors_ImGuiCol_ScrollbarBg);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_ScrollbarGrab", colorscheme.Colors_ImGuiCol_ScrollbarGrab);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_ScrollbarGrabHovered",
+                             colorscheme.Colors_ImGuiCol_ScrollbarGrabHovered);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_ScrollbarGrabActive",
+                             colorscheme.Colors_ImGuiCol_ScrollbarGrabActive);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_CheckMark", colorscheme.Colors_ImGuiCol_CheckMark);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_SliderGrab", colorscheme.Colors_ImGuiCol_SliderGrab);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_SliderGrabActive", colorscheme.Colors_ImGuiCol_SliderGrabActive);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_Button", colorscheme.Colors_ImGuiCol_Button);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_ButtonHovered", colorscheme.Colors_ImGuiCol_ButtonHovered);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_ButtonActive", colorscheme.Colors_ImGuiCol_ButtonActive);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_Header", colorscheme.Colors_ImGuiCol_Header);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_HeaderHovered", colorscheme.Colors_ImGuiCol_HeaderHovered);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_HeaderActive", colorscheme.Colors_ImGuiCol_HeaderActive);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_ResizeGrip", colorscheme.Colors_ImGuiCol_ResizeGrip);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_ResizeGripHovered", colorscheme.Colors_ImGuiCol_ResizeGripHovered);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_ResizeGripActive", colorscheme.Colors_ImGuiCol_ResizeGripActive);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_PlotLines", colorscheme.Colors_ImGuiCol_PlotLines);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_PlotLinesHovered", colorscheme.Colors_ImGuiCol_PlotLinesHovered);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_PlotHistogram", colorscheme.Colors_ImGuiCol_PlotHistogram);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_PlotHistogramHovered",
+                             colorscheme.Colors_ImGuiCol_PlotHistogramHovered);
+  DeserializeIfExistsIntoRef(node, "Colors_ImGuiCol_TextSelectedBg", colorscheme.Colors_ImGuiCol_TextSelectedBg);
+
   return colorscheme;
 }
 
@@ -548,7 +456,8 @@ void Serialization::ReadSceneShadersConfig(String path)
         String fragment = shader["FragmentPath"].as<String>();
         String vertex = shader["VertexPath"].as<String>();
         String var = shader["VarName"].as<String>();
-        auto ps_shader = std::make_shared<Yeager::Shader>(GetPathFromSourceCode(fragment).c_str(), GetPathFromSourceCode(vertex).c_str(), name);
+        auto ps_shader = std::make_shared<Yeager::Shader>(GetPathFromShared(fragment).value().c_str(),
+                                                          GetPathFromShared(vertex).value().c_str(), name);
         ps_shader->SetVarName(var);
         std::pair<std::shared_ptr<Shader>, String> sh;
         sh.first = ps_shader;
@@ -572,7 +481,7 @@ bool Serialization::ReadEditorSoundsConfiguration(const String& path)
       String name = s["Name"].as<String>();
       String filename = s["Filename"].as<String>();
 
-      const String path = Yeager::GetPathFromSourceCode("/Assets/Sounds/" + filename);
+      const String path = Yeager::GetPathFromShared("/Resources/Sound/" + filename).value();
 
       EngineSoundHandle handle(name, path);
       if (m_Application->GetAudioFromEngine()->AddSound(handle)) {
@@ -586,21 +495,22 @@ bool Serialization::ReadEditorSoundsConfiguration(const String& path)
   }
 }
 
-void Serialization::DeserializeTemplateAssetsIntoScene(Yeager::Scene* scene, const std::filesystem::path& path) {
+void Serialization::DeserializeTemplateAssetsIntoScene(Yeager::Scene* scene, const std::filesystem::path& path)
+{
   YAML::Node node = YAML::LoadFile(path.string());
   if (node["TemplateEntities"]) {
     auto entities = node["TemplateEntities"];
     for (auto entity : entities) {
       try {
         DeserializeEntity(scene, node, entity);
-      }
-      catch (YAML::BadConversion& exc) {
-        Yeager::Log(ERROR, "Exception: YAML::BadConversion, Something went wrong reading the template assets configuration! {}", exc.what());
-      }
-      catch (YAML::BadSubscript& exc) {
+      } catch (YAML::BadConversion& exc) {
         Yeager::Log(
-            ERROR, "Exception: YAML::BadSubscript, Something went wrong reading the template assets configuration! {}",
+            ERROR, "Exception: YAML::BadConversion, Something went wrong reading the template assets configuration! {}",
             exc.what());
+      } catch (YAML::BadSubscript& exc) {
+        Yeager::Log(ERROR,
+                    "Exception: YAML::BadSubscript, Something went wrong reading the template assets configuration! {}",
+                    exc.what());
       }
     }
   }
@@ -681,34 +591,39 @@ void YEAGER_FORCE_INLINE Serialization::DeserializeEntity(Yeager::Scene* scene, 
   them the user have change something in the configuration file itself
   or someone implemented a new type of entity without the proper configuration in the serialization class for saving it correctly */
 
-  Uint id = entity["Entity"].as<unsigned int>();
+  auto uuid = uuids::uuid::from_string(entity["Entity"].as<String>());
   String name = entity["Name"].as<String>();
   String type = entity["Type"].as<String>();
 
-  switch (StringToInteger(type.c_str())) {
+  if (!uuid.has_value()) {
+    Yeager::Log(WARNING, "UUID from entity {} is not valid!", name);
+    uuid = uuids::uuid();
+  }
 
-    case StringToInteger("AudioHandle"): {
-      DeserializeAudioHandle(entity, scene, name, type, id);
+  switch (StringToInterger(type.c_str())) {
+
+    case StringToInterger("AudioHandle"): {
+      DeserializeAudioHandle(entity, scene, name, type, uuid.value());
     } break;
 
-    case StringToInteger("Audio3DHandle"): {
-      DeserializeAudio3DHandle(entity, scene, name, type, id);
+    case StringToInterger("Audio3DHandle"): {
+      DeserializeAudio3DHandle(entity, scene, name, type, uuid.value());
     } break;
 
-    case StringToInteger("Object"): {
-      DeserializeObject(entity, scene, name, type, id);
+    case StringToInterger("Object"): {
+      DeserializeObject(entity, scene, name, type, uuid.value());
     } break;
 
-    case StringToInteger("AnimatedObject"): {
-      DeserializeAnimatedObject(entity, scene, name, type, id);
+    case StringToInterger("AnimatedObject"): {
+      DeserializeAnimatedObject(entity, scene, name, type, uuid.value());
     } break;
 
-    case StringToInteger("LightSource"): {
-      DeserializeLightSource(entity, scene, name, type, id);
+    case StringToInterger("LightSource"): {
+      DeserializeLightSource(entity, scene, name, type, uuid.value());
     } break;
-    
-    case StringToInteger("Skybox"): {
-      DeserializeSkybox(entity, scene, name, type, id);
+
+    case StringToInterger("Skybox"): {
+      DeserializeSkybox(entity, scene, name, type, uuid.value());
     } break;
 
     default:
@@ -717,55 +632,60 @@ void YEAGER_FORCE_INLINE Serialization::DeserializeEntity(Yeager::Scene* scene, 
 }
 
 void Serialization::DeserializeSkybox(YAML::detail::iterator_value& entity, Yeager::Scene* scene, const String& name,
-    const String& type, const Uint id) {
-  
-    bool fromTemplate = entity["FromTemplate"].as<bool>();
-    String path;
-    
-    if (fromTemplate) 
-      path += scene->GetTemplateHandle().FolderPath.string();
-    
-    String p = entity["Path"].as<String>();
-    if (g_OperatingSystemString == YEAGER_WINDOWS32_OS_STRING)
-      std::replace(p.begin(), p.end(), '/', '\\');
-    path += p;
-    
-    auto skybox = std::make_shared<Skybox>(name, ObjectGeometryType::eCUSTOM, m_Application);
-    skybox->BuildSkyboxFromImport(path, true);
-    scene->SetSkybox(skybox);
- }
+                                      const String& type, const uuids::uuid uuid)
+{
+
+  bool fromTemplate = entity["FromTemplate"].as<bool>();
+  String path;
+
+  if (fromTemplate)
+    path += scene->GetTemplateHandle().FolderPath.string();
+
+  String p = entity["Path"].as<String>();
+  if (g_OperatingSystemString == YEAGER_WINDOWS32_OS_STRING)
+    std::replace(p.begin(), p.end(), '/', '\\');
+  path += p;
+
+  auto skybox = std::make_shared<Skybox>(EntityBuilder(m_Application, name, EntityObjectType::SKYBOX, uuid),
+                                         ObjectGeometryType::eCUSTOM);
+  skybox->BuildSkyboxFromImport(path, true);
+  scene->SetSkybox(skybox);
+}
 
 void Serialization::DeserializeAudioHandle(YAML::detail::iterator_value& entity, Yeager::Scene* scene,
-                                           const String& name, const String& type, const Uint id)
+                                           const String& name, const String& type, const uuids::uuid uuid)
 {
   String path = entity["Path"].as<String>();
   auto audio =
-      std::make_shared<Yeager::AudioHandle>(path, name, m_Application->GetAudioEngineHandle(), false, m_Application);
+      std::make_shared<Yeager::AudioHandle>(EntityBuilder(m_Application, name, EntityObjectType::AUDIO_HANDLE, uuid),
+                                            path, m_Application->GetAudioEngineHandle(), false);
   scene->GetAudios()->push_back(audio);
 }
 
 void Serialization::DeserializeAudio3DHandle(YAML::detail::iterator_value& entity, Yeager::Scene* scene,
-                                             const String& name, const String& type, const Uint id)
+                                             const String& name, const String& type, const uuids::uuid uuid)
 {
   String path = entity["Path"].as<String>();
   Vector3 position = entity["Position"].as<Vector3>();
-  auto audio = std::make_shared<Yeager::Audio3DHandle>(path, name, m_Application->GetAudioEngineHandle(), false,
-                                                       GLMVec3ToVec3df(position), m_Application);
+  auto audio = std::make_shared<Yeager::Audio3DHandle>(
+      EntityBuilder(m_Application, name, EntityObjectType::AUDIO_3D_HANDLE, uuid), path,
+      m_Application->GetAudioEngineHandle(), false, GLMVec3ToVec3df(position));
   scene->GetAudios3D()->push_back(audio);
 };
 
 void Serialization::DeserializeObject(YAML::detail::iterator_value& entity, Yeager::Scene* scene, const String& name,
-                                      const String& type, const Uint id)
+                                      const String& type, const uuids::uuid uuid)
 {
   std::shared_ptr<Yeager::Object> obj;
 
   String instancedType = entity["InstancedType"].as<String>();
   if (instancedType == "Instanced") {
-    obj = std::make_shared<Yeager::Object>(name, m_Application, entity["InstancedCount"].as<int>());
+    obj = std::make_shared<Yeager::Object>(EntityBuilder(m_Application, name, EntityObjectType::OBJECT_INSTANCED, uuid),
+                                           entity["InstancedCount"].as<int>());
     std::vector<std::shared_ptr<Transformation3D>> positions = DeserializeObjectProperties(entity);
     obj->BuildProps(positions, m_Application->ShaderFromVarName("SimpleInstanced"));
   } else {
-    obj = std::make_shared<Yeager::Object>(name, m_Application);
+    obj = std::make_shared<Yeager::Object>(EntityBuilder(m_Application, name, EntityObjectType::OBJECT, uuid));
   }
 
   // Gets transformation, and geometry of the object serialized
@@ -809,16 +729,19 @@ void Serialization::DeserializeObject(YAML::detail::iterator_value& entity, Yeag
 };
 
 void Serialization::DeserializeAnimatedObject(YAML::detail::iterator_value& entity, Yeager::Scene* scene,
-                                              const String& name, const String& type, const Uint id)
+                                              const String& name, const String& type, const uuids::uuid uuid)
 {
   std::shared_ptr<Yeager::AnimatedObject> obj;
   String instancedType = entity["InstancedType"].as<String>();
   if (instancedType == "Instanced") {
-    obj = std::make_shared<Yeager::AnimatedObject>(name, m_Application, entity["InstancedCount"].as<int>());
+    obj = std::make_shared<Yeager::AnimatedObject>(
+        EntityBuilder(m_Application, name, EntityObjectType::OBJECT_INSTANCED_ANIMATED, uuid),
+        entity["InstancedCount"].as<int>());
     std::vector<std::shared_ptr<Transformation3D>> positions = DeserializeObjectProperties(entity);
     obj->BuildProps(positions, m_Application->ShaderFromVarName("SimpleInstanced"));
   } else {
-    obj = std::make_shared<Yeager::AnimatedObject>(name, m_Application);
+    obj = std::make_shared<Yeager::AnimatedObject>(
+        EntityBuilder(m_Application, name, EntityObjectType::OBJECT_ANIMATED, uuid));
   }
 
   ObjectGeometryType::Enum geometry = DeserializeBasicObject(obj.get(), entity);
@@ -845,7 +768,7 @@ void Serialization::DeserializeAnimatedObject(YAML::detail::iterator_value& enti
   }
 };
 void Serialization::DeserializeLightSource(YAML::detail::iterator_value& entity, Yeager::Scene* scene,
-                                           const String& name, const String& type, const Uint id)
+                                           const String& name, const String& type, const uuids::uuid uuid)
 {
   String drawable_shader_var = entity["DrawableShaderVar"].as<String>();
   std::vector<Shader*> link_shader;
@@ -857,8 +780,10 @@ void Serialization::DeserializeLightSource(YAML::detail::iterator_value& entity,
       Yeager::Log(WARNING, "Configuration file trying to push a uninitialized shader to the light source!");
     }
   }
-  auto obj = std::make_shared<Yeager::PhysicalLightHandle>(name, m_Application, link_shader,
-                                                           m_Application->ShaderFromVarName(drawable_shader_var));
+  auto obj = std::make_shared<Yeager::PhysicalLightHandle>(
+      EntityBuilder(m_Application, name, EntityObjectType::LIGHT_HANDLE, uuid), link_shader,
+      m_Application->ShaderFromVarName(drawable_shader_var));
+
   YAML::Node DirectionalLight = entity["DirectionalLight"];
   obj->GetDirectionalLight()->Direction = DirectionalLight["Direction"].as<Vector3>();
   obj->GetDirectionalLight()->Ambient = DirectionalLight["Ambient"].as<Vector3>();
@@ -960,6 +885,17 @@ void Serialization::ReadEngineConfiguration(const String& path)
     conf->EditorWindowSize.y = 1080;
     wnd->EditorSize.y = 1080;
   }
+
+  // TODO: Security measures here to avoid the window position to be out of the montior borders !!
+  if (node["YeagerWindowPositionWidth"]) {
+    Uint windowPositionWidth = node["YeagerWindowPositionWidth"].as<Uint>();
+    wnd->WindowPosition.x = windowPositionWidth;
+  }
+
+  if (node["YeagerWindowPositionHeight"]) {
+    Uint windowPositionHeight = node["YeagerWindowPositionHeight"].as<Uint>();
+    wnd->WindowPosition.y = windowPositionHeight;
+  }
 }
 
 void Serialization::WriteEngineConfiguration(const String& path)
@@ -972,6 +908,10 @@ void Serialization::WriteEngineConfiguration(const String& path)
                   m_Application->GetWindow()->GetWindowInformationPtr()->LauncherSize.y);
   SerializeObject(out, "YeagerEditorWindowWidth", m_Application->GetWindow()->GetWindowInformationPtr()->EditorSize.x);
   SerializeObject(out, "YeagerEditorWindowHeight", m_Application->GetWindow()->GetWindowInformationPtr()->EditorSize.y);
+  SerializeObject(out, "YeagerWindowPositionWidth",
+                  m_Application->GetWindow()->GetWindowInformationPtr()->WindowPosition.x);
+  SerializeObject(out, "YeagerWindowPositionHeight",
+                  m_Application->GetWindow()->GetWindowInformationPtr()->WindowPosition.y);
   out << YAML::EndMap;
 
   Yeager::CreateFileAndWrites(path, out.c_str());
@@ -1033,3 +973,23 @@ void Serialization::SerializeProjectTimeOfCreation(YAML::Emitter& out, Yeager::S
   out << YAML::EndMap;
 }
 
+std::optional<Serialization::LocaleData> Serialization::DeserializeLocaleData(const std::filesystem::path& path)
+{
+  YAML::Node node;
+  Serialization::LocaleData data;
+  try {
+    node = YAML::LoadFile(path);
+
+  } catch (const std::exception& exc) {
+    Yeager::Log(ERROR, "Cannot deserialize locale data! Path {}, What {}", path.string(), exc.what());
+    return std::nullopt;
+  }
+
+  for (YAML::iterator it = node.begin(); it != node.end(); ++it) {
+    String first, second;
+    first = it->first.as<String>();
+    second = it->second.as<String>();
+    data[first] = second;
+  }
+  return data;
+}

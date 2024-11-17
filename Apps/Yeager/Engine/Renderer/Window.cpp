@@ -4,7 +4,7 @@
 #include "stb_image.h"
 using namespace Yeager;
 
-Yeager::WindowInfo Window::m_WindowInformation;
+Yeager::WindowInfo Window::mWindowInformation;
 
 String AspectRatio::ToString(AspectRatio::Enum type)
 {
@@ -20,10 +20,10 @@ String AspectRatio::ToString(AspectRatio::Enum type)
 
 AspectRatio::Enum AspectRatio::ToEnum(const String& str)
 {
-  switch (Yeager::StringToInteger(str.c_str())) {
-    case Yeager::StringToInteger("4:3"):
+  switch (Yeager::StringToInterger(str.c_str())) {
+    case Yeager::StringToInterger("4:3"):
       return eASPECT_4_3;
-    case Yeager::StringToInteger("21:9"):
+    case Yeager::StringToInterger("21:9"):
       return eASPECT_21_9;
     default:
       return eASPECT_4_3;
@@ -42,33 +42,45 @@ float AspectRatio::ToValue(AspectRatio::Enum type)
   }
 }
 
+void Window::InitializeCallbacks(GLFWcursorposfun cursor)
+{
+  glfwSetWindowSizeCallback(mWindowHandle, ResizeCallback);
+  glfwSetWindowPosCallback(mWindowHandle, WindowPosCallback);
+  glfwSetWindowMaximizeCallback(mWindowHandle, WindowMaximizeCallback);
+  glfwSetFramebufferSizeCallback(mWindowHandle, FramebufferSizeCallback);
+  glfwSetCursorPosCallback(mWindowHandle, cursor);
+  glfwSetErrorCallback(HandleError);
+}
+
 void Window::GenerateWindow(String title, GLFWcursorposfun cursor, DFlags wndType)
 {
   Yeager::Log(INFO, "Creating GLFW window!");
   if (!glfwInit()) {
     Yeager::Log(ERROR, "Cannot initialize glfw!");
+    PanicCrashReport(std::runtime_error("Cannot initialize GLFW!"));
   }
 
-  m_WindowInformation.EditorTitle = title;
-  m_WindowInformation.CursorFunc = cursor;
+  mWindowInformation.EditorTitle = title;
+  mWindowInformation.CursorFunc = cursor;
 
   const Vector2 size =
-      (wndType == YEAGER_GENERATE_EDITOR_WINDOW ? m_WindowInformation.EditorSize : m_WindowInformation.LauncherSize);
+      (wndType == YEAGER_GENERATE_EDITOR_WINDOW ? mWindowInformation.EditorSize : mWindowInformation.LauncherSize);
 
   BuildWindowHints();
   GenerateWindow(size.x, size.y, title);
-  glfwSetCursorPosCallback(m_WindowHandle, cursor);
-  glfwMakeContextCurrent(m_WindowHandle);
-  glfwSetFramebufferSizeCallback(m_WindowHandle, FramebufferSizeCallback);
-  glfwSetInputMode(m_WindowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-  glfwSetWindowSizeCallback(m_WindowHandle, ResizeCallback);
-  glfwSetWindowMaximizeCallback(m_WindowHandle, WindowMaximizeCallback);
-  glfwSetWindowSizeLimits(m_WindowHandle, 700, 700, 2000, 2000);
-  glfwSetWindowUserPointer(m_WindowHandle, m_Application);
+
+  InitializeCallbacks(cursor);
+
+  glfwMakeContextCurrent(mWindowHandle);
+  glfwSetInputMode(mWindowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+  glfwSetWindowSizeLimits(mWindowHandle, 700, 700, 2000, 2000);
+  glfwSetWindowUserPointer(mWindowHandle, mApplication);
+  glfwSetWindowPos(mWindowHandle, mWindowInformation.WindowPosition.x, mWindowInformation.WindowPosition.y);
+
   glfwSwapInterval(1);
 }
 
-Window::Window(Yeager::ApplicationCore* application) : m_Application(application) {}
+Window::Window(Yeager::ApplicationCore* application) : mApplication(application) {}
 
 bool Window::CheckIfOpenGLContext()
 {
@@ -78,10 +90,10 @@ bool Window::CheckIfOpenGLContext()
 void Window::BuildWindowHints()
 {
   glfwSetErrorCallback(HandleError);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, m_WindowHints.ContextVersionMajor);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, m_WindowHints.ContextVersionMinor);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, m_WindowHints.OpenGLProfile);
-  glfwWindowHint(GLFW_SAMPLES, m_WindowHints.AntiAliasingSamples);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, mWindowHints.ContextVersionMajor);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, mWindowHints.ContextVersionMinor);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, mWindowHints.OpenGLProfile);
+  glfwWindowHint(GLFW_SAMPLES, mWindowHints.AntiAliasingSamples);
 #ifdef YEAGER_SYSTEM_MACOS
   glfwWindowHint(GLFW_OPENGL_FORWAND_COMPAT, m_WindowHints.OpenGLForwandCompat);
 #endif
@@ -89,21 +101,22 @@ void Window::BuildWindowHints()
 
 bool Window::RegenerateMainWindow(Uint window_x, Uint window_y, String title, GLFWcursorposfun cursor) noexcept
 {
-  if (m_WindowHandle) {
-    glfwDestroyWindow(m_WindowHandle);
-    m_WindowInformation.EditorTitle = title;
-    m_WindowInformation.EditorSize = Vector2(window_x, window_y);
+  if (mWindowHandle) {
+    glfwMakeContextCurrent(NULL);
+    glfwDestroyWindow(mWindowHandle);
+    mWindowInformation.EditorTitle = title;
+    mWindowInformation.EditorSize = Vector2(window_x, window_y);
     BuildWindowHints();
-    m_WindowHandle = glfwCreateWindow(window_x, window_y, title.c_str(), NULL, NULL);
-    glfwSetCursorPosCallback(m_WindowHandle, cursor);
-    glfwMakeContextCurrent(m_WindowHandle);
-    glfwSetErrorCallback(HandleError);
-    glfwSetWindowMaximizeCallback(m_WindowHandle, WindowMaximizeCallback);
-    glfwSetFramebufferSizeCallback(m_WindowHandle, FramebufferSizeCallback);
-    glfwSetInputMode(m_WindowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    GenerateWindow(window_x, window_y, title);
+
+    InitializeCallbacks(cursor);
+
+    glfwMakeContextCurrent(mWindowHandle);
+    glfwSetInputMode(mWindowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     glfwSwapInterval(1);
-    glfwSetWindowUserPointer(m_WindowHandle, m_Application);
-    
+    glfwSetWindowUserPointer(mWindowHandle, mApplication);
+    glfwSetWindowPos(mWindowHandle, mWindowInformation.WindowPosition.x, mWindowInformation.WindowPosition.y);
+
     return true;
   } else {
     Yeager::Log(WARNING, "Window pointer does not exist!");
@@ -115,9 +128,9 @@ void Window::ResizeCallback(GLFWwindow* window, int width, int height)
 {
   Yeager::ApplicationCore* application = static_cast<Yeager::ApplicationCore*>(glfwGetWindowUserPointer(window));
   if (application->GetMode() == ApplicationMode::eAPPLICATION_LAUNCHER) {
-    m_WindowInformation.LauncherSize = Vector2(width, height);
+    mWindowInformation.LauncherSize = Vector2(width, height);
   } else {
-    m_WindowInformation.EditorSize = Vector2(width, height);
+    mWindowInformation.EditorSize = Vector2(width, height);
   }
 }
 
@@ -128,9 +141,9 @@ void Window::WindowMaximizeCallback(GLFWwindow* window, int maximized)
   int width, height;
   glfwGetWindowSize(window, &width, &height);
   if (application->GetMode() == ApplicationMode::eAPPLICATION_LAUNCHER) {
-    m_WindowInformation.LauncherSize = Vector2(width, height);
+    mWindowInformation.LauncherSize = Vector2(width, height);
   } else {
-    m_WindowInformation.EditorSize = Vector2(width, height);
+    mWindowInformation.EditorSize = Vector2(width, height);
   }
 
   if (maximized) {
@@ -140,15 +153,15 @@ void Window::WindowMaximizeCallback(GLFWwindow* window, int maximized)
   }
 }
 
-bool Window::GenerateWindow(unsigned window_x, Uint window_y, String title)
+bool Window::GenerateWindow(Uint window_x, Uint window_y, String title)
 {
-  void* previous = m_WindowHandle;
-  m_WindowHandle = glfwCreateWindow(window_x, window_y, title.c_str(), NULL, NULL);
-  Yeager::LogDebug(INFO, "GLFW window pointer changes from ({}) to ({})", fmt::ptr(previous), fmt::ptr(m_WindowHandle));
+  void* previous = mWindowHandle;
+  mWindowHandle = glfwCreateWindow(window_x, window_y, title.c_str(), NULL, NULL);
+  Yeager::LogDebug(INFO, "GLFW window pointer changes from ({}) to ({})", fmt::ptr(previous), fmt::ptr(mWindowHandle));
 
-  if (!m_WindowHandle) {
+  if (!mWindowHandle) {
     Yeager::Log(ERROR, "Cannot Generate GLFW Window!");
-    glfwTerminate();
+    PanicCrashReport(std::runtime_error("Cannot Generate GLFW Window!"));
     return false;
   }
   return true;
@@ -216,43 +229,74 @@ void Window::FramebufferSizeCallback(GLFWwindow* window, int width, int height)
     // Call glViewport to specify the new drawing area
     // By specifying its lower left corner, we center it
     glViewport(lowerLeftCornerOfViewportX, lowerLeftCornerOfViewportY, widthOfViewport, heightOfViewport);
-    m_WindowInformation.FrameBufferPosition = Vector2(lowerLeftCornerOfViewportX, lowerLeftCornerOfViewportY);
-    m_WindowInformation.FrameBufferSize = Vector2(widthOfViewport, heightOfViewport);
+    mWindowInformation.FrameBufferPosition = Vector2(lowerLeftCornerOfViewportX, lowerLeftCornerOfViewportY);
+    mWindowInformation.FrameBufferSize = Vector2(widthOfViewport, heightOfViewport);
   } else {
     glViewport(0, 0, width, height);
-    m_WindowInformation.FrameBufferPosition = Vector2(0, 0);
-    m_WindowInformation.FrameBufferSize = Vector2(width, height);
+    mWindowInformation.FrameBufferPosition = Vector2(0, 0);
+    mWindowInformation.FrameBufferSize = Vector2(width, height);
   }
 }
 
 Window::~Window()
 {
-  Yeager::Log(INFO, "Destrorying Window!");
-  delete m_IconImageData;
+  Terminate();
 }
 
 Vector2 Window::GetWindowSize() const
 {
-  return (m_Application->GetMode() == ApplicationMode::eAPPLICATION_EDITOR ? m_WindowInformation.EditorSize
-                                                                           : m_WindowInformation.LauncherSize);
-}
-
-void Window::GetWindowSize(int* width, int* height)
-{
-  if (m_WindowHandle) {
-    glfwGetWindowSize(m_WindowHandle, width, height);
-  }
+  return (mApplication->GetMode() == ApplicationMode::eAPPLICATION_EDITOR ? mWindowInformation.EditorSize
+                                                                          : mWindowInformation.LauncherSize);
 }
 
 bool Window::ChangeAntiAliasingSamples(int samples)
 {
-  if (!m_WindowHandle)
+  if (!mWindowHandle)
     return false;
 
   /* Only x1, x2, x4, and x8 anti alising */
   if (!ValidateAntiAliasingSampleValue(samples))
     return false;
 
-  m_WindowHints.AntiAliasingSamples = samples;
+  mWindowHints.AntiAliasingSamples = samples;
   return true;
+}
+
+void Window::SetWindowPos(const IVector2& pos)
+{
+  if (mWindowHandle) {
+    glfwSetWindowPos(mWindowHandle, pos.x, pos.y);
+  }
+}
+
+IVector2 Window::GetWindowPos() const
+{
+  if (mWindowHandle) {
+    int x, y;
+    glfwGetWindowPos(mWindowHandle, &x, &y);
+    return IVector2(x, y);
+  }
+  return IVector2(0, 0);
+}
+
+void Window::WindowPosCallback(GLFWwindow* window, int xpos, int ypos)
+{
+  Yeager::ApplicationCore* application = static_cast<Yeager::ApplicationCore*>(glfwGetWindowUserPointer(window));
+  Yeager::WindowInfo* wnd = application->GetWindow()->GetWindowInformationPtr();
+  wnd->WindowPosition = IVector2(xpos, ypos);
+}
+
+void Window::Terminate()
+{
+  if (!bTerminated) {
+    glfwTerminate();
+    Yeager::Log(INFO, "Destrorying Window!");
+    bTerminated = true;
+  }
+}
+YEAGER_FORCE_INLINE bool Window::ValidateAntiAliasingSampleValue(int samples) const
+{
+  if (samples == 1 || samples == 2 || samples == 4 || samples == 8)
+    return true;
+  return false;
 }

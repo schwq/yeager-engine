@@ -1,7 +1,7 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
 //    Repo : https://github.com/schwq/YeagerEngine
-//    Copyright (C) 2023
+//    Copyright (C) 2023 - Present
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 #pragma once
 
 #include "Common.h"
+#include "LogEngine.h"
 
 namespace Yeager {
 
@@ -63,7 +64,8 @@ extern std::map<String, FileType> g_ExtensionTypesToRawExtensions;
     @brief Checks if the extension of the path is list among the ExtensionTypesToRawExtensions, returns if true. This doesnt check if the 
     extensions is  supported by the engine. This function returns a ERROR type if not found!
 */
-YEAGER_NODISCARD std::pair<bool, FileType> CheckFileExtensionType(const std::filesystem::path& path, FileExtensionType type);
+YEAGER_NODISCARD std::pair<bool, FileType> CheckFileExtensionType(const std::filesystem::path& path,
+                                                                  FileExtensionType type);
 
 /**
     @brief Returns the extensions typename from a given filename. Example the filename: model.obj, returns "3D Model Object"
@@ -119,7 +121,7 @@ YEAGER_NODISCARD extern String GetWindowsAppDataFolder();
 */
 YEAGER_NODISCARD extern String GetWindowsProgramFilesFolder();
 
-#endif // YEAGER_SYSTEM_WINDOWS_x64
+#endif  // YEAGER_SYSTEM_WINDOWS_x64
 
 /**
     @brief Converts the given number of bytes to a string with the nearest file size name, for example, by passing 5000, the nearest 
@@ -205,4 +207,4 @@ YEAGER_NODISCARD std::optional<String> GetPathFromShared(const String& path);
 */
 extern void DumpConsoleDataInFile(const std::filesystem::path& path);
 
-}
+}  // namespace Yeager

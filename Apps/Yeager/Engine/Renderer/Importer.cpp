@@ -311,6 +311,7 @@ STBIDataOutput* Importer::LoadStbiDataOutput(String path, bool flip)
   ValidatesPath(path);
   output->Data = stbi_load(path.c_str(), &output->Width, &output->Height, &output->NrComponents, 0);
   output->OriginalPath = path;
+  output->Flip = flip;
 
   if (output->Data == YEAGER_NULLPTR) {
     Yeager::Log(ERROR, "Cannot load data to STBIDataOutput! Path: {}, Reason {}", path, stbi_failure_reason());

@@ -1,8 +1,9 @@
 #include "LightHandle.h"
 using namespace Yeager;
 
-LightBaseHandle::LightBaseHandle(String name, ApplicationCore* app, std::vector<Shader*> link_shaders)
-    : EditorEntity(EntityObjectType::LIGHT_HANDLE, app, name), m_LinkedShader(link_shaders)
+LightBaseHandle::LightBaseHandle(const EntityBuilder& builder, std::vector<Shader*> link_shaders)
+    : EditorEntity(EntityBuilder(builder.Application, builder.Name, EntityObjectType::LIGHT_HANDLE, builder.UUID)),
+      m_LinkedShader(link_shaders)
 {
   m_PointLights.reserve(MAX_POINT_LIGHTS);
   for (int x = 0; x < MAX_POINT_LIGHTS; x++) {
@@ -35,8 +36,7 @@ void LightBaseHandle::BuildShaderProps(Vector3 viewPos, Vector3 front, float shi
     shader->SetVec3("viewer.Position", viewPos);
     shader->SetFloat("material.Shininess", shininess);
 
-    shader->SetVec3("directionalLight.Direction", m_DirectionalLight.Direction);
-    shader->SetVec3("directionalLight.Ambient", m_DirectionalLight.Ambient);
+    shader->SetVec3("directionalLighNamet.Ambient", m_DirectionalLight.Ambient);
     shader->SetVec3("directionalLight.Diffuse", m_DirectionalLight.Diffuse);
     shader->SetVec3("directionalLight.Specular", m_DirectionalLight.Specular);
     shader->SetVec3("directionalLight.Color", m_DirectionalLight.Color);
@@ -54,16 +54,16 @@ void LightBaseHandle::BuildShaderProps(Vector3 viewPos, Vector3 front, float shi
     shader->SetBool("spotLight.Active", spotLight.Active);
   }
 }
-PhysicalLightHandle::PhysicalLightHandle(String name, ApplicationCore* app, std::vector<Shader*> link_shader,
+PhysicalLightHandle::PhysicalLightHandle(const EntityBuilder& builder, std::vector<Shader*> link_shader,
                                          Shader* draw_shader)
-    : LightBaseHandle(name, app, link_shader), m_DrawableShader(draw_shader)
+    : LightBaseHandle(builder, link_shader), m_DrawableShader(draw_shader)
 {
   m_ObjectPointLights.reserve(MAX_POINT_LIGHTS);
 }
 
 PhysicalLightHandle::~PhysicalLightHandle()
 {
-  for (const auto& obj : m_ObjectPointLights) {
+  for (auto& obj : m_ObjectPointLights) {
     obj.Destroy();
   }
   m_ObjectPointLights.clear();
@@ -127,7 +127,7 @@ void PhysicalLightHandle::AddObjectPointLight(const ObjectPointLight& obj, Trans
 {
 
   ObjectPointLight pObj = obj;
-  pObj.ObjSource = new Object("SpotLight_" + std::to_string(m_ObjectPointLights.size()), m_Application);
+  pObj.ObjSource = new Object(EntityBuilder(mApplication, "SpotLight_" + std::to_string(m_ObjectPointLights.size())));
   pObj.ObjSource->GenerateObjectGeometry(ObjectGeometryType::eSPHERE,
                                          ObjectPhysXCreationStatic(Vector3(0.0f), Vector3(0.0f), Vector3(0.1f)));
   pObj.ObjSource->SetTransformation(trans);
@@ -170,7 +170,7 @@ void PhysicalLightHandle::AddObjectPointLight(const ObjectPointLight& obj, Yeage
 
 void PhysicalLightHandle::AddObjectPointLight(ObjectPointLight* light, ObjectGeometryType::Enum type)
 {
-  light->ObjSource = new Object("Light Point", m_Application);
+  light->ObjSource = new Object(EntityBuilder(mApplication, "Point_Light"));
   light->ObjSource->GenerateObjectGeometry(type,
                                            ObjectPhysXCreationStatic(Vector3(0.0f), Vector3(0.0f), Vector3(0.1f)));
   light->Active = true;

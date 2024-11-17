@@ -1,7 +1,7 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
 //    Repo : https://github.com/schwq/YeagerEngine
-//    Copyright (C) 2023
+//    Copyright (C) 2023 - Present
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ class Shader {
   void SetUniform1i(const String& name, int value);
   void SetVec4(const String& name, glm::vec4 value);
 
-  constexpr inline GLuint GetId() { return m_EntityID; }
+  constexpr inline GLuint GetId() { return m_ShaderID; }
   constexpr inline bool IsInitialized() { return m_initialize; }
 
   inline String GetName() { return m_Name; }
@@ -46,7 +46,7 @@ class Shader {
   inline void SetVarName(const String& str) { m_VarName = str; }
 
  private:
-  GLuint m_EntityID;
+  GLuint m_ShaderID;
   bool m_initialize = false;
   bool m_fragment_build = false;
   bool m_vertex_build = false;

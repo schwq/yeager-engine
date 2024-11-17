@@ -7,10 +7,10 @@ using namespace Yeager;
 
 SceneRenderer Yeager::StringToSceneRenderer(String str)
 {
-  switch (Yeager::StringToInteger(str.c_str())) {
-    case Yeager::StringToInteger("OpenGL3_3"):
+  switch (Yeager::StringToInterger(str.c_str())) {
+    case Yeager::StringToInterger("OpenGL3_3"):
       return OpenGL3_3;
-    case Yeager::StringToInteger("OpenGL4"):
+    case Yeager::StringToInterger("OpenGL4"):
       return OpenGL4;
     default:
       Yeager::Log(ERROR, "Cannot convert string to scene renderer!");
@@ -43,10 +43,10 @@ String Yeager::SceneRendererToString(SceneRenderer renderer)
 
 SceneType Yeager::StringToSceneType(String str)
 {
-  switch (StringToInteger(str.c_str())) {
-    case StringToInteger("Scene2D"):
+  switch (StringToInterger(str.c_str())) {
+    case StringToInterger("Scene2D"):
       return Scene2D;
-    case StringToInteger("Scene3D"):
+    case StringToInterger("Scene3D"):
       return Scene3D;
     default:
       Yeager::Log(WARNING, "Invalid string to scene type! {}", str);
@@ -73,23 +73,26 @@ SceneContext Yeager::InitializeContext(String name, String author, SceneType typ
   return context;
 }
 
-Scene::Scene(Yeager::ApplicationCore* app) : m_Application(app)  {}
+Scene::Scene(Yeager::ApplicationCore* app) : m_Application(app) {}
 
 void Scene::BuildScene(const LauncherProjectPicker& project)
 {
-  m_Context = InitializeContext(project.m_Name, project.m_AuthorName, project.m_SceneType, project.m_ProjectFolderPath, project.m_SceneRenderer, project.m_ProjectDateOfCreation);
+  m_Context = InitializeContext(project.m_Name, project.m_AuthorName, project.m_SceneType, project.m_ProjectFolderPath,
+                                project.m_SceneRenderer, project.m_ProjectDateOfCreation);
   m_Context.ProjectSavePath = GetConfigurationFilePath(m_Context.ProjectFolderPath);
   ValidatesCommonFolders();
   m_AssetsFolderPath = m_Context.ProjectFolderPath + YG_PS + "Assets";
   m_PlayerCamera = std::make_shared<PlayerCamera>(m_Application);
   m_Application->AttachPlayerCamera(m_PlayerCamera);
-  m_Skybox = std::make_shared<Yeager::Skybox>(m_Application);
+  m_Skybox = std::make_shared<Yeager::Skybox>(EntityBuilder(m_Application, YEAGER_SKYBOX_DEFAULT_NAME),
+                                              ObjectGeometryType::eCUSTOM);
 
   Log(INFO, "Created Scene name {}", m_Context.Name);
   InitializeRootNode();
-  
-  if (project.m_TemplateHandle.has_value()) 
-     BuildSceneFromTemplate(project.m_TemplateHandle.value());
+  LoadEditorColorscheme();
+
+  if (project.m_TemplateHandle.has_value())
+    BuildSceneFromTemplate(project.m_TemplateHandle.value());
 }
 
 String Scene::GetConfigurationFilePath(String path) const
@@ -97,8 +100,8 @@ String Scene::GetConfigurationFilePath(String path) const
   return path + YG_PS + m_Context.Name + ".yml";
 }
 
-
-void Scene::BuildSceneFromTemplate(const TemplateHandle& handle) {
+void Scene::BuildSceneFromTemplate(const TemplateHandle& handle)
+{
   m_Template = handle;
   m_Application->GetSerial()->DeserializeTemplateAssetsIntoScene(this, handle.AssetsConfigurationPath);
 }
@@ -376,9 +379,9 @@ void Scene::Save()
   m_Application->GetSerial()->SerializeScene(this, m_Context.ProjectSavePath);
 }
 
-void Scene::LoadEditorColorscheme(Interface* intr)
+void Scene::LoadEditorColorscheme()
 {
-  intr->ApplyColorscheme(m_Application->GetSerial()->ReadColorschemeConfig());
+  m_Application->GetInterface()->ApplyColorscheme(m_Application->GetSerial()->ReadColorschemeConfig());
 }
 
 void Scene::Load(String path)

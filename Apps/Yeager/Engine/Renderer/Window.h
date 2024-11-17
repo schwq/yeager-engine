@@ -2,7 +2,7 @@
 //    In case of questions and bugs, please, refer to the issue tab on github
 //    Repo : https://github.com/schwq/
 //
-//    Copyright (C) 2023-present
+//    Copyright (C) 2023 - Present - Present
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -48,6 +48,7 @@ struct WindowInfo {
   Vector2 LauncherSize = Vector2(0.0f, 0.0f);
   Vector2 FrameBufferSize = Vector2(0.0f, 0.0f);
   Vector2 FrameBufferPosition = Vector2(0.0f, 0.0f);
+  IVector2 WindowPosition = IVector2(0, 0);
   String EditorTitle = YEAGER_EDITOR_DEFAULT_TITLE;
   String LauncherTitle = YEAGER_LAUNCHER_DEFAULT_TITLE;
   GLFWcursorposfun CursorFunc;
@@ -69,45 +70,55 @@ class Window {
   Window(Yeager::ApplicationCore* application);
   ~Window();
 
+  void Terminate();
+
   void GenerateWindow(String title, GLFWcursorposfun cursor, DFlags wndType);
 
-  YEAGER_NODISCARD GLFWwindow* GetGLFWwindow() { return m_WindowHandle; }
-  static void FramebufferSizeCallback(GLFWwindow* window, int width, int height);
-  static void HandleError(int code, Cchar description);
-  void GetWindowSize(int* width, int* height);
+  YEAGER_NODISCARD GLFWwindow* GetGLFWwindow() { return mWindowHandle; }
+
   Vector2 GetWindowSize() const;
-  bool GenerateWindow(unsigned window_x, Uint window_y, String title);
+
+  void SetWindowPos(const IVector2& pos);
+  IVector2 GetWindowPos() const;
+
+  bool GenerateWindow(Uint window_x, Uint window_y, String title);
   bool RegenerateMainWindow(Uint window_x, Uint window_y, String title, GLFWcursorposfun cursor) noexcept;
 
-  /* Glfw3 Callbacks  */
+  void InitializeCallbacks(GLFWcursorposfun cursor);
+  /**
+   * GLFW Callbacks
+   */
   static void ResizeCallback(GLFWwindow* window, int width, int height);
   static void WindowMaximizeCallback(GLFWwindow* window, int maximized);
+  static void WindowPosCallback(GLFWwindow* window, int xpos, int ypos);
+  static void FramebufferSizeCallback(GLFWwindow* window, int width, int height);
+  static void HandleError(int code, Cchar description);
 
   bool CheckIfOpenGLContext();
+
   /**
-   * @brief Regenerates the main window with the new given number of samples for the anti aliasing (ps: glfw needs to recreate the window to function)
-   *  , it returns true if the process was successed, or false if otherwise
+   * @brief Regenerates the main window with the new given number of samples for the anti aliasing (ps: glfw needs to recreate the window to 
+   * function), it returns true if the process was successed, or false if otherwise
    */
   bool ChangeAntiAliasingSamples(int samples);
 
-  YEAGER_FORCE_INLINE bool ValidateAntiAliasingSampleValue(int samples) const
-  {
-    if (samples == 1 || samples == 2 || samples == 4 || samples == 8)
-      return true;
-    return false;
-  }
+  YEAGER_FORCE_INLINE bool ValidateAntiAliasingSampleValue(int samples) const;
 
-  YEAGER_FORCE_INLINE WindowInfo* GetWindowInformationPtr() { return &m_WindowInformation; }
-  YEAGER_FORCE_INLINE WindowCreationHints* GetWindowCreationHintsPtr() { return &m_WindowHints; }
+  YEAGER_FORCE_INLINE WindowInfo* GetWindowInformationPtr() { return &mWindowInformation; }
+  YEAGER_FORCE_INLINE WindowCreationHints* GetWindowCreationHintsPtr() { return &mWindowHints; }
 
   void BuildWindowHints();
 
  private:
-  static WindowInfo m_WindowInformation;
-  WindowCreationHints m_WindowHints;
-  GLFWwindow* m_WindowHandle = YEAGER_NULLPTR;
-  unsigned char* m_IconImageData = YEAGER_NULLPTR;
-  Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
-  bool m_Maximized = false, m_FullScreen = false;
+  static WindowInfo mWindowInformation;
+
+  WindowCreationHints mWindowHints;
+  GLFWwindow* mWindowHandle = YEAGER_NULLPTR;
+  Yeager::ApplicationCore* mApplication = YEAGER_NULLPTR;
+  std::unique_ptr<unsigned char> mIconImageData = YEAGER_NULLPTR;
+
+  bool bMaximized = false;
+  bool bFullScreen = false;
+  bool bTerminated = false;
 };
 }  // namespace Yeager

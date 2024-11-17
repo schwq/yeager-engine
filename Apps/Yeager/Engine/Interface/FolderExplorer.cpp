@@ -2,24 +2,29 @@
 #include "../../Application.h"
 using namespace Yeager;
 
-FolderExplorer::FolderExplorer(Yeager::ApplicationCore* application, const std::filesystem::path& start)
-    : m_Application(application), m_CurrentPath(start), m_LastKnownWorkingPath(start), m_LastPath(start)
+FolderExplorer::FolderExplorer(Yeager::ApplicationCore* application, const Path& start)
+    : mApplication(application), mCurrentPath(start), mLastKnownWorkingPath(start), mLastPath(start)
 {
-  m_CurrentItems = GetItemsFromFolder(start);
+  mCurrentItems = GetItemsFromFolder(start);
   LoadIcons();
 }
 
 void FolderExplorer::LoadIcons()
 {
-  auto folder = std::make_shared<MaterialTexture2D>(m_Application, "Folder_Icon", MaterialTextureType::eDIFFUSE);
+  auto folder =
+      std::make_shared<MaterialTexture2D>(EntityBuilder(mApplication, "Folder_Icon"), MaterialTextureType::eDIFFUSE);
   folder->GenerateFromFile(GetPathFromShared("/Resources/Icons/folder.png").value(), true);
-  m_Icons.insert(std::pair<DirectoryHierarchyType::Enum, std::shared_ptr<MaterialTexture2D>>(DirectoryHierarchyType::eFOLDER, folder));
-  auto file = std::make_shared<MaterialTexture2D>(m_Application, "File_Icon", MaterialTextureType::eDIFFUSE);
+  mIcons.insert(std::pair<DirectoryHierarchyType::Enum, std::shared_ptr<MaterialTexture2D>>(
+      DirectoryHierarchyType::eFOLDER, folder));
+  auto file =
+      std::make_shared<MaterialTexture2D>(EntityBuilder(mApplication, "File_Icon"), MaterialTextureType::eDIFFUSE);
   file->GenerateFromFile(GetPathFromShared("/Resources/Icons/file.png").value(), true);
-  m_Icons.insert(std::pair<DirectoryHierarchyType::Enum, std::shared_ptr<MaterialTexture2D>>(DirectoryHierarchyType::eFILE, file));
+  mIcons.insert(
+      std::pair<DirectoryHierarchyType::Enum, std::shared_ptr<MaterialTexture2D>>(DirectoryHierarchyType::eFILE, file));
 }
 
-FileInformation FileInformation::GetFileInformation(const std::filesystem::path& path) {
+FileInformation FileInformation::GetFileInformation(const std::filesystem::path& path)
+{
 #if defined(YEAGER_SYSTEM_WINDOWS_x64)
   return GetWindowsFileInformation(path);
 #elif defined(YEAGER_SYSTEM_LINUX)
@@ -29,7 +34,8 @@ FileInformation FileInformation::GetFileInformation(const std::filesystem::path&
 
 #if defined(YEAGER_SYSTEM_WINDOWS_x64)
 
-FileInformation FileInformation::GetWindowsFileInformation(const std::filesystem::path& path) {
+FileInformation FileInformation::GetWindowsFileInformation(const std::filesystem::path& path)
+{
   WIN32_FILE_ATTRIBUTE_DATA info = {0};
   GetFileAttributesEx(path.string().c_str(), GetFileExInfoStandard, &info);
   FileInformation file;
@@ -42,51 +48,69 @@ FileInformation FileInformation::GetWindowsFileInformation(const std::filesystem
 }
 
 #elif defined(YEAGER_SYSTEM_LINUX)
-FileInformation FileInformation::GetLinuxFileInformation(const std::filesystem::path& path);
+FileInformation FileInformation::GetLinuxFileInformation(const std::filesystem::path& path)
+{
+  return FileInformation();
+}
 #endif
 
 void FolderExplorer::DrawWindow()
 {
   ImGui::Begin("File Explorer", NULL, YEAGER_WINDOW_MOVEABLE);
 
-  if (m_LastPath != m_CurrentPath) {
+  if (mLastPath != mCurrentPath) {
     try {
-      m_CurrentItems = GetItemsFromFolder(m_CurrentPath);
-    }
-    catch (std::filesystem::filesystem_error& err) {
+      mCurrentItems = GetItemsFromFolder(mCurrentPath);
+    } catch (std::filesystem::filesystem_error& err) {
       Yeager::Log(ERROR, "Cannot access Folder: {}", err.what());
-      m_CurrentPath = m_LastPath;
+      mCurrentPath = mLastPath;
     }
-    m_LastPath = m_CurrentPath;
+    mLastPath = mCurrentPath;
+  }
+
+  if (ImGui::InputText("Search:", &mSearchPattern)) {
+    if (!mSearchPattern.empty() && mSearchPattern != YEAGER_EMPTY_LITERAL) {
+      for (auto& item : mCurrentItems) {
+        (!BruteForceStringSearch(ToLower(mSearchPattern), ToLower(item.Name)).empty()) ? item.m_SearchAppears = true
+                                                                                       : item.m_SearchAppears = false;
+      }
+    } else {
+      for (auto& item : mCurrentItems) {
+        item.m_SearchAppears = true;
+      }
+    }
   }
 
   if (ImGui::Button("Back")) {
-      if (m_CurrentPath.has_parent_path()) {
-      m_CurrentPath = m_CurrentPath.parent_path();
+    if (mCurrentPath.has_parent_path()) {
+      mCurrentPath = mCurrentPath.parent_path();
     }
   }
 
   ImGui::SameLine();
   if (ImGui::Button("Refresh")) {
-    m_CurrentItems = GetItemsFromFolder(m_CurrentPath);
+    mCurrentItems = GetItemsFromFolder(mCurrentPath);
   }
 
-  ImGui::Text("Current path: %s", m_CurrentPath.string().c_str());
+  ImGui::Text("Current path: %s", mCurrentPath.string().c_str());
 
   ImGui::BeginChild("##item");
 
-  for (const auto& item : m_CurrentItems) {
-    String type = (item.Type == DirectoryHierarchyType::eFOLDER ? "Folder" : "File"); 
+  for (const auto& item : mCurrentItems) {
+    if (!item.m_SearchAppears)
+      continue;
+
+    String type = (item.Type == DirectoryHierarchyType::eFOLDER ? "Folder" : "File");
     String symbol = (item.Type == DirectoryHierarchyType::eFOLDER ? ICON_FA_FOLDER : ICON_FA_FILE);
     String name = String(symbol + " [" + type + "] " + item.Name);
-    
+
     if (ImGui::Selectable(name.c_str(), false, ImGuiSelectableFlags_AllowDoubleClick)) {
       if (item.Type == DirectoryHierarchyType::eFOLDER) {
-        m_CurrentPath = std::filesystem::path(m_CurrentPath / item.Name);
+        mCurrentPath = std::filesystem::path(mCurrentPath / item.Name);
       } else {
         const auto filetype = CheckFileExtensionType(item.Path, FileExtensionType::EExtensitonType3DModel);
         if (filetype.first && filetype.second.Supported) {
-          m_Application->GetExplorer()->QuickLoadObject(item.Path);
+          mApplication->GetExplorer()->QuickLoadObject(item.Path);
         }
       }
     }
@@ -94,9 +118,9 @@ void FolderExplorer::DrawWindow()
   ImGui::EndChild();
 
   ImGui::End();
-
 }
-std::vector<DirectoryHierarchyItem> FolderExplorer::GetItemsFromFolder(const std::filesystem::path& path) {
+std::vector<DirectoryHierarchyItem> FolderExplorer::GetItemsFromFolder(const Path& path)
+{
   if (!std::filesystem::exists(path) || std::filesystem::is_regular_file(path))
     return std::vector<DirectoryHierarchyItem>{};  // Dont exists or is a file!
 
@@ -104,8 +128,8 @@ std::vector<DirectoryHierarchyItem> FolderExplorer::GetItemsFromFolder(const std
 
   for (const auto& item : std::filesystem::directory_iterator(path)) {
     DirectoryHierarchyItem entry;
-    entry.Type = (std::filesystem::is_directory(item) ? DirectoryHierarchyType::eFOLDER
-                                        : DirectoryHierarchyType::eFILE);
+    entry.Type =
+        (std::filesystem::is_directory(item) ? DirectoryHierarchyType::eFOLDER : DirectoryHierarchyType::eFILE);
     entry.Name = (item.path().has_filename() ? item.path().filename().string() : YEAGER_NULL_LITERAL);
     entry.Path = item.path();
     entry.Parent = (item.path().has_parent_path() ? item.path().parent_path() : YEAGER_EMPTY_PATH);
@@ -116,30 +140,34 @@ std::vector<DirectoryHierarchyItem> FolderExplorer::GetItemsFromFolder(const std
   return entries;
 }
 
-std::vector<DirectoryHierarchyItem> FolderExplorer::GetItemsFromFolder(const DirectoryHierarchyItem& item) {
+std::vector<DirectoryHierarchyItem> FolderExplorer::GetItemsFromFolder(const DirectoryHierarchyItem& item)
+{
   if (item.Type == DirectoryHierarchyType::eFOLDER)
     return GetItemsFromFolder(item.Path);
-  return std::vector<DirectoryHierarchyItem>{}; // Is a file!
+  return std::vector<DirectoryHierarchyItem>{};  // Is a file!
 }
 
-std::filesystem::path FolderExplorer::GetCurrentPath() const {
-  return m_CurrentPath;
+std::filesystem::path FolderExplorer::GetCurrentPath() const
+{
+  return mCurrentPath;
 }
 
-std::filesystem::path FolderExplorer::GetLastKnownWorkingPath() const {
-    return m_LastKnownWorkingPath;
+std::filesystem::path FolderExplorer::GetLastKnownWorkingPath() const
+{
+  return mLastKnownWorkingPath;
 }
 
 std::filesystem::path FolderExplorer::GoBackLastKnownPath() const
 {
-  return (std::filesystem::exists(m_LastKnownWorkingPath) ? m_LastKnownWorkingPath : std::filesystem::current_path());
+  return (std::filesystem::exists(mLastKnownWorkingPath) ? mLastKnownWorkingPath : std::filesystem::current_path());
 }
 
-
-std::filesystem::path FolderExplorer::GetLastPath() const {
-  return m_LastPath;
+std::filesystem::path FolderExplorer::GetLastPath() const
+{
+  return mLastPath;
 }
 
-std::vector<DirectoryHierarchyItem> FolderExplorer::GetCurrentItems() const {
-  return m_CurrentItems;
+std::vector<DirectoryHierarchyItem> FolderExplorer::GetCurrentItems() const
+{
+  return mCurrentItems;
 }

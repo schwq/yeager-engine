@@ -1,7 +1,7 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
 //    Repo : https://github.com/schwq/YeagerEngine
-//    Copyright (C) 2023
+//    Copyright (C) 2023 - Present
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -99,6 +99,7 @@
 #endif
 
 #define YEAGER_NULL_LITERAL "NULL"
+#define YEAGER_EMPTY_LITERAL ""
 #define YEAGER_NULLPTR nullptr
 #define YEAGER_NULLPTR_T nullptr_t
 #define YEAGER_FORCE_INLINE inline
@@ -155,6 +156,9 @@
 #include "format.h"
 #include <irrKlang/irrKlang.h>
 
+#include "uuid.h"
+typedef uuids::uuid uuid_t;
+
 #define YEAGER_STRING_ERROR(error) {fmt::format("String error []", error)} 
 
 typedef const char* Cchar;
@@ -162,6 +166,7 @@ typedef std::string String;
 typedef glm::mat4 Matrix4;
 typedef glm::mat3 Matrix3;
 typedef glm::vec2 Vector2;
+typedef glm::ivec2 IVector2;
 typedef glm::vec3 Vector3;
 typedef glm::vec4 Vector4;
 typedef glm::ivec2 IVector2;
@@ -190,9 +195,6 @@ typedef uint64_t DFlags; // defined flags with the #define YEAGER_
 #define WARNING -1
 #define ERROR -2
 
-// Yeager defines
-#define YG_SYSTEM 0
-#define YG_USER 1
 #define IMGUI_RED_ERROR_COLOR ImVec4(1.0f, 0.0f, 0.0f, 1.0f)
 #define IMGUI_YELLOW_WARNING_COLOR ImVec4(1.0f, 1.0f, 0.0f, 1.0f)
 #define IMGUI_WHITE_COMMON_COLOR ImVec4(1.0f, 1.0f, 1.0f, 1.0f)

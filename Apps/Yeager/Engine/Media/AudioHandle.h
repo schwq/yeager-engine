@@ -1,7 +1,7 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
 //    Repo : https://github.com/schwq/YeagerEngine
-//    Copyright (C) 2023
+//    Copyright (C) 2023 - Present
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -82,8 +82,7 @@ class AudioEngine {
 
 class AudioHandle : public GameEntity {
  public:
-  AudioHandle(String path, String name, AudioEngineHandle* handle, bool looped,
-              Yeager::ApplicationCore* app = YEAGER_NULLPTR);
+  AudioHandle(const EntityBuilder& builder, String path, AudioEngineHandle* handle, bool looped);
   ~AudioHandle();
 
   void SetVolume(irrklang::ik_f32 volume);
@@ -131,8 +130,8 @@ YEAGER_NODISCARD extern irrklang::vec3df GLMVec3ToVec3df(Vector3 vec);
 
 class Audio3DHandle : public AudioHandle {
  public:
-  Audio3DHandle(String path, String name, AudioEngineHandle* handle, bool looped, irrklang::vec3df position,
-                Yeager::ApplicationCore* app = YEAGER_NULLPTR);
+  Audio3DHandle(const EntityBuilder& builder, String path, AudioEngineHandle* handle, bool looped,
+                irrklang::vec3df position);
   ~Audio3DHandle();
 
   void Play();

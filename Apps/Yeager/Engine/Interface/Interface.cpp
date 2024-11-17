@@ -17,7 +17,8 @@ OpenProjectsDisplay::OpenProjectsDisplay(const LauncherProjectPicker& other)
   ConstructorFrom(other);
 }
 
-void OpenProjectsDisplay::ConstructorFrom(const LauncherProjectPicker& other) {
+void OpenProjectsDisplay::ConstructorFrom(const LauncherProjectPicker& other)
+{
   Name = other.m_Name;
   Author = other.m_AuthorName;
   SceneType = SceneTypeToString(other.m_SceneType);
@@ -70,95 +71,98 @@ void SpaceFitText::Build()
   StringBlocks.push_back(buildingString);
 }
 
-void Yeager::InputVector3(const char* label, Vector3* v, const char* format, ImGuiInputTextFlags flags)
+bool Yeager::InputVector3(const char* label, Vector3* v, const char* format, ImGuiInputTextFlags flags)
 {
   float* ver[3] = {&v->x, &v->y, &v->z};
-  InputFloat3(label, *ver, format, flags);
+  return InputFloat3(label, *ver, format, flags);
 }
 
-void Yeager::DisplayDirectionalLightControl(Yeager::PhysicalLightHandle* source)
+void Interface::DisplayDirectionalLightControl(Yeager::PhysicalLightHandle* source)
 {
-  InputVector3("Directions##Directional", &source->GetDirectionalLight()->Direction);
-  InputVector3("Ambients##Directional", &source->GetDirectionalLight()->Ambient);
-  InputVector3("Diffuses##Directional", &source->GetDirectionalLight()->Diffuse);
-  InputVector3("Speculars##Directional", &source->GetDirectionalLight()->Specular);
-  InputVector3("Colors##Directional", &source->GetDirectionalLight()->Color);
+  InputVector3(TranslatableWithID("Directional", "Common.Direction").c_str(),
+               &source->GetDirectionalLight()->Direction);
+  InputVector3(TranslatableWithID("Directional", "Editor.Panel.LS.Ambient").c_str(),
+               &source->GetDirectionalLight()->Ambient);
+  InputVector3(TranslatableWithID("Directional", "Editor.Panel.LS.Diffuse").c_str(),
+               &source->GetDirectionalLight()->Diffuse);
+  InputVector3(TranslatableWithID("Directional", "Editor.Panel.LS.Specular").c_str(),
+               &source->GetDirectionalLight()->Specular);
+  InputVector3(TranslatableWithID("Directional", "Common.Color").c_str(), &source->GetDirectionalLight()->Color);
 }
 
-void Yeager::DisplaySpotLightControl(Yeager::PhysicalLightHandle* source)
+void Interface::DisplaySpotLightControl(Yeager::PhysicalLightHandle* source)
 {
-  InputVector3("Position##SpotLight", &source->GetSpotLight()->Position);
-  InputVector3("Direction##SpotLight", &source->GetSpotLight()->Direction);
-  InputFloat("CutOff##SpotLight", &source->GetSpotLight()->CutOff);
-  InputFloat("OuterCutOff##SpotLight", &source->GetSpotLight()->OuterCutOff);
-  InputFloat("Constant##SpotLight", &source->GetSpotLight()->Constant);
-  InputFloat("Linear##SpotLight", &source->GetSpotLight()->Linear);
-  InputFloat("Quadratic##SpotLight", &source->GetSpotLight()->Quadratic);
-  InputVector3("Ambient##SpotLight", &source->GetSpotLight()->Ambient);
-  InputVector3("Diffuse##SpotLight", &source->GetSpotLight()->Diffuse);
-  InputVector3("Specular##SpotLight", &source->GetSpotLight()->Specular);
-  Checkbox("Active##SpotLight", &source->GetSpotLight()->Active);
+  InputVector3(TranslatableWithID("SpotLight", "Common.Position").c_str(), &source->GetSpotLight()->Position);
+  InputVector3(TranslatableWithID("SpotLight", "Common.Direction").c_str(), &source->GetSpotLight()->Direction);
+  InputFloat(TranslatableWithID("SpotLight", "Editor.Panel.LS.CutOff").c_str(), &source->GetSpotLight()->CutOff);
+  InputFloat(TranslatableWithID("SpotLight", "Editor.Panel.LS.OuterCutOff").c_str(),
+             &source->GetSpotLight()->OuterCutOff);
+  InputFloat(TranslatableWithID("SpotLight", "Editor.Panel.LS.Constant").c_str(), &source->GetSpotLight()->Constant);
+  InputFloat(TranslatableWithID("SpotLight", "Editor.Panel.LS.Linear").c_str(), &source->GetSpotLight()->Linear);
+  InputFloat(TranslatableWithID("SpotLight", "Editor.Panel.LS.Quadratic").c_str(), &source->GetSpotLight()->Quadratic);
+  InputVector3(TranslatableWithID("SpotLight", "Editor.Panel.LS.Ambient").c_str(), &source->GetSpotLight()->Ambient);
+  InputVector3(TranslatableWithID("SpotLight", "Editor.Panel.LS.Diffuse").c_str(), &source->GetSpotLight()->Diffuse);
+  InputVector3(TranslatableWithID("SpotLight", "Editor.Panel.LS.Specular").c_str(), &source->GetSpotLight()->Specular);
+  Checkbox(TranslatableWithID("SpotLight", "Common.Active").c_str(), &source->GetSpotLight()->Active);
 }
 
-void Yeager::DisplayPointLightControl(Yeager::ObjectPointLight* source)
+void Interface::DisplayPointLightControl(Yeager::ObjectPointLight* source)
 {
-  InputVector3("Position##PointLight", &source->ObjSource->GetTransformationPtr()->position);
-  InputVector3("Scale##PointLight", &source->ObjSource->GetTransformationPtr()->scale);
-  InputVector3("Rotation##PointLight", &source->ObjSource->GetTransformationPtr()->rotation);
-  InputFloat("Constant##PointLight", &source->Constant);
-  InputFloat("Linear##PointLight", &source->Linear);
-  InputFloat("Quadratic##PointLight", &source->Quadratic);
-  InputVector3("Ambient##PointLight", &source->Ambient);
-  InputVector3("Specular##PointLight", &source->Specular);
-  InputVector3("Diffuse##PointLight", &source->Diffuse);
-  InputVector3("Color##PointLight", &source->Color);
-  Checkbox("Active##PointLight", &source->Active);
+  InputVector3(TranslatableWithID("PointLight", "Common.Position").c_str(),
+               &source->ObjSource->GetTransformationPtr()->position);
+  InputVector3(TranslatableWithID("PointLight", "Common.Scale").c_str(),
+               &source->ObjSource->GetTransformationPtr()->scale);
+  InputVector3(TranslatableWithID("PointLight", "Common.Rotation").c_str(),
+               &source->ObjSource->GetTransformationPtr()->rotation);
+  InputFloat(TranslatableWithID("PointLight", "Editor.Panel.LS.Constant").c_str(), &source->Constant);
+  InputFloat(TranslatableWithID("PointLight", "Editor.Panel.LS.Linear").c_str(), &source->Linear);
+  InputFloat(TranslatableWithID("PointLight", "Editor.Panel.LS.Quadratic").c_str(), &source->Quadratic);
+  InputVector3(TranslatableWithID("PointLight", "Editor.Panel.LS.Ambient").c_str(), &source->Ambient);
+  InputVector3(TranslatableWithID("PointLight", "Editor.Panel.LS.Specular").c_str(), &source->Specular);
+  InputVector3(TranslatableWithID("PointLight", "Editor.Panel.LS.Diffuse").c_str(), &source->Diffuse);
+  InputVector3(TranslatableWithID("PointLight", "Common.Color").c_str(), &source->Color);
+  Checkbox(TranslatableWithID("PointLight", "Common.Active").c_str(), &source->Active);
 }
 
 void Interface::LightHandleControlWindow()
 {
-  /**
-   * NOTE Imgui button`s label problem explained where: https://github.com/ocornut/imgui/issues/74
-   */
-
-  Begin(ICON_FA_LIGHTBULB " Light Control");
+  Locale locale = m_Application->GetLocale();
+  Begin(TranslatableWithIcon(ICON_FA_LIGHTBULB, "Window.LS.Label").c_str());
   int label_id = 0;
   for (auto& lightsources : *m_Application->GetScene()->GetLightSources()) {
     PushID(label_id++);
-    if (Button("Add Light Source")) {
+    if (Button(locale.Translate("Editor.Panel.LS.Add.LS.Btn").c_str())) {
       ObjectPointLight light;
-      Transformation3D trans;
-      trans.position = m_Application->GetCamera()->GetPosition() + m_Application->GetCamera()->GetDirection();
-      trans.scale = Vector3(0.1f);
+      Transformation3D trans(m_Application->GetCamera()->InFront(), Vector3(0.0f), Vector3(0.1f));
       lightsources->AddObjectPointLight(light, trans);
     }
 
     SameLine();
-    if (Button("Delete")) {
+    if (Button(locale.Translate("Editor.Panel.LS.Delete.Btn").c_str())) {
       lightsources->SetScheduleDeletion(true);
     }
 
-    if (CollapsingHeader("Linked Shaders")) {
+    if (CollapsingHeader(locale.Translate("Editor.Panel.LS.Linked.Shaders.Label").c_str())) {
       for (const auto& shader : *lightsources->GetLinkedShaders()) {
         Text("%s", shader->GetName().c_str());
       }
     }
 
-    if (TreeNode("Directional Light")) {
+    if (TreeNode(locale.Translate("Editor.Panel.LS.Dir.Light.Label").c_str())) {
       PushID(label_id++);
       DisplayDirectionalLightControl(lightsources.get());
       PopID();
       TreePop();
     }
 
-    if (TreeNode("Spot Light")) {
+    if (TreeNode(locale.Translate("Editor.Panel.LS.Spot.Light.Label").c_str())) {
       PushID(label_id++);
       DisplaySpotLightControl(lightsources.get());
       PopID();
       TreePop();
     }
 
-    if (TreeNode("Point Lights")) {
+    if (TreeNode(locale.Translate("Editor.Panel.LS.Point.Lights.Label").c_str())) {
       for (auto& obj_light : *lightsources->GetObjectPointLights()) {
         PushID(label_id++);
         DisplayPointLightControl(&obj_light);
@@ -173,16 +177,20 @@ void Interface::LightHandleControlWindow()
 
 Interface::~Interface()
 {
+  if (!bTerminated)
+    Terminate();
+}
+
+void Interface::Terminate()
+{
   SaveIniSettingsToDisk(m_ImGuiConfigurationPath->c_str());
   Yeager::Log(INFO, "Destrorying Interface!");
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImPlot::DestroyContext();
   DestroyContext();
-  // This function termination was placed in the Window.h file, but it was causing a error, because interface class that managers imgui and the window class
-  // that manage the glfw window are smart pointers, and in the wrong calling sequence, the glfw windows was destroryed before imgui can terminate properly
-  glfwTerminate();
   m_ImGuiConfigurationPath.reset();
+  bTerminated = true;
 }
 
 bool Interface::FindProjectHandleInApplicationAndDelete(String path)
@@ -213,18 +221,21 @@ void Interface::DebugControlWindow()
 
 bool Interface::WindowExitProgram()
 {
+  Locale locale = m_Application->GetLocale();
   m_Application->GetInput()->SetCursorCanDisappear(false);
   m_Application->GetCamera()->SetShouldMove(false);
   CenteredWindow(350, 140);
-  Begin("Exit Program?", NULL, YEAGER_WINDOW_STATIC);
-  CenteredText("Do you really want to exit the program?");
-  CenteredText(" Unsaved work wont been load next time!");
-  if (Button("Exit")) {
+  Begin(locale.Translate("Exit.Dia.Title").c_str(), NULL, YEAGER_WINDOW_STATIC);
+
+  CenteredText(locale.Translate("Exit.Dia.Msg1"));
+  CenteredText(locale.Translate("Exit.Dia.Msg2"));
+
+  if (Button(locale.Translate("Common.Exit").c_str())) {
     End();
     m_Control.ExitProgramWindowIsOpen = false;
     return true;
   }
-  if (Button("Cancel")) {
+  if (Button(locale.Translate("Common.Cancel").c_str())) {
     m_Control.ExitProgramWindowIsOpen = false;
     m_Application->GetInput()->SetCursorCanDisappear(true);
     m_Application->GetCamera()->SetShouldMove(true);
@@ -306,18 +317,6 @@ void Interface::AlignForWidth(float width, float alignment)
     SetCursorPosX(GetCursorPosX() + off);
 }
 
-String Interface::ProjectTimeOfCreationToString(TimePointType time)
-{
-  String str;
-  str += String(std::to_string(time.Date.Year) + " ");
-  str += String(DateType::MonthNumberToString(time.Date.Month) + " ");
-  str += String(std::to_string(time.Date.Day) + " | ");
-
-  str += String(std::to_string(time.Time.Hours) + ":");
-  str += std::to_string(time.Time.Minutes);
-  return str;
-}
-
 void Interface::LaunchImGui(Window* window)
 {
 
@@ -330,19 +329,16 @@ void Interface::LaunchImGui(Window* window)
   m_imgui_io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
   m_imgui_io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
   m_imgui_io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Keyboard Controls
-  
+
   if (GetPathFromLocal("/Configuration/Interface/imgui.ini").has_value()) {
-    m_ImGuiConfigurationPath =
-        std::make_shared<String>(GetPathFromLocal("/Configuration/Interface/imgui.ini").value());
+    m_ImGuiConfigurationPath = std::make_shared<String>(GetPathFromLocal("/Configuration/Interface/imgui.ini").value());
     m_imgui_io.IniFilename = m_ImGuiConfigurationPath->c_str();
     LoadIniSettingsFromDisk(m_ImGuiConfigurationPath->c_str());
-  }
-  else {
+  } else {
     m_ImGuiConfigurationPath =
         std::make_shared<String>(GetPathFromSourceCode("/Assets/Configuration/Editor/Public/Interface/imgui.ini"));
     m_imgui_io.IniFilename = m_ImGuiConfigurationPath->c_str();
   }
-
 
   StyleColorsDark();
   ImGui_ImplGlfw_InitForOpenGL(window->GetGLFWwindow(), true);
@@ -358,7 +354,8 @@ void Interface::RequestRestartInterface(Window* window)
   ImGui_ImplOpenGL3_Init(YEAGER_IMGUI_OPENGL_VERSION);
 }
 
-void Interface::CreateImGuiContext() {
+void Interface::CreateImGuiContext()
+{
   ImGuiIO& m_imgui_io = GetIO();
   ImFontConfig config;
   m_imgui_io.Fonts->AddFontDefault();
@@ -367,29 +364,24 @@ void Interface::CreateImGuiContext() {
   static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
 
   m_imgui_io.Fonts->AddFontFromFileTTF(
-      GetPathFromSourceCode("/Assets/Fonts/IosevkaNerdFont-Medium.ttf").c_str(),
-                                       m_Fonts.PixelSize, &config, icon_ranges);
+      GetPathFromShared("/Resources/Fonts/Editor/IosevkaNerdFont-Medium.ttf").value().c_str(), m_Fonts.PixelSize,
+      &config, icon_ranges);
   m_imgui_io.Fonts->Build();
 }
 
 Interface::Interface(Window* window, Yeager::ApplicationCore* app)
     : m_Application(app),
       m_ScreenShotWindow(Yeager::InterfaceWindow(m_Application, "ScreenShot", ImVec2(400, 400), ImVec2(0, 0), true,
-                                                 Yeager::WindowRelativePos::MIDDLE)), 
-    m_FolderExplorer(FolderExplorer(app))
+                                                 Yeager::WindowRelativePos::MIDDLE)),
+      m_FolderExplorer(FolderExplorer(app))
 {
   LaunchImGui(window);
   CreateImGuiContext();
   LoadColorscheme();
-    
+
   m_Control.Initialize = true;
   Yeager::EngineEditorMenuBar.HasMenuBar = true;
-  m_LauncherInformation = SpaceFitText(
-      "This is a small project built by one developer. It`s a game / renderer engine, that supports 2D and 3D "
-      "creations. It uses OpenGL 3.3 and in the near future, it will supports OpenGL 4, Vulkan and DirectX rendering. "
-      "This project is free and open source, under the GPL 3.0 license, so fell free to make changes and the use of "
-      "the engine. This project is also open to pull requests and issues on the repository on github.",
-      80);
+  m_LauncherInformation = SpaceFitText(m_Application->GetLocale().Translate("Launcher.About.Msg"), 80);
 }
 
 void Interface::CreateSpaceX(Uint count)
@@ -445,8 +437,8 @@ void Interface::RenderUI(Yeager::Launcher* launcher)
 
 void Interface::DrawConsole()
 {
-  //m_ConsoleWindow.Begin(m_Control.DontMoveWindowsEditor ? kWindowStatic : kWindowMoveable);
-  Begin(ICON_FA_TERMINAL " Console");
+  const String consoleStr = String(ICON_FA_TERMINAL " " + m_Application->GetLocale().Translate("Window.Console.Label"));
+  Begin(consoleStr.c_str());
 
   Checkbox(ICON_FA_INFO " Messages", &m_ConsoleShowMessages);
   SameLine();
@@ -487,7 +479,7 @@ void Interface::DrawExplorer()
   Begin(ICON_FA_ADDRESS_BOOK " Explorer", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBackground);
   m_Application->GetExplorer()->DrawExplorer();
   End();
-} 
+}
 
 void Interface::DrawToolbox()
 {
@@ -602,18 +594,18 @@ void Interface::OpenProjectWindow(Yeager::Launcher* launcher, InterfaceButton& b
   if (m_OpenProjectWindowOpen && !m_NewProjectWindowOpen) {
     window.Begin(YEAGER_WINDOW_STATIC);
 
-    if (m_OpenProjectToDisplay.empty()) 
+    if (m_OpenProjectToDisplay.empty())
       CenteredText("No projects have been created!");
-    
+
     for (Uint index = 0; index < m_OpenProjectToDisplay.size(); index++) {
-      
+
       OpenProjectsDisplay project = m_OpenProjectToDisplay.at(index);
-      
+
       Text("[%s] By: %s", project.Name.c_str(), project.Author.c_str());
       Text("[%s] [%s]", project.RendererType.c_str(), project.SceneType.c_str());
       Text("[Folder path]: %s", project.FolderPath.c_str());
-      Text("[Created at]: %s", ProjectTimeOfCreationToString(project.TimeOfCreation).c_str());
- 
+      Text("[Created at]: %s", TimePointType::FormatTimeToString(project.TimeOfCreation).c_str());
+
       if (Button(String("Open##" + project.Name).c_str())) {
         launcher->SetUserHasSelect(true);
         launcher->GetCurrentProjectPicked()->ConstructorFrom(project);
@@ -621,7 +613,7 @@ void Interface::OpenProjectWindow(Yeager::Launcher* launcher, InterfaceButton& b
       }
 
       SameLine();
-      
+
       if (Button(String("Delete##" + project.Name).c_str())) {
         m_WindowUserIsSureDeletingProject = true;
         project.SelectedToDelete = true;
@@ -632,12 +624,11 @@ void Interface::OpenProjectWindow(Yeager::Launcher* launcher, InterfaceButton& b
       Separator();
     }
 
-    if (Button("Cancel")) 
+    if (Button("Cancel"))
       m_OpenProjectWindowOpen = false;
-    
-    if (m_WindowUserIsSureDeletingProject) 
+
+    if (m_WindowUserIsSureDeletingProject)
       WindowUserIsSureDeletingProject();
-    
 
     window.End();
   }
@@ -659,10 +650,11 @@ void Interface::NewProjectWindow(Yeager::Launcher* launcher, InterfaceButton& bu
 
     const std::vector<Cchar> RendererType = {"OpenGL3_3", "OpenGL4"};
     const std::vector<Cchar> SceneType = {"Scene2D", "Scene3D"};
-    const std::vector<Cchar> PlataformTarget = {"Linux System", "Windows 10/11", "Android SDK", "MacOS", "IOS", "Universal"};
+    const std::vector<Cchar> PlataformTarget = {"Linux System", "Windows 10/11", "Android SDK",
+                                                "MacOS",        "IOS",           "Universal"};
 
     InputText("Project`s Name", &m_NewProjectHandle->m_Name);
-    
+
     for (const auto& str : m_ProjectsNamesAlreadyTaken) {
       if (m_NewProjectHandle->m_Name == str) {
         TextColored(IMGUI_RED_ERROR_COLOR, "Name already taken! Please input another one");
@@ -680,12 +672,12 @@ void Interface::NewProjectWindow(Yeager::Launcher* launcher, InterfaceButton& bu
         }
       }
     }
-    
+
     SameLine();
     Text("Project Folder: %s", m_NewProjectHandle->m_ProjectFolderPath.c_str());
     SameLine();
     Checkbox("Create Directory", &m_NewProjectCreateDirectory);
-    
+
     if (m_NewProjectCreateDirectory &&
         ValidatesPath(m_NewProjectHandle->m_ProjectFolderPath + m_NewProjectHandle->m_Name)) {
       TextColored(IMGUI_RED_ERROR_COLOR, "Directory already exists!");
@@ -757,7 +749,7 @@ void Interface::NewProjectWindow(Yeager::Launcher* launcher, InterfaceButton& bu
         m_NewProjectHandle->m_ProjectConfigurationPath =
             m_NewProjectHandle->m_ProjectFolderPath + m_NewProjectHandle->m_Name + ".yml";
         m_NewProjectHandle->m_AuthorName = m_NewProjectAuthorName;
-        
+
         if (m_TemplateWasSelected)
           m_NewProjectHandle->m_TemplateHandle = m_TemplateSelected;
 
@@ -873,11 +865,25 @@ void Interface::LauncherSettingsWindow(InterfaceButton& button, Yeager::Interfac
   }
 }
 
+String Interface::TranslatableWithIcon(String icon, String translatable) const
+{
+  return String(icon + " " + m_Application->GetLocale().Translate(translatable));
+}
+
+String Interface::TranslatableWithID(String id, String translatable) const
+{
+  return String(m_Application->GetLocale().Translate(translatable) + "##" + id);
+}
+
 bool Interface::RenderLauncher(Yeager::Launcher* launcher)
 {
-  InterfaceButton open_project("interface_open_project", ICON_FA_FOLDER_OPEN " Open Project");
-  InterfaceButton new_project("interface_new_project", ICON_FA_FOLDER " New Project");
-  InterfaceButton settings_button("interface_settings_button", ICON_FA_GEARS " Settings");
+  Locale locale = m_Application->GetLocale();
+  InterfaceButton open_project("interface_open_project",
+                               ICON_FA_FOLDER_OPEN " " + locale.Translate("Launcher.OpenProject.Btn"));
+  InterfaceButton new_project("interface_new_project",
+                              ICON_FA_FOLDER " " + locale.Translate("Launcher.NewProject.Btn"));
+  InterfaceButton settings_button("interface_settings_button",
+                                  ICON_FA_GEARS " " + locale.Translate("Launcher.Settings.Btn"));
   InterfaceButton help_button("interface_help_button", ICON_FA_CIRCLE_QUESTION " Help");
 
   Yeager::WindowInfo* wnd = m_Application->GetWindow()->GetWindowInformationPtr();
@@ -892,18 +898,17 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
                                           ImVec2(wnd->LauncherSize.x / 2, wnd->LauncherSize.y / 2), true,
                                           Yeager::WindowRelativePos::MIDDLE);
 
-
   const Vector2 windowSize = m_Application->GetWindow()->GetWindowSize();
   SetNextWindowPos(ImVec2(0, 0));
   SetNextWindowSize(ImVec2(windowSize.x, windowSize.y));
-  Begin("Yeager Launcher", NULL, YEAGER_LAUNCHER_WINDOW_FLAGS);
+  Begin(locale.Translate("Window.Launcher.Label").c_str(), NULL, YEAGER_LAUNCHER_WINDOW_FLAGS);
 
-  CenteredText("Welcome to the Yeager Engine!");
+  CenteredText(locale.Translate("Launcher.Greetings.Msg"));
   for (const auto& str : m_LauncherInformation.StringBlocks) {
     if (!str.empty())
       CenteredText(str);
   }
-  CenteredText("Link to Github: https://github.com/schwq/YeagerEngine");
+  CenteredText(m_Application->GetLocale().Translate("Launcher.About.GithubLink"));
 
   CreateSpaceX(2);
 
@@ -991,6 +996,7 @@ void Interface::LoadColorscheme()
   style.Colors[ImGuiCol_HeaderActive] = m_Colorscheme.Colors_ImGuiCol_HeaderActive;
 
   style.Colors[ImGuiCol_ResizeGrip] = m_Colorscheme.Colors_ImGuiCol_ResizeGrip;
+
   style.Colors[ImGuiCol_ResizeGripHovered] = m_Colorscheme.Colors_ImGuiCol_ResizeGripHovered;
   style.Colors[ImGuiCol_ResizeGripActive] = m_Colorscheme.Colors_ImGuiCol_ResizeGripActive;
   style.Colors[ImGuiCol_PlotLines] = m_Colorscheme.Colors_ImGuiCol_PlotLines;
@@ -1002,37 +1008,42 @@ void Interface::LoadColorscheme()
 
 void Interface::RenderDebugger()
 {
-  Begin(ICON_FA_LAPTOP " Debug Development");
-  if (Button("Reset camera position")) {
+  Locale locale = m_Application->GetLocale();
+  Scene* scene = m_Application->GetScene();
+
+  const String debugLabel = String(ICON_FA_LAPTOP " " + locale.Translate("Window.Debug.Dev.Label"));
+  Begin(debugLabel.c_str());
+  if (Button(locale.Translate("Debug.Dev.Reset.Cam.Pos.Btn").c_str())) {
     m_Application->GetCamera()->SetPosition(Vector3(0));
   }
 
   SameLine();
 
-  if (Button("Detach player camera")) {
+  if (Button(locale.Translate("Debug.Dev.Detach.Player.Cam.Btn").c_str())) {
     m_Application->DetachPlayerCamera();
   }
 
   SameLine();
 
-  if (Button("Attach scene player camera")) {
-    m_Application->AttachPlayerCamera(m_Application->GetScene()->GetPlayerCamera());
+  if (Button(locale.Translate("Debug.Dev.Attach.Scene.Player.Cam.Btn").c_str())) {
+    m_Application->AttachPlayerCamera(scene->GetPlayerCamera());
   }
 
   Separator();
 
-  if (m_Application->GetScene() != YEAGER_NULLPTR) {
-    Text("Toolboxes Loaded %u", m_Application->GetScene()->GetToolboxs()->size());
-    Text("Objects in Scene %u", m_Application->GetScene()->GetObjects()->size());
-    Text("Animated Objects in Scene %u", m_Application->GetScene()->GetAnimatedObject()->size());
+  if (scene != YEAGER_NULLPTR) {
+    Text("%s %u", locale.Translate("Debug.Dev.Toolboxes.Loaded.Txt").c_str(), scene->GetToolboxs()->size());
+    Text("%s %u", locale.Translate("Debug.Dev.Objs.Scene.Txt").c_str(), scene->GetObjects()->size());
+    Text("%s %u", locale.Translate("Debug.Dev.Anim.Objs.Scene.Txt").c_str(), scene->GetAnimatedObject()->size());
   }
 
   Separator();
 
-  Text("Frames %u", m_Frames);
+  Text("%s %u", locale.Translate("Debug.Dev.Frames.Txt").c_str(), m_Frames);
   if (m_Application->GetMode() == ApplicationMode::eAPPLICATION_EDITOR) {
     /* Prevent the calculation of dividing itself by 0 */
-    Text("Time elapsed since start : %u", (unsigned int)m_Application->GetSecondsElapsedSinceStart());
+    Text("%s : %u", locale.Translate("Debug.Dev.Time.Elapsed.Since.Start.Txt").c_str(),
+         (unsigned int)m_Application->GetSecondsElapsedSinceStart());
     if ((unsigned int)m_Application->GetSecondsElapsedSinceStart() > 0) {
       Uint fps = m_Application->GetFrameCurrentCount() / (unsigned int)m_Application->GetSecondsElapsedSinceStart();
       Text("FPS: %u", fps);
@@ -1041,10 +1052,13 @@ void Interface::RenderDebugger()
 
   Separator();
 
-  Text("Camera should move: %s", m_Application->GetCamera()->GetShouldMove() ? "true" : "false");
+  Text("%s: %s", locale.Translate("Debug.Dev.Cam.Should.Move.Txt").c_str(),
+       m_Application->GetCamera()->GetShouldMove() ? locale.Translate("Common.Boolean.True.Txt").c_str()
+                                                   : locale.Translate("Common.Boolean.False.Txt").c_str());
   Vector3 cameraPos = m_Application->GetCamera()->GetPosition();
-  Text("Camera world position: x: %f y: %f z: %f", cameraPos.x, cameraPos.y, cameraPos.z);
-  Checkbox("Windows dont move", &m_Control.DontMoveWindowsEditor);
+  Text("%s: x: %f y: %f z: %f", locale.Translate("Debug.Dev.Cam.World.Pos.Txt").c_str(), cameraPos.x, cameraPos.y,
+       cameraPos.z);
+  Checkbox(locale.Translate("Debug.Dev.Wnd.Dont.Move.Txt").c_str(), &m_Control.DontMoveWindowsEditor);
 
   Separator();
 
@@ -1052,46 +1066,65 @@ void Interface::RenderDebugger()
   if (m_Application->GetMode() == ApplicationMode::eAPPLICATION_EDITOR) {
     const Vector3 cameraDirection = m_Application->GetCamera()->GetFront();
     const Vector3 rDirection = Vector3(lround(cameraDirection.x), lround(cameraDirection.y), lround(cameraDirection.z));
-    Text("Camera direction: x: %i, y: %i, z: %i", rDirection.x, rDirection.y, rDirection.z);
-    Text("Camera direction float: x: %.4f, y: %.4f, z: %.4f", cameraDirection.x, cameraDirection.y, cameraDirection.z);
-    InputVector3("Forced change of camera direction", m_Application->GetCamera()->GetFrontPtr());
+    Text("%s: x: %i, y: %i, z: %i", locale.Translate("Debug.Dev.Cam.Direction.Txt").c_str(), rDirection.x, rDirection.y,
+         rDirection.z);
+    Text("%s: x: %.4f, y: %.4f, z: %.4f", locale.Translate("Debug.Dev.Cam.Direction.Float.Txt").c_str(),
+         cameraDirection.x, cameraDirection.y, cameraDirection.z);
+    InputVector3(locale.Translate("Debug.Dev.Forced.Change.Cam.Direction.Txt").c_str(),
+                 m_Application->GetCamera()->GetFrontPtr());
   }
 
   Separator();
 
-  if (Button(ICON_FA_EXCLAMATION " Throw Console Error")) {
+  const String throwConsoleErrStr =
+      String(ICON_FA_EXCLAMATION " " + locale.Translate("Debug.Dev.Throw.Console.Err.Btn"));
+  if (Button(throwConsoleErrStr.c_str())) {
     m_Application->GetAudioFromEngine()->PlaySound("Click_01");
     Yeager::Log(ERROR, "Test Error");
   }
   SameLine();
-  if (Button(ICON_FA_QUESTION " Throw Console Warning")) {
+
+  const String throwConsoleWarnStr =
+      String(ICON_FA_QUESTION " " + locale.Translate("Debug.Dev.Throw.Console.Warn.Btn"));
+  if (Button(throwConsoleWarnStr.c_str())) {
     Yeager::Log(WARNING, "Test Warning");
   }
 
   Separator();
-
-  if (Button(ICON_FA_ARROW_POINTER " Polygon mode: POINT")) {
+  const String polygonModePointStr =
+      String(ICON_FA_ARROW_POINTER " " + locale.Translate("Debug.Dev.Polygon.Mode.Point.Btn"));
+  if (Button(polygonModePointStr.c_str())) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
   }
   SameLine();
-  if (Button(ICON_FA_ARROW_ROTATE_LEFT " Polygon mode: LINES")) {
+
+  const String polygonModeLinesStr =
+      String(ICON_FA_ARROW_ROTATE_LEFT " " + locale.Translate("Debug.Dev.Polygon.Mode.Lines.Btn"));
+  if (Button(polygonModeLinesStr.c_str())) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   }
+
   SameLine();
-  if (Button(ICON_FA_ARROW_ROTATE_LEFT " Polygon mode: FILL")) {
+
+  const String polygonModeFillStr =
+      String(ICON_FA_ARROW_ROTATE_LEFT " " + locale.Translate("Debug.Dev.Polygon.Mode.Lines.Btn"));
+  if (Button(polygonModeFillStr.c_str())) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   }
 
   Separator();
 
-  InputVector3("OpenGL clear color", &m_OpenGLDebugClearScreenColor);
+  InputVector3(locale.Translate("Debug.Dev.OpenGL.Clear.Color.Txt").c_str(), &m_OpenGLDebugClearScreenColor);
 
   WindowInfo* wnd = m_Application->GetWindow()->GetWindowInformationPtr();
-  Text("Window Editor Size: x: %f y: %f", wnd->EditorSize.x, wnd->EditorSize.y);
-  Text("Window Launcher Size: x: %f y: %f", wnd->LauncherSize.x, wnd->LauncherSize.y);
-  Text("Window Framebuffer Size: x: %f y: %f", wnd->FrameBufferSize.x, wnd->FrameBufferSize.y);
+  Text("%s: x: %f y: %f", locale.Translate("Debug.Dev.Wnd.Editor.Size.Txt").c_str(), wnd->EditorSize.x,
+       wnd->EditorSize.y);
+  Text("%s: x: %f y: %f", locale.Translate("Debug.Dev.Wnd.Launcher.Size.Txt").c_str(), wnd->LauncherSize.x,
+       wnd->LauncherSize.y);
+  Text("%s: x: %f y: %f", locale.Translate("Debug.Dev.Wnd.Framebuffer.Size.Txt").c_str(), wnd->FrameBufferSize.x,
+       wnd->FrameBufferSize.y);
 
-  if (CollapsingHeader("Engine Sounds Test")) {
+  if (CollapsingHeader(locale.Translate("Debug.Dev.Engine.Sounds.Test.Txt").c_str())) {
     for (const auto& sound : *m_Application->GetAudioFromEngine()->GetSounds()) {
       if (Button(sound.Name.c_str())) {
         m_Application->GetAudioFromEngine()->PlaySound(sound.Name);
@@ -1099,7 +1132,7 @@ void Interface::RenderDebugger()
     }
   }
 
-  if (CollapsingHeader("Scene file content")) {
+  if (CollapsingHeader(locale.Translate("Debug.Dev.Scene.File.Content.Txt").c_str())) {
     Text(m_SceneFileText.c_str());
   }
 
@@ -1152,6 +1185,12 @@ void Interface::ScreenShotWindow()
 }
 void Interface::PrepareAndMakeScreenShot()
 {
+
+  /**
+   * TODO: Change the path of the screenshot to somewhere the user want to save it !!!
+   * Crash can happens during runtime of the installed binarie!
+   */
+
   String output = GetPathFromSourceCode("/Configuration/") + m_NewScreenShootName + ".jpg";
   switch (m_ScreenShotMode) {
     case ScreenShotMode::ECustomSizedAndPosition:

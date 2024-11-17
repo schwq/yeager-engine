@@ -160,15 +160,15 @@ void EditorExplorer::HandleAudioCreation()
 
   if (m_EverythingFineToCreate) {
     if (m_AddAudioIs3D) {
-      auto audio = std::make_shared<Yeager::Audio3DHandle>(m_NewObjectPath, m_NewObjectName,
-                                                           m_Application->GetAudioEngineHandle(), m_LoopedAudio,
-                                                           irrklang::vec3df(0.0f, 0.0f, 0.0f), m_Application);
+      auto audio = std::make_shared<Yeager::Audio3DHandle>(EntityBuilder(m_Application, m_NewObjectName),
+                                                           m_NewObjectPath, m_Application->GetAudioEngineHandle(),
+                                                           m_LoopedAudio, irrklang::vec3df(0.0f, 0.0f, 0.0f));
 
       m_Application->GetScene()->GetAudios3D()->push_back(audio);
 
     } else {
-      auto audio = std::make_shared<Yeager::AudioHandle>(
-          m_NewObjectPath, m_NewObjectName, m_Application->GetAudioEngineHandle(), m_LoopedAudio, m_Application);
+      auto audio = std::make_shared<Yeager::AudioHandle>(EntityBuilder(m_Application, m_NewObjectName), m_NewObjectPath,
+                                                         m_Application->GetAudioEngineHandle(), m_LoopedAudio);
 
       m_Application->GetScene()->GetAudios()->push_back(audio);
     }
@@ -216,7 +216,7 @@ void EditorExplorer::HandleGeometryCreation()
     if (m_AddGeometryShapeCube) {
       shape = Yeager::ObjectGeometryType::eSPHERE;
     }
-    auto obj = std::make_shared<Yeager::Object>(m_NewObjectName, m_Application);
+    auto obj = std::make_shared<Yeager::Object>(EntityBuilder(m_Application, m_NewObjectName));
     obj->GenerateObjectGeometry(shape, ObjectPhysXCreationStatic(Vector3(0.0f)));
     m_Application->GetScene()->GetObjects()->push_back(obj);
     HandleGeometryCleanup();
@@ -254,16 +254,17 @@ void EditorExplorer::AddGeometryObjectWindow()
   }
 }
 
-void EditorExplorer::QuickLoadObject(const std::filesystem::path& path) {
-    
-    /* Forces the windows to open */
-    if (!m_AddGeometryWindowOpen && !m_AddAudioWindowOpen) {
-        m_AddImportedObjectWindowOpen = true;
-        m_SelectableOptions = m_Application->GetScene()->VerifyImportedModelsOptionsInAssetsFolder();
-    }
-    
-    m_NewObjectPath = path.string(); // Adds the path loaded
-    m_NewObjectName = RemoveExtensionFromFilename(path.filename().string()); // Gives the file name to the object
+void EditorExplorer::QuickLoadObject(const std::filesystem::path& path)
+{
+
+  /* Forces the windows to open */
+  if (!m_AddGeometryWindowOpen && !m_AddAudioWindowOpen) {
+    m_AddImportedObjectWindowOpen = true;
+    m_SelectableOptions = m_Application->GetScene()->VerifyImportedModelsOptionsInAssetsFolder();
+  }
+
+  m_NewObjectPath = path.string();                                          // Adds the path loaded
+  m_NewObjectName = RemoveExtensionFromFilename(path.filename().string());  // Gives the file name to the object
 }
 
 void EditorExplorer::AddImportedObjectWindow()
@@ -331,8 +332,8 @@ void EditorExplorer::AddImportedObjectWindow()
 void EditorExplorer::StartFolderSelectionFromTexture(const String& title)
 {
   if (!m_AwaitingUserChoiceFile && !m_AwaitingUserChoiceFile) {
-    m_FolderSelection = std::make_shared<pfd::select_folder>(
-        title, m_Application->GetScene()->GetContext()->ProjectFolderPath.c_str());
+    m_FolderSelection =
+        std::make_shared<pfd::select_folder>(title, m_Application->GetScene()->GetContext()->ProjectFolderPath.c_str());
     m_AwaintingUserChoiceFolder = true;
   }
 }
@@ -383,7 +384,7 @@ void EditorExplorer::HandleObjectCreation()
 
 void EditorExplorer::CreateObject()
 {
-  auto obj = std::make_shared<Yeager::Object>(m_NewObjectName, m_Application);
+  auto obj = std::make_shared<Yeager::Object>(EntityBuilder(m_Application, m_NewObjectName));
   if (obj->ThreadImportObjectFromFile(m_NewObjectPath.c_str(), m_CreationConfiguration, m_ImportedObjectFlipTexture)) {
 
     m_Application->GetScene()->GetObjects()->push_back(obj);
@@ -397,7 +398,8 @@ void EditorExplorer::CreateObject()
 void EditorExplorer::CreateAnimatedObject()
 {
   if (m_AddObjectIsInstanced) {
-    auto obj = std::make_shared<Yeager::AnimatedObject>(m_NewObjectName, m_Application, m_InstancedObjectsCount);
+    auto obj = std::make_shared<Yeager::AnimatedObject>(EntityBuilder(m_Application, m_NewObjectName),
+                                                        m_InstancedObjectsCount);
     if (obj->ImportObjectFromFile(m_NewObjectPath.c_str(), m_CreationConfiguration, m_ImportedObjectFlipTexture)) {
       std::vector<std::shared_ptr<Transformation3D>> pos;
       BuildInstancedObjectTransformation(pos);
@@ -414,7 +416,7 @@ void EditorExplorer::CreateAnimatedObject()
       m_EverythingFineToCreate = false;
     }
   } else {
-    auto obj = std::make_shared<Yeager::AnimatedObject>(m_NewObjectName, m_Application);
+    auto obj = std::make_shared<Yeager::AnimatedObject>(EntityBuilder(m_Application, m_NewObjectName));
     if (obj->ThreadImportObjectFromFile(m_NewObjectPath.c_str(), m_CreationConfiguration,
                                         m_ImportedObjectFlipTexture)) {
       m_Application->GetScene()->GetAnimatedObject()->push_back(obj);
@@ -429,7 +431,7 @@ void EditorExplorer::CreateAnimatedObject()
 void EditorExplorer::CreatePlayableObject()
 {
   if (!m_AddObjectIsAnimated) {
-    auto obj = std::make_shared<PlayableObject>(m_NewObjectName, m_Application);
+    auto obj = std::make_shared<PlayableObject>(EntityBuilder(m_Application, m_NewObjectName));
     if (obj->ThreadImportObjectFromFile(m_NewObjectPath.c_str(), m_CreationConfiguration,
                                         m_ImportedObjectFlipTexture)) {
       m_Application->GetScene()->GetObjects()->push_back(obj);
@@ -439,7 +441,7 @@ void EditorExplorer::CreatePlayableObject()
       m_EverythingFineToCreate = false;
     }
   } else {
-    auto obj = std::make_shared<PlayableAnimatedObject>(m_NewObjectName, m_Application);
+    auto obj = std::make_shared<PlayableAnimatedObject>(EntityBuilder(m_Application, m_NewObjectName));
     if (obj->ThreadImportObjectFromFile(m_NewObjectPath.c_str(), m_CreationConfiguration,
                                         m_ImportedObjectFlipTexture)) {
       m_Application->GetScene()->GetAnimatedObject()->push_back(obj);

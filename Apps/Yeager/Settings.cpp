@@ -4,10 +4,10 @@ using namespace Yeager;
 
 AntiAliasingOption::Enum AntiAliasingOption::toEnum(String str)
 {
-  switch (Yeager::StringToInteger(str.c_str())) {
-    case Yeager::StringToInteger("MSAA x2"):
+  switch (Yeager::StringToInterger(str.c_str())) {
+    case Yeager::StringToInterger("MSAA x2"):
       return AntiAliasingOption::MSAA_x2;
-    case Yeager::StringToInteger("MSAA x4"):
+    case Yeager::StringToInterger("MSAA x4"):
       return AntiAliasingOption::MSAA_x4;
     default:
       Yeager::Log(WARNING, "Anti Aliasing Option to enum, invalid string! {}", str);

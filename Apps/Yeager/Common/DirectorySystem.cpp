@@ -1,5 +1,6 @@
 #include "DirectorySystem.h"
 #include "LogEngine.h"
+#include "Utilities.h"
 using namespace Yeager;
 
 std::map<String, FileType> Yeager::g_ExtensionTypesToRawExtensions = {
@@ -19,8 +20,7 @@ std::map<String, FileType> Yeager::g_ExtensionTypesToRawExtensions = {
     {".h", FileType("C Header File", EExtensionTypeSource, false)},
     {".hpp", FileType("C++ Header File", EExtensionTypeSource, false)},
     {".hxx", FileType("C++ Header File", EExtensionTypeSource, false)},
-    {".hh", FileType("C++ Header File", EExtensionTypeSource, false)}
-};
+    {".hh", FileType("C++ Header File", EExtensionTypeSource, false)}};
 
 FileType::FileType(String type, FileExtensionType ext, bool supported)
 {
@@ -87,7 +87,6 @@ String Yeager::ExtractExtensionFromFilename(String filename)
   return filename.substr(pos, filename.length());
 }
 
-
 size_t Yeager::NumberOfFilesInDir(const std::filesystem::path& p)
 {
   using std::filesystem::directory_iterator;
@@ -111,7 +110,6 @@ String Yeager::FileContentToString(const std::filesystem::path& p)
   return result;
 }
 
-
 bool Yeager::ValidatesPath(const std::filesystem::path& p, bool declare, std::filesystem::file_status s)
 {
   bool known = std::filesystem::status_known(s) ? std::filesystem::exists(s) : std::filesystem::exists(p);
@@ -130,10 +128,10 @@ String Yeager::GetExternalLocalFolderPath()
   /* The $HOME env varaible does not exist */
   if ((homeDir = getenv("HOME")) == NULL) {
     homeDir = getpwuid(getuid())->pw_dir;
-    return String(homeDir + "/.local/share");
+    return String(homeDir) + String("/.local/share");
   } else {
     /* The $HOME env variable exists!*/
-    return String(getenv("HOME") + "/.local/share");
+    return String(getenv("HOME")) + String("/.local/share");
   }
 #elif defined(YEAGER_SYSTEM_WINDOWS_x64)
   return GetWindowsAppDataFolder();
@@ -172,7 +170,6 @@ String Yeager::GetWindowsProgramFilesFolder()
 }
 
 #endif
-
 
 std::vector<String> Yeager::RetriveSubdirectoriesFromPath(const std::filesystem::path& p)
 {

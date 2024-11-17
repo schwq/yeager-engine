@@ -1,7 +1,7 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
 //    Repo : https://github.com/schwq/YeagerEngine
-//    Copyright (C) 2023
+//    Copyright (C) 2023 - Present
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -52,18 +52,18 @@ struct MaterialType {
 
   static Enum ToEnum(const String& str)
   {
-    switch (StringToInteger(str.c_str())) {
-      case StringToInteger("Texture2D"):
+    switch (StringToInterger(str.c_str())) {
+      case StringToInterger("Texture2D"):
         return eTEXTURE2D;
-      case StringToInteger("Material Base"):
+      case StringToInterger("Material Base"):
         return eMATERIAL_BASE;
-      case StringToInteger("Skybox"):
+      case StringToInterger("Skybox"):
         return eSKYBOX;
-      case StringToInteger("Cubemap"):
+      case StringToInterger("Cubemap"):
         return eSKYBOX;
-      case StringToInteger("Physical Texture2D"):
+      case StringToInterger("Physical Texture2D"):
         return ePHYSICAL_TEXTURE2D;
-      case StringToInteger("Undefined"):
+      case StringToInterger("Undefined"):
       default:
         return eUNDEFINED;
     }
@@ -92,16 +92,16 @@ struct MaterialSurfaceType {
   }
   static Enum ToEnum(const String& str)
   {
-    switch (StringToInteger(str.c_str())) {
-      case StringToInteger("Textured"):
+    switch (StringToInterger(str.c_str())) {
+      case StringToInterger("Textured"):
         return eTEXTURED;
-      case StringToInteger("Colored"):
+      case StringToInterger("Colored"):
         return eCOLORED;
-      case StringToInteger("Material Defined"):
+      case StringToInterger("Material Defined"):
         return eMATERIAL_DEFINED;
-      case StringToInteger("MultiTextured"):
+      case StringToInterger("MultiTextured"):
         return eMULTI_TEXTURED;
-      case StringToInteger("Undefined"):
+      case StringToInterger("Undefined"):
       default:
         return eUNDEFINED;
     }
@@ -130,18 +130,18 @@ struct MaterialTextureType {
   }
   static Enum ToEnum(const String& str)
   {
-    switch (StringToInteger(str.c_str())) {
-      case StringToInteger("Diffuse"):
+    switch (StringToInterger(str.c_str())) {
+      case StringToInterger("Diffuse"):
         return eDIFFUSE;
-      case StringToInteger("Specular"):
+      case StringToInterger("Specular"):
         return eSPECULAR;
-      case StringToInteger("Mettalic"):
+      case StringToInterger("Mettalic"):
         return eMETTALIC;
-      case StringToInteger("NormalMap"):
+      case StringToInterger("NormalMap"):
         return eNORMAL_MAP;
-      case StringToInteger("Roughness"):
+      case StringToInterger("Roughness"):
         return eROUGHNESS;
-      case StringToInteger("Undefined"):
+      case StringToInterger("Undefined"):
       default:
         return eUNDEFINED;
     }
@@ -183,6 +183,7 @@ struct STBIDataOutput {
   int Width = 0;
   int Height = 0;
   int NrComponents = 0;
+  bool Flip = true;
   String OriginalPath = YEAGER_NULL_LITERAL;
 };
 
@@ -208,8 +209,7 @@ extern std::optional<Uint> FormatToChannels(GLenum format);
 
 class MaterialBase : public EditorEntity {
  public:
-  MaterialBase(Yeager::ApplicationCore* application, const String& name, const MaterialType::Enum type,
-               const MaterialSurfaceType::Enum surface);
+  MaterialBase(const EntityBuilder& builder, const MaterialType::Enum type, const MaterialSurfaceType::Enum surface);
   ~MaterialBase();
 
   YEAGER_CONSTEXPR Vector4 GetColor() const { return m_Color; }
@@ -231,9 +231,10 @@ class MaterialBase : public EditorEntity {
 
 class MaterialTexture2D : public MaterialBase {
  public:
-  MaterialTexture2D(Yeager::ApplicationCore* application, const String& name, const MaterialTextureType::Enum texture);
+  MaterialTexture2D(const EntityBuilder& builder, const MaterialTextureType::Enum texture);
   MaterialTexture2D()  // FIXME: this is shit, the applicationCore is set to nullptr that crashes the application! i need to review know to fix this mess
-      : MaterialBase(YEAGER_NULLPTR, YEAGER_NULL_LITERAL, MaterialType::eTEXTURE2D, MaterialSurfaceType::eTEXTURED){};
+      : MaterialBase(EntityBuilder(YEAGER_NULLPTR, YEAGER_NULL_LITERAL), MaterialType::eTEXTURE2D,
+                     MaterialSurfaceType::eTEXTURED){};
   ~MaterialTexture2D();
 
   MaterialTextureDataHandle* GetTextureDataHandle() { return &m_TextureHandle; }

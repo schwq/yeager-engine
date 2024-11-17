@@ -9,7 +9,7 @@ using namespace physx;
 void Yeager::SpawnCubeObject(Yeager::ApplicationCore* application, const String& name, const Vector3& position,
                              const Vector3& rotation, const Vector3& scale, const ObjectPhysicsType::Enum physics)
 {
-  auto object = std::make_shared<Object>(name, application);
+  auto object = std::make_shared<Object>(EntityBuilder(application, name));
   object->SetCanBeSerialize(false);
   object->GenerateGeometryTexture(application->GetDefaults()->GetTexture().get());
   if (physics == ObjectPhysicsType::eSTATIC_BODY) {
@@ -23,7 +23,7 @@ void Yeager::SpawnCubeObject(Yeager::ApplicationCore* application, const String&
 void Yeager::SpawnSphereObject(Yeager::ApplicationCore* application, const String& name, const Vector3& position,
                                const Vector3& rotation, const Vector3& scale, const ObjectPhysicsType::Enum physics)
 {
-  auto object = std::make_shared<Object>(name, application);
+  auto object = std::make_shared<Object>(EntityBuilder(application, name));
   object->SetCanBeSerialize(false);
   object->GenerateGeometryTexture(application->GetDefaults()->GetTexture().get());
   if (physics == ObjectPhysicsType::eSTATIC_BODY) {
@@ -64,14 +64,14 @@ String ObjectInstancedType::EnumToString(ObjectInstancedType::Enum e)
 
 ObjectGeometryType::Enum Yeager::StringToObjectGeometryType(const String& str)
 {
-  switch (StringToInteger(str.c_str())) {
-    case StringToInteger("Cube"):
+  switch (StringToInterger(str.c_str())) {
+    case StringToInterger("Cube"):
       return ObjectGeometryType::eCUBE;
-    case StringToInteger("Sphere"):
+    case StringToInterger("Sphere"):
       return ObjectGeometryType::eSPHERE;
-    case StringToInteger("Triangle"):
+    case StringToInterger("Triangle"):
       return ObjectGeometryType::eTRIANGLE;
-    case StringToInteger("Custom"):
+    case StringToInterger("Custom"):
       return ObjectGeometryType::eCUSTOM;
     default:
       Yeager::Log(ERROR,
@@ -80,35 +80,35 @@ ObjectGeometryType::Enum Yeager::StringToObjectGeometryType(const String& str)
   }
 }
 
-Object::Object(String name, ApplicationCore* application)
-    : GameEntity(EntityObjectType::OBJECT, application, name),
+Object::Object(const EntityBuilder& builder)
+    : GameEntity(EntityBuilder(builder.Application, builder.Name, EntityObjectType::OBJECT, builder.UUID)),
       m_InstancedType(ObjectInstancedType::eNON_INSTACED),
-      m_Actor(std::make_shared<PhysXActor>(m_Application, this)),
-      m_ThreadImporter(std::make_shared<ImporterThreaded>(name, m_Application))
+      m_Actor(std::make_shared<PhysXActor>(builder.Application, this)),
+      m_ThreadImporter(std::make_shared<ImporterThreaded>(builder.Name, builder.Application))
 {
-  BuildNode(m_Application->GetScene()->GetRootNode());
+  BuildNode(mApplication->GetScene()->GetRootNode());
 }
 
-Object::Object(String name, ApplicationCore* application, GLuint amount)
-    : GameEntity(EntityObjectType::OBJECT, application, name),
+Object::Object(const EntityBuilder& builder, GLuint amount)
+    : GameEntity(EntityBuilder(builder.Application, builder.Name, EntityObjectType::OBJECT, builder.UUID)),
       m_InstancedObjs(amount),
       m_InstancedType(ObjectInstancedType::eINSTANCED),
-      m_Actor(std::make_shared<PhysXActor>(m_Application, this)),
-      m_ThreadImporter(std::make_shared<ImporterThreaded>(name, m_Application))
+      m_Actor(std::make_shared<PhysXActor>(builder.Application, this)),
+      m_ThreadImporter(std::make_shared<ImporterThreaded>(builder.Name, builder.Application))
 {
   m_Props.reserve(amount);
-  BuildNode(m_Application->GetScene()->GetRootNode());
+  BuildNode(mApplication->GetScene()->GetRootNode());
 }
 
-AnimatedObject::AnimatedObject(String name, ApplicationCore* application)
-    : Object(name, application), m_ThreadImporter(std::make_shared<ImporterThreadedAnimated>(name, m_Application))
+AnimatedObject::AnimatedObject(const EntityBuilder& builder)
+    : Object(builder), m_ThreadImporter(std::make_shared<ImporterThreadedAnimated>(builder.Name, builder.Application))
 {
   SetEntityType(EntityObjectType::OBJECT_ANIMATED);
 }
 
-AnimatedObject::AnimatedObject(String name, ApplicationCore* application, GLuint amount)
-    : Object(name, application, amount),
-      m_ThreadImporter(std::make_shared<ImporterThreadedAnimated>(name, m_Application))
+AnimatedObject::AnimatedObject(const EntityBuilder& builder, GLuint amount)
+    : Object(builder, amount),
+      m_ThreadImporter(std::make_shared<ImporterThreadedAnimated>(builder.Name, builder.Application))
 {
   SetEntityType(EntityObjectType::OBJECT_INSTANCED_ANIMATED);
 }
@@ -118,7 +118,7 @@ void Object::BuildProps(const std::vector<std::shared_ptr<Transformation3D>>& tr
   if (transformations.size() > m_InstancedObjs)
     Yeager::Log(WARNING,
                 "Trying to build instanced props with a std::vector bigger that the amount that was declared! {} ",
-                m_Name);
+                mName);
   m_Props = transformations;
   shader->UseShader();
   /* The number of instances can differ from the actual number of props that exists*/
@@ -153,7 +153,7 @@ Object::~Object()
       }
     }
     m_Actor.reset();
-    Yeager::Log(INFO, "Destroying object {}", m_Name);
+    Yeager::Log(INFO, "Destroying object {}", mName);
   }
 }
 
@@ -201,14 +201,14 @@ std::vector<Vector3> Yeager::ExtractVerticesPositionToVector(ObjectModelData* mo
 
 void AnimatedObject::UpdateAnimation(float delta)
 {
-  if (m_ObjectDataLoaded && m_Render) {
+  if (m_ObjectDataLoaded && bRender) {
     m_AnimationEngine->UpdateAnimation(delta);
   }
 }
 
 void AnimatedObject::BuildAnimationMatrices(Shader* shader)
 {
-  if (m_ObjectDataLoaded && m_Render) {
+  if (m_ObjectDataLoaded && bRender) {
     shader->UseShader();
     auto transform = m_AnimationEngine->GetFinalBoneMatrices();
     for (int x = 0; x < transform.size(); x++) {
@@ -285,21 +285,21 @@ bool Object::GenerateObjectGeometry(ObjectGeometryType::Enum geometry, const Obj
         m_GeometryData.Indices = GenerateSphereIndices(50, 50);
         break;
       default:
-        Yeager::Log(ERROR, "Cannot generate geometry, invalid type! model {}", m_Name);
+        Yeager::Log(ERROR, "Cannot generate geometry, invalid type! model {}", mName);
         return false;
     }
     m_PhysicsType = physics.Type;
-    physics.ApplyToObjectTransformation(&m_EntityTransformation);
+    physics.ApplyToObjectTransformation(&mEntityTransformation);
     m_Actor->BuildActor(physics);
     Setup();
     m_ObjectDataLoaded = true;
 
-    Yeager::LogDebug(INFO, "Success in loading geometry {}", m_Name);
+    Yeager::LogDebug(INFO, "Success in loading geometry {}", mName);
 
     return true;
 
   } else {
-    Yeager::Log(WARNING, "Object data already loaded! Trying to load geometry to model {}", m_Name);
+    Yeager::Log(WARNING, "Object data already loaded! Trying to load geometry to model {}", mName);
     return false;
   }
 }
@@ -309,12 +309,12 @@ bool Object::ImportObjectFromFile(Cchar path, const ObjectCreationConfiguration 
   Path = path;
 
   if (!m_ObjectDataLoaded) {
-    Importer imp(m_Name, m_Application);
+    Importer imp(mName, mApplication);
 
     m_ModelData = imp.Import(path, configuration, flip_image);
 
     if (!m_ModelData.SuccessfulLoaded) {
-      Yeager::Log(ERROR, "Cannot load imported model data, model {} path {}", m_Name, path);
+      Yeager::Log(ERROR, "Cannot load imported model data, model {} path {}", mName, path);
       m_ObjectDataLoaded = false;
       return false;
     }
@@ -325,15 +325,15 @@ bool Object::ImportObjectFromFile(Cchar path, const ObjectCreationConfiguration 
     Setup();
 
     for (auto& tex : m_ModelData.TexturesLoaded) {
-      m_EntityLoadedTextures.push_back(&tex->first);
+      mEntityLoadedTextures.push_back(&tex->first);
     }
 
-    Yeager::LogDebug(INFO, "Success in loading mode {} path {}", m_Name, path);
+    Yeager::LogDebug(INFO, "Success in loading mode {} path {}", mName, path);
 
     return true;
 
   } else {
-    Yeager::Log(WARNING, "Model data already loaded! Trying to load imported model to model {} path {}", m_Name, path);
+    Yeager::Log(WARNING, "Model data already loaded! Trying to load imported model to model {} path {}", mName, path);
     return false;
   }
 }
@@ -347,10 +347,10 @@ bool Object::ThreadImportObjectFromFile(Cchar path, const ObjectCreationConfigur
     std::pair<ImporterThreaded*, Yeager::Object*> thread;
     thread.first = m_ThreadImporter.get();
     thread.second = this;
-    m_Application->GetScene()->GetThreadImporters()->push_back(thread);
+    mApplication->GetScene()->GetThreadImporters()->push_back(thread);
     return true;
   } else {
-    Yeager::Log(WARNING, "Model data already loaded! Trying to load imported model to model {} path {}", m_Name, path);
+    Yeager::Log(WARNING, "Model data already loaded! Trying to load imported model to model {} path {}", mName, path);
     return false;
   }
 }
@@ -375,7 +375,7 @@ void Object::ThreadSetup()
   m_ThreadImporter->GetThreadPtr()->join();
 
   if (!m_ModelData.SuccessfulLoaded) {
-    Yeager::Log(ERROR, "Cannot load imported model data, model {}", m_Name);
+    Yeager::Log(ERROR, "Cannot load imported model data, model {}", mName);
     m_ObjectDataLoaded = false;
     return;
   }
@@ -387,10 +387,10 @@ void Object::ThreadSetup()
   Setup();
 
   for (auto& tex : m_ModelData.TexturesLoaded) {
-    m_EntityLoadedTextures.push_back(&tex->first);
+    mEntityLoadedTextures.push_back(&tex->first);
   }
 
-  Yeager::LogDebug(INFO, "Success in loading mode {}", m_Name);
+  Yeager::LogDebug(INFO, "Success in loading mode {}", mName);
 }
 
 bool AnimatedObject::ThreadImportObjectFromFile(Cchar path, const ObjectCreationConfiguration configuration,
@@ -403,11 +403,11 @@ bool AnimatedObject::ThreadImportObjectFromFile(Cchar path, const ObjectCreation
     std::pair<ImporterThreadedAnimated*, Yeager::AnimatedObject*> thread;
     thread.first = m_ThreadImporter.get();
     thread.second = this;
-    m_Application->GetScene()->GetThreadAnimatedImporters()->push_back(thread);
+    mApplication->GetScene()->GetThreadAnimatedImporters()->push_back(thread);
     return true;
   } else {
-    Yeager::Log(WARNING, "Model Animated data already loaded! Trying to load imported model to model {} path {}",
-                m_Name, path);
+    Yeager::Log(WARNING, "Model Animated data already loaded! Trying to load imported model to model {} path {}", mName,
+                path);
     return false;
   }
 }
@@ -430,7 +430,7 @@ void AnimatedObject::ThreadSetup()
   m_ThreadImporter->GetThreadPtr()->join();
 
   if (!m_ModelData.SuccessfulLoaded) {
-    Yeager::Log(ERROR, "Cannot load imported model data, model {}", m_Name);
+    Yeager::Log(ERROR, "Cannot load imported model data, model {}", mName);
     m_ObjectDataLoaded = false;
     return;
   }
@@ -443,13 +443,13 @@ void AnimatedObject::ThreadSetup()
   Setup();
 
   for (auto& tex : m_ModelData.TexturesLoaded) {
-    m_EntityLoadedTextures.push_back(&tex->first);
+    mEntityLoadedTextures.push_back(&tex->first);
   }
 
   BuildAnimation(Path);
 
 #ifdef YEAGER_DEBUG
-  Yeager::Log(INFO, "Success in loading mode {}", m_Name);
+  Yeager::Log(INFO, "Success in loading mode {}", mName);
 #endif
 }
 
@@ -521,7 +521,7 @@ void Object::Draw(Yeager::Shader* shader, float delta)
 
   ProcessOnScreenProprieties();
 
-  if (m_ObjectDataLoaded && m_Render) {
+  if (m_ObjectDataLoaded && bRender) {
 
     shader->UseShader();
     if (m_PhysicsType == ObjectPhysicsType::eDYNAMIC_BODY)
@@ -605,11 +605,11 @@ bool AnimatedObject::ImportObjectFromFile(Cchar path, const ObjectCreationConfig
   Path = path;
 
   if (!m_ObjectDataLoaded) {
-    Importer imp(m_Name, m_Application);
+    Importer imp(mName, mApplication);
     m_ModelData = imp.ImportAnimated(path, configuration, flip_image);
 
     if (!m_ModelData.SuccessfulLoaded) {
-      Yeager::Log(ERROR, "Cannot load imported model data, model {} path {}", m_Name, path);
+      Yeager::Log(ERROR, "Cannot load imported model data, model {} path {}", mName, path);
       m_ObjectDataLoaded = false;
       return false;
     }
@@ -619,13 +619,13 @@ bool AnimatedObject::ImportObjectFromFile(Cchar path, const ObjectCreationConfig
     Setup();
 
     for (auto& tex : m_ModelData.TexturesLoaded) {
-      m_EntityLoadedTextures.push_back(&tex->first);
+      mEntityLoadedTextures.push_back(&tex->first);
     }
 
-    Yeager::Log(INFO, "Success in loading mode {} path {}", m_Name, path);
+    Yeager::Log(INFO, "Success in loading mode {} path {}", mName, path);
     return true;
   } else {
-    Yeager::Log(WARNING, "Model data already loaded! Trying to load imported model to model {} path {}", m_Name, path);
+    Yeager::Log(WARNING, "Model data already loaded! Trying to load imported model to model {} path {}", mName, path);
     return false;
   }
 }
@@ -670,7 +670,7 @@ void AnimatedObject::Draw(Shader* shader)
 {
   ProcessOnScreenProprieties();
 
-  if (m_ObjectDataLoaded && m_Render) {
+  if (m_ObjectDataLoaded && bRender) {
     shader->UseShader();
     if (m_InstancedType == ObjectInstancedType::eNON_INSTACED)
       ApplyTransformation(shader);
@@ -754,7 +754,7 @@ std::vector<GLfloat> Yeager::GenerateCubeVertices()
 
 std::vector<GLuint> Yeager::GenerateCubeIndices()
 {
-  return std::vector<GLuint>{// front and back
+  return std::vector<GLuint>{// front and backa
                              0, 3, 2, 2, 1, 0, 4, 5, 6, 6, 7, 4,
                              // left and right
                              11, 8, 9, 9, 10, 11, 12, 13, 14, 14, 15, 12,

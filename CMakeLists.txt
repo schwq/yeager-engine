@@ -52,7 +52,11 @@ set(SOURCEFILES
     Apps/Yeager/DefaultValues.cpp
     Apps/Yeager/DefaultValues.h
     Apps/Yeager/Engine/Interface/Interface.cpp
-    Apps/Yeager/Engine/Interface/UIManagement.cpp 
+    Apps/Yeager/Engine/Interface/UIManagement.cpp
+    Apps/Yeager/Engine/Interface/FolderExplorer.cpp
+    Apps/Yeager/Engine/Interface/FolderExplorer.h
+    Apps/Yeager/Engine/Interface/Locale.h
+    Apps/Yeager/Engine/Interface/Locale.cpp
     Apps/Yeager/Application.cpp 
     Apps/Yeager/InputHandle.cpp 
     Apps/Yeager/Serialization.cpp
@@ -93,12 +97,30 @@ set(SOURCEFILES
     Apps/Yeager/Engine/Terrain/ProceduralTerrain.h
     Apps/Yeager/Common/Mathematics.cpp
     Apps/Yeager/Common/Mathematics.h
+    Apps/Yeager/Common/Algorithm/String/KMPSearchPattern.h
+    Apps/Yeager/Common/Algorithm/String/KMPSearchPattern.cpp
+    Apps/Yeager/Common/Algorithm/String/BruteForceSearch.h
+    Apps/Yeager/Common/Algorithm/String/BruteForceSearch.cpp
+    Apps/Yeager/Common/DirectorySystem.h
+    Apps/Yeager/Common/DirectorySystem.cpp 
+    Apps/Yeager/Common/Time.cpp
+    Apps/Yeager/Common/Time.h
+    Apps/Yeager/Common/Random.h
+    Apps/Yeager/Common/Random.cpp 
+    Apps/Yeager/Common/Utilities.h
     Apps/Yeager/Engine/Terrain/PerlinNoise.cpp
     Apps/Yeager/Engine/Terrain/PerlinNoise.h
+    Apps/Yeager/Kernel/Network/NetworkSocket.cpp
+    Apps/Yeager/Kernel/Network/NetworkSocket.h
+    Apps/Yeager/Kernel/Network/Connection.h
+    Apps/Yeager/Kernel/Network/Connection.cpp
+    Apps/Yeager/Kernel/HardwareInfo.h
     Apps/Yeager/Kernel/HardwareInfo.h
     Apps/Yeager/Kernel/HardwareInfo.cpp
-    Apps/Yeager/Kernel/NvidiaCuda.h 
+    Apps/Yeager/Kernel/NvidiaCuda.h
     Apps/Yeager/Kernel/NvidiaCuda.cpp
+    Apps/Yeager/Kernel/Thread.h 
+    Apps/Yeager/Kernel/Thread.cpp
     Apps/Yeager/Kernel/Caching/Cache.h
     Apps/Yeager/Kernel/Caching/Cache.cpp
     

@@ -2,10 +2,10 @@
 #include "../../../Application.h"
 using namespace Yeager;
 
-PlayableObject::PlayableObject(String name, ApplicationCore* application) : Object(name, application)
+PlayableObject::PlayableObject(const EntityBuilder& builder) : Object(builder)
 {
   SetEntityType(EntityObjectType::OBJECT_PLAYABLE);
-  Yeager::LogDebug(INFO, "Created PLayable Object {} ID {}", name, m_EntityID);
+  Yeager::LogDebug(INFO, "Created PLayable Object {} UUID {}", mName, uuids::to_string(mEntityUUID));
 }
 
 void PlayableObject::Draw(Yeager::Shader* shader, float delta)
@@ -14,7 +14,7 @@ void PlayableObject::Draw(Yeager::Shader* shader, float delta)
 
   ProcessOnScreenProprieties();
 
-  if (m_ObjectDataLoaded && m_Render) {
+  if (m_ObjectDataLoaded && bRender) {
 
     shader->UseShader();
     if (m_PhysicsType == ObjectPhysicsType::eDYNAMIC_BODY)
@@ -35,11 +35,10 @@ void PlayableObject::Draw(Yeager::Shader* shader, float delta)
   PosProcessOnScreenProprieties();
 }
 
-PlayableAnimatedObject::PlayableAnimatedObject(String name, ApplicationCore* application)
-    : AnimatedObject(name, application)
+PlayableAnimatedObject::PlayableAnimatedObject(const EntityBuilder& builder) : AnimatedObject(builder)
 {
   SetEntityType(EntityObjectType::OBJECT_ANIMATED_PLAYABLE);
-  Yeager::LogDebug(INFO, "Created Animated Playable Object {} ID {}", name, m_EntityID);
+  Yeager::LogDebug(INFO, "Created Animated Playable Object {} UUID {}", mName, uuids::to_string(mEntityUUID));
 }
 
 void PlayableAnimatedObject::Draw(Yeager::Shader* shader, float delta)
@@ -48,7 +47,7 @@ void PlayableAnimatedObject::Draw(Yeager::Shader* shader, float delta)
 
   ProcessOnScreenProprieties();
 
-  if (m_ObjectDataLoaded && m_Render) {
+  if (m_ObjectDataLoaded && bRender) {
     shader->UseShader();
     if (m_InstancedType == ObjectInstancedType::eNON_INSTACED)
       ApplyTransformation(shader);
@@ -60,18 +59,18 @@ void PlayableAnimatedObject::Draw(Yeager::Shader* shader, float delta)
 
 void PlayableObject::ProcessPlayableSetOfRules()
 {
-  Yeager::BaseCamera* camera = m_Application->GetCamera();
+  Yeager::BaseCamera* camera = mApplication->GetCamera();
 
   if (m_SetOfRules.FollowPlayerPosition) {
-    m_EntityTransformation.position = camera->GetPosition() + m_SetOfRules.PositionOffset;
+    mEntityTransformation.position = camera->GetPosition() + m_SetOfRules.PositionOffset;
   }
 }
 
 void PlayableAnimatedObject::ProcessPlayableSetOfRules()
 {
-  Yeager::BaseCamera* camera = m_Application->GetCamera();
+  Yeager::BaseCamera* camera = mApplication->GetCamera();
 
   if (m_SetOfRules.FollowPlayerPosition) {
-    m_EntityTransformation.position = camera->GetPosition() + m_SetOfRules.PositionOffset;
+    mEntityTransformation.position = camera->GetPosition() + m_SetOfRules.PositionOffset;
   }
 }

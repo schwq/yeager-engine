@@ -1,7 +1,7 @@
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
 //    Repo : https://github.com/schwq/YeagerEngine
-//    Copyright (C) 2023-present
+//    Copyright (C) 2023 - Present - Present
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -73,10 +73,12 @@ struct SpotLight {
   Vector3 Specular = Vector3(1.0f);
   bool Active = true;
 };
-
+/**
+ * TODO: Make this raw pointer into a smart pointer!
+ */
 struct ObjectPointLight : public PointLight {
   Object* ObjSource = YEAGER_NULLPTR;
-  constexpr void Destroy() const noexcept
+  void Destroy() const
   {
     if (ObjSource)
       delete ObjSource;
@@ -85,7 +87,7 @@ struct ObjectPointLight : public PointLight {
 
 class LightBaseHandle : public EditorEntity {
  public:
-  LightBaseHandle(String name, ApplicationCore* app, std::vector<Shader*> link_shaders);
+  LightBaseHandle(const EntityBuilder& builder, std::vector<Shader*> link_shaders);
   ~LightBaseHandle() {}
 
   std::vector<PointLight>* GetPointLights() { return &m_PointLights; }
@@ -113,10 +115,10 @@ class LightBaseHandle : public EditorEntity {
 */
 class PhysicalLightHandle : public LightBaseHandle {
  public:
-  PhysicalLightHandle(String name, ApplicationCore* app, std::vector<Shader*> link_shader, Shader* draw_shader);
+  PhysicalLightHandle(const EntityBuilder& builder, std::vector<Shader*> link_shader, Shader* draw_shader);
   ~PhysicalLightHandle();
 
-  bool operator==(const PhysicalLightHandle& rhs) { return (this->m_Name == rhs.m_Name); }
+  bool operator==(const PhysicalLightHandle& rhs) { return (this->mName == rhs.mName); }
 
   void ScheduleDeletionOfPointLights()
   {

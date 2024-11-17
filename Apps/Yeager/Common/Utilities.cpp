@@ -36,17 +36,20 @@ Cchar Yeager::g_OperatingSystemString = YEAGER_WINDOWS32_OS_STRING;
 Cchar Yeager::g_OperatingSystemString = YEAGER_LINUX_OS_STRING;
 #endif
 
+bool Yeager::g_FromSourceCode = false;
 
-
-uint64_t Yeager::Convert32BitsTo64Bits(uint32_t high, uint32_t low) {return (uint64_t) high << 32 | low;}
-
+uint64_t Yeager::Convert32BitsTo64Bits(uint32_t high, uint32_t low)
+{
+  return (uint64_t)high << 32 | low;
+}
 
 bool Yeager::EvaluateIntToBool(const int i)
 {
   return i == 0 ? false : true;
 }
 
-std::vector<String> Yeager::RetrievePhrasesBetweenChar(String str, const char ch) {
+std::vector<String> Yeager::RetrievePhrasesBetweenChar(String str, const char ch)
+{
   std::vector<String> phrases;
   while (str.find(ch) != String::npos) {
     String ph = ReadSuffixUntilCharacter(str, ch);
@@ -96,14 +99,38 @@ String Yeager::ReadSuffixUntilCharacter(String expression, char characterToStop)
   return expression;
 }
 
+int Yeager::DisplayWarningPanicMessageBox(const String& cause, const std::filesystem::path& log)
+{
+#ifdef YEAGER_SYSTEM_WINDOWS_x64
+  return DisplayWarningPanicMessageBoxWindows(cause, log);
+#endif
+  return 0;
+}
 
-int Yeager::DisplayWarningPanicMessageBox(const String& cause, const std::filesystem::path& log) {
-    if (g_OperatingSystemString == YEAGER_WINDOWS32_OS_STRING) {
+#ifdef YEAGER_SYSTEM_WINDOWS_x64
+int Yeager::DisplayWarningPanicMessageBoxWindows(const String& cause, const std::filesystem::path& log)
+{
+  if (g_OperatingSystemString == YEAGER_WINDOWS32_OS_STRING) {
     return MessageBoxW(NULL,
-                      (LPCWSTR)String("A problem have occurs that causes the Yeager Engine to panic! Cause: " + cause +
-                                      "\nPlease check the log generated in the path: \n" + log.string())
-                          .c_str(),
-                         (LPCWSTR)String("Yeager Engine panic!").c_str(), MB_ICONHAND | MB_APPLMODAL | MB_OK);
+                       (LPCWSTR)String("A problem have occurs that causes the Yeager Engine to panic! Cause: " + cause +
+                                       "\nPlease check the log generated in the path: \n" + log.string())
+                           .c_str(),
+                       (LPCWSTR)String("Yeager Engine panic!").c_str(), MB_ICONHAND | MB_APPLMODAL | MB_OK);
   }
-    return -1;
+  return -1;
+}
+#endif
+
+String Yeager::ToLower(const String& str)
+{
+  String result = str;
+  std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c) { return std::tolower(c); });
+  return result;
+}
+
+String Yeager::ToUpper(const String& str)
+{
+  String result = str;
+  std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c) { return std::toupper(c); });
+  return result;
 }

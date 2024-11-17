@@ -6,12 +6,14 @@ using namespace physx;
 PhysXActor::PhysXActor(Yeager::ApplicationCore* application, Yeager::Object* object)
     : m_Application(application), m_Object(object)
 {
-  Yeager::LogDebug(INFO, "Created physx actor for object: {} ID {}", object->GetName(), object->GetEntityID());
+  Yeager::LogDebug(INFO, "Created physx actor for object: {} UUID {}", object->GetName(),
+                   uuids::to_string(object->GetEntityUUID()));
 }
 
 PhysXActor::~PhysXActor()
 {
-  Yeager::LogDebug(INFO, "Destroryed physx actor for object {} ID {}", m_Object->GetName(), m_Object->GetEntityID());
+  Yeager::LogDebug(INFO, "Destroryed physx actor for object {} UUID {}", m_Object->GetName(),
+                   uuids::to_string(m_Object->GetEntityUUID()));
 }
 
 void PhysXActor::BuildActor(const ObjectPhysXCreationBase& creation)

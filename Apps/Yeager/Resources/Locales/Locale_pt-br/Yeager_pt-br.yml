@@ -1,0 +1,44 @@
+# Launcher 
+Launcher.Version: "1.0.0-beta"
+Launcher.Greetings.Msg: "Bem vindo ao Yeager Engine!"
+Launcher.About.Msg: "Esse é um pequeno projeto sendo programado por um programador solo. É uma game engine / render engine, que contém suporte para cenas 2D e 3D. A engine usa OpenGL 3.3 para renderizar, mas em um futuro proximo, terá suporte para OpenGL 4.6, Vulkan e DirectX. Esse project é open source, sob a licença GPL 3.0, então fique livre para fazer mudanças e o uso da engine. Esse projeto está aberto para pull requests e problemas no github."
+Launcher.About.GithubLink: "Link do Github: https://github.com/schwq/YeagerEngine"
+Launcher.OpenProject.Btn: "Abrir Projeto"
+Launcher.NewProject.Btn: "Novo Projeto"
+Launcher.Settings.Btn: "Configurações"
+
+# Yeager Common
+Common.Boolean.True.Txt: "verdadeiro"
+Common.Boolean.False.Txt: "falso"
+
+# Yeager Window
+Window.Launcher.Label: "Yeager Launcher"
+Window.Debug.Dev.Label: "Debug do Desenvolvimento"
+
+
+# Yeager Debug Development
+Debug.Dev.Reset.Cam.Pos.Btn: "Resetar posição da camera"
+Debug.Dev.Detach.Player.Cam.Btn: "Remover camera do player"
+Debug.Dev.Attach.Scene.Player.Cam.Btn: "Anexar camera da cena no player"
+Debug.Dev.Toolboxes.Loaded.Txt: "Toolbox carregadas"
+Debug.Dev.Objs.Scene.Txt: "Objetos na cena"
+Debug.Dev.Anim.Objs.Scene.Txt: "Objetos animados na cena"  
+Debug.Dev.Frames.Txt: "Quadros"
+Debug.Dev.Time.Elapsed.Since.Start.Txt: "Duração desde do inicio"
+Debug.Dev.Cam.Should.Move.Txt: "Camera deve se mover"
+Debug.Dev.Cam.World.Pos.Txt: "Posição da camera no mundo"
+Debug.Dev.Wnd.Dont.Move.Txt: "Janelas não se movem"
+Debug.Dev.Cam.Direction.Txt: "Direção da camera"
+Debug.Dev.Cam.Direction.Float.Txt: "Direção da camera em decimais"
+Debug.Dev.Forced.Change.Cam.Direction.Txt: "Forçar a mudança de direção da camera"
+Debug.Dev.Throw.Console.Err.Btn: "Emitir Erro de Console"
+Debug.Dev.Throw.Console.Warn.Btn: "Emitir Aviso de Console"
+Debug.Dev.Polygon.Mode.Point.Btn: "Modo do Poligono: PONTOS"
+Debug.Dev.Polygon.Mode.Lines.Btn: "Modo do Poligono: LINHAS"
+Debug.Dev.Polygon.Mode.Fill.Btn: "Modo do Poligono: PREENCHER"
+Debug.Dev.OpenGL.Clear.Color.Txt: "OpenGL clear cor"
+Debug.Dev.Wnd.Editor.Size.Txt: "Tamanho da Janela do Editor"
+Debug.Dev.Wnd.Launcher.Size.Txt: "Tamanho da Janela do Launcher"
+Debug.Dev.Wnd.Framebuffer.Size.Txt: "Tamanho da Janela do Framebuffer"
+Debug.Dev.Engine.Sounds.Test.Txt: "Teste de Sons da Engine"
+Debug.Dev.Scene.File.Content.Txt: "Conteudos no Arquivo da Cena"

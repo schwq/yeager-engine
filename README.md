@@ -1,24 +1,43 @@
-# Yeager Engine 
-> 'Yeager', inspired by the character Eren Yeager from the Shingeki no Kyojin manga and anime 
+# <p align="center"> Yeager Engine </p>
 
-3D/2D Renderer engine, made with OpenGL3.3. This project is current at early development stage, lacking performace and safe code. 
-Future implementations are working autonomous modules, a safe engine core, proper UI librarie, and custom compiler. 
-Current working toward asnyc and thread compartibily. 
+#### <p align="center"> ```An open source 3D/2D engine written in C++``` </p>
 
+#### <p align="center"> About the project </p>
+
+Yeager engine is an open source engine, under the *GNU General Public License v3.0*. It is written in C/C++ and uses OpenGL 3.3 for rendering. It aims to deliver 3D realistic scenarios with desirable performance, still having support for the development of 2D scenarios. Other features are: complete customization, flexible for modifications, and cross platform, with full support on Windows, Mac and Linux!
+
+```⚠️ Disclaimer: This project is in early development! It has the possibility of crashing, numerous bugs and several missing features ```
+
+#### <p align="center"> Usage </p>
+To install the engine, you can clone the project directly and run the python installer:
+``` bash
+$ git clone https://github.com/schwq/YeagerEngine.git
+$ cd YeagerEngine
+$ python3 setup.py install 
 ```
-cmake -DCMAKE_CXX_COMPILER:FILEPATH=<G++ Path> -S ./YeagerEngine -B ./YeagerEngine/build -G Ninja
-cmake --build YeagerEngine/build --config Debug --target all --
+To use the engine, you can call it on the terminal with the desiariable arguments by:
+``` bash
+$ YeagerEngine -args
 ```
 
-# Libraries and Third Party Integrations
-- Serialization : [yaml-cpp](https://github.com/jbeder/yaml-cpp)
-- Window Manager : [glfw](https://github.com/glfw/glfw)
-- OpenGL Math : [glm](https://github.com/g-truc/glm)
-- Music and Sound Effect : [irrklang](https://www.ambiera.com/irrklang/)
-- UI Interface : [imgui](https://github.com/ocornut/imgui)
-- GL/GLES/EGL/GLX/WGL Loader : [glad](https://glad.dav1d.de/)
-- GPU acceleration : [Nvidia Cuda](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html)
-- Log System : [loguru](https://github.com/Delgan/loguru)
-- Model Loading : [assimp](https://github.com/assimp/assimp)
-- Image Loading : [std_image](https://github.com/nothings/stb)
-- File Manager Opening : [portable-file-dialogs](https://github.com/samhocevar/portable-file-dialogs)
+Available arguments:
+```bash 
+$ YeagerEngine -ForcedEntry (Project name) 
+$ YeagerEngine -DebugTitleString (Title) (Ex. DEBUG_VSCODE)
+$ YeagerEngine -DebugVirtualMachine (VM) (Ex. valgrind)
+$ YeagerEngine -FromSource
+$ YeagerEngine -NetworkSocket (Role) (IP) (Port) (Ex. Client 127.0.0.1 5005)
+```
+- Forced Entry: A way to skip the launcher and starts running inside the scene
+- Debug Title String: Gives a new title to the engine during runtime, useful to debugging
+- Debug Virtual Machine: If the engine is running inside a virtual machine (Valgrind for example), you can set the name  of the vm, so the engine works properlly
+- From Source: Sets to true if you are running the engine from the source code
+- Network Socket: Makes a network connection with the given role, useful to benchmarking with python   
+
+#### <p align="center"> Supporting </p>
+You can support the project by pull requests and by point out issues and bugs! Fell free to reach out the developers. 
+
+
+
+
+

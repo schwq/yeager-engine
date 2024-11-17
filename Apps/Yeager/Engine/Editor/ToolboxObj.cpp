@@ -204,6 +204,7 @@ void ToolboxHandle::DisplayTextureInformation(MaterialTexture2D* texture)
 {
   if (texture->IsGenerated()) {
     Text(texture->GetName().c_str());
+    Text("Flipped: %s", texture->GetTextureDataHandle()->Flipped ? "True" : "False");
     Text("Width %u, Height %u", texture->GetWidth(), texture->GetHeight());
     DisplayImageImGui(texture, m_ResizeTextures);
   }

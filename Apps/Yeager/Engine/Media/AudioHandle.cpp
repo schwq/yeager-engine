@@ -106,47 +106,56 @@ void AudioHandle::EnableSoundEffect(AudioHandleSoundEffects effect)
     switch (effect) {
       case Chorus:
         if (!m_sound_effects->enableChorusSoundEffect()) {
-          Yeager::Log(ERROR, "Cannot Enabled Chorus effect on AudioHandle name {}, ID {}", m_Name, m_EntityID);
+          Yeager::Log(ERROR, "Cannot Enabled Chorus effect on AudioHandle name {}, UUID {}", mName,
+                      uuids::to_string(mEntityUUID));
         }
         break;
       case Compressor:
         if (!m_sound_effects->enableCompressorSoundEffect()) {
-          Yeager::Log(ERROR, "Cannot Enabled Compressor effect on AudioHandle name {}, ID {}", m_Name, m_EntityID);
+          Yeager::Log(ERROR, "Cannot Enabled Compressor effect on AudioHandle name {}, UUID {}", mName,
+                      uuids::to_string(mEntityUUID));
         }
         break;
       case Distortion:
         if (!m_sound_effects->enableDistortionSoundEffect()) {
-          Yeager::Log(ERROR, "Cannot Enabled Distorsion effect on AudioHandle name {}, ID {}", m_Name, m_EntityID);
+          Yeager::Log(ERROR, "Cannot Enabled Distorsion effect on AudioHandle name {}, UUID {}", mName,
+                      uuids::to_string(mEntityUUID));
         }
         break;
       case Echo:
         if (!m_sound_effects->enableEchoSoundEffect()) {
-          Yeager::Log(ERROR, "Cannot Enabled Echo effect on AudioHandle name {}, ID {}", m_Name, m_EntityID);
+          Yeager::Log(ERROR, "Cannot Enabled Echo effect on AudioHandle name {}, UUID {}", mName,
+                      uuids::to_string(mEntityUUID));
         }
         break;
       case Flanger:
         if (!m_sound_effects->enableFlangerSoundEffect()) {
-          Yeager::Log(ERROR, "Cannot Enabled Flanger effect on AudioHandle name {}, ID {}", m_Name, m_EntityID);
+          Yeager::Log(ERROR, "Cannot Enabled Flanger effect on AudioHandle name {}, UUID {}", mName,
+                      uuids::to_string(mEntityUUID));
         }
         break;
       case Gargle:
         if (!m_sound_effects->enableGargleSoundEffect()) {
-          Yeager::Log(ERROR, "Cannot Enabled Gargle effect on AudioHandle name {}, ID {}", m_Name, m_EntityID);
+          Yeager::Log(ERROR, "Cannot Enabled Gargle effect on AudioHandle name {}, UUID {}", mName,
+                      uuids::to_string(mEntityUUID));
         }
         break;
       case I3DL2Reverb:
         if (!m_sound_effects->enableI3DL2ReverbSoundEffect()) {
-          Yeager::Log(ERROR, "Cannot Enabled I3DL2Reverb effect on AudioHandle name {}, ID {}", m_Name, m_EntityID);
+          Yeager::Log(ERROR, "Cannot Enabled I3DL2Reverb effect on AudioHandle name {}, UUID {}", mName,
+                      uuids::to_string(mEntityUUID));
         }
         break;
       case ParamEq:
         if (!m_sound_effects->enableParamEqSoundEffect()) {
-          Yeager::Log(ERROR, "Cannot Enabled ParamEq effect on AudioHandle name {}, ID {}", m_Name, m_EntityID);
+          Yeager::Log(ERROR, "Cannot Enabled ParamEq effect on AudioHandle name {}, UUID {}", mName,
+                      uuids::to_string(mEntityUUID));
         }
         break;
       case WavesReverb:
         if (!m_sound_effects->enableWavesReverbSoundEffect()) {
-          Yeager::Log(ERROR, "Cannot Enabled WavesReverb effect on AudioHandle name {}, ID {}", m_Name, m_EntityID);
+          Yeager::Log(ERROR, "Cannot Enabled WavesReverb effect on AudioHandle name {}, UUID {}", mName,
+                      uuids::to_string(mEntityUUID));
         }
         break;
       default:
@@ -154,9 +163,9 @@ void AudioHandle::EnableSoundEffect(AudioHandleSoundEffects effect)
     }
   } else {
     Yeager::Log(WARNING,
-                "Cannot enable sound effect for AudioHandle name {} ID {}, no m_sound or m_sound_effect initialized "
+                "Cannot enable sound effect for AudioHandle name {} UUID {}, no m_sound or m_sound_effect initialized "
                 "correctly!",
-                m_Name, m_EntityID);
+                mName, uuids::to_string(mEntityUUID));
   }
 }
 void AudioHandle::DisableSoundEffect(AudioHandleSoundEffects effect)
@@ -195,9 +204,9 @@ void AudioHandle::DisableSoundEffect(AudioHandleSoundEffects effect)
     }
   } else {
     Yeager::Log(WARNING,
-                "Cannot disable sound effect for AudioHandle name {} ID {}, no m_sound or m_sound_effect initialized "
+                "Cannot disable sound effect for AudioHandle name {} UUID {}, no m_sound or m_sound_effect initialized "
                 "correctly!",
-                m_Name, m_EntityID);
+                mName, uuids::to_string(mEntityUUID));
   }
 }
 
@@ -237,9 +246,9 @@ bool AudioHandle::IsSoundEffectEnable(AudioHandleSoundEffects effect)
     }
   } else {
     Yeager::Log(WARNING,
-                "Cannot check sound effect for AudioHandle name {} ID {}, no m_sound or m_sound_effect initialized "
+                "Cannot check sound effect for AudioHandle name {} UUID {}, no m_sound or m_sound_effect initialized "
                 "correctly!",
-                m_Name, m_EntityID);
+                mName, uuids::to_string(mEntityUUID));
     return false;
   }
 }
@@ -250,14 +259,17 @@ bool Yeager::AudioHandle::CheckIfSoundEffectIsSupported()
   return false;
 }
 
-AudioHandle::AudioHandle(String path, String name, AudioEngineHandle* handle, bool looped, Yeager::ApplicationCore* app)
-    : GameEntity(EntityObjectType::AUDIO_HANDLE, app, name), m_EngineHandle(handle), m_path(path), m_looped(looped)
+AudioHandle::AudioHandle(const EntityBuilder& builder, String path, AudioEngineHandle* handle, bool looped)
+    : GameEntity(EntityBuilder(builder.Application, builder.Name, EntityObjectType::AUDIO_HANDLE, builder.UUID)),
+      m_EngineHandle(handle),
+      m_path(path),
+      m_looped(looped)
 {
   m_sound_source = m_EngineHandle->Engine->addSoundSourceFromFile(path.c_str(), ESM_AUTO_DETECT, false);
   if (!m_sound_source) {
-    Yeager::Log(ERROR, "Cannot Create AudioHandle name {} ID {}", m_Name, m_EntityID);
+    Yeager::Log(ERROR, "Cannot Create AudioHandle name {} UUID {}", mName, uuids::to_string(mEntityUUID));
   } else {
-    Yeager::Log(INFO, "Create AudioHandle name {} ID {}", m_Name, m_EntityID);
+    Yeager::Log(INFO, "Create AudioHandle name {} UUID {}", mName, uuids::to_string(mEntityUUID));
   }
 }
 
@@ -292,7 +304,7 @@ void AudioHandle::DisableAllSoundEffects()
 
 AudioHandle::~AudioHandle()
 {
-  Yeager::Log(INFO, "Destroying AudioHandle name {} ID {}", m_Name, m_EntityID);
+  Yeager::Log(INFO, "Destroying AudioHandle name {} UUID {}", mName, uuids::to_string(mEntityUUID));
 }
 
 void AudioHandle::SetVolume(ik_f32 volume)
@@ -307,17 +319,19 @@ void AudioHandle::Play()
   if (m_stopped) {
     m_sound = m_EngineHandle->Engine->play2D(m_sound_source, m_looped, false, true, true);
     if (!m_sound) {
-      Yeager::Log(ERROR, "Cannot play music! ISound* havent been initialized! Name {} ID {}", m_Name, m_EntityID);
+      Yeager::Log(ERROR, "Cannot play music! ISound* havent been initialized! Name {} UUID {}", mName,
+                  uuids::to_string(mEntityUUID));
     } else {
       SAudioStreamFormat format = m_sound_source->getAudioFormat();
       const char* formatSampleFormat = format.SampleFormat == ESF_U8 ? "ESF_U8" : "ESF_S16";
 
       Yeager::Log(
           INFO,
-          "AudioHandle name {} ID {}, Info: Sample size {}, Frame size {}, Sample data size {}, Bytes per seconds {} \n \
+          "AudioHandle name {} UUID {}, Info: Sample size {}, Frame size {}, Sample data size {}, Bytes per seconds {} \n \
           Channel count {}, Frame count {}, Sample rate {}, Sample Format {}",
-          m_Name, m_EntityID, format.getSampleSize(), format.getFrameSize(), format.getSampleDataSize(),
-          format.getBytesPerSecond(), format.ChannelCount, format.FrameCount, format.SampleRate, formatSampleFormat);
+          mName, uuids::to_string(mEntityUUID), format.getSampleSize(), format.getFrameSize(),
+          format.getSampleDataSize(), format.getBytesPerSecond(), format.ChannelCount, format.FrameCount,
+          format.SampleRate, formatSampleFormat);
       m_stopped = false;
       m_sound_effects = m_sound->getSoundEffectControl();
     }
@@ -379,8 +393,8 @@ void AudioHandle::SetSoundPos(irrklang::ik_f32 pos)
     irrklang::ik_f32 tmp = GetSoundPos();
     m_sound->setPlayPosition(pos);
     irrklang::ik_f32 time_shift = tmp - pos;
-    Yeager::Log(INFO, "AudioHandle name {} ID {}, had received a {}s time shift", m_Name, m_EntityID,
-                -(time_shift / 1000.0f));
+    Yeager::Log(INFO, "AudioHandle name {} UUID {}, had received a {}s time shift", mName,
+                uuids::to_string(mEntityUUID), -(time_shift / 1000.0f));
   }
 }
 
@@ -392,19 +406,20 @@ void Audio3DHandle::SetAudioPos(irrklang::vec3df pos)
   }
 }
 
-Audio3DHandle::Audio3DHandle(String path, String name, AudioEngineHandle* handle, bool looped,
-                             irrklang::vec3df position, Yeager::ApplicationCore* app)
-    : AudioHandle(path, name, handle, looped, app), m_audio_pos(position)
+Audio3DHandle::Audio3DHandle(const EntityBuilder& builder, String path, AudioEngineHandle* handle, bool looped,
+                             irrklang::vec3df position)
+    : AudioHandle(builder, path, handle, looped), m_audio_pos(position)
 {
   if (m_sound_source) {
-    Yeager::Log(INFO, "Create Audio3DHandle name {} ID {} Position {} {} {}", m_Name, m_EntityID, position.X,
-                position.Y, position.Z);
+    Yeager::Log(INFO, "Create Audio3DHandle name {} UUID {} Position {} {} {}", mName, uuids::to_string(mEntityUUID),
+                position.X, position.Y, position.Z);
   }
+  SetEntityType(EntityObjectType::AUDIO_3D_HANDLE);
 }
 
 Audio3DHandle::~Audio3DHandle()
 {
-  Yeager::Log(INFO, "Destroying Audio3DHandle name {} ID {}", m_Name, m_EntityID);
+  Yeager::Log(INFO, "Destroying Audio3DHandle name {} UUID {}", mName, uuids::to_string(mEntityUUID));
 }
 
 void Audio3DHandle::Play()
@@ -412,17 +427,19 @@ void Audio3DHandle::Play()
   if (m_stopped) {
     m_sound = m_EngineHandle->Engine->play3D(m_sound_source, m_audio_pos, m_looped, false, true, true);
     if (!m_sound) {
-      Yeager::Log(ERROR, "Cannot play music! ISound* havent been initialized! Name {} ID {}", m_Name, m_EntityID);
+      Yeager::Log(ERROR, "Cannot play music! ISound* havent been initialized! Name {} UUID {}", mName,
+                  uuids::to_string(mEntityUUID));
     } else {
       SAudioStreamFormat format = m_sound_source->getAudioFormat();
       const char* formatSampleFormat = format.SampleFormat == ESF_U8 ? "ESF_U8" : "ESF_S16";
 
       Yeager::Log(
           INFO,
-          "Audio3DHandle name {} ID {}, Info: Sample size {}, Frame size {}, Sample data size {}, Bytes per seconds {} \n \
+          "Audio3DHandle name {} UUID {}, Info: Sample size {}, Frame size {}, Sample data size {}, Bytes per seconds {} \n \
           Channel count {}, Frame count {}, Sample rate {}, Sample Format {}",
-          m_Name, m_EntityID, format.getSampleSize(), format.getFrameSize(), format.getSampleDataSize(),
-          format.getBytesPerSecond(), format.ChannelCount, format.FrameCount, format.SampleRate, formatSampleFormat);
+          mName, uuids::to_string(mEntityUUID), format.getSampleSize(), format.getFrameSize(),
+          format.getSampleDataSize(), format.getBytesPerSecond(), format.ChannelCount, format.FrameCount,
+          format.SampleRate, formatSampleFormat);
       m_stopped = false;
       m_sound_effects = m_sound->getSoundEffectControl();
     }

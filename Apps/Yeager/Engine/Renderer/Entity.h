@@ -1,8 +1,9 @@
 
+
 //    Yeager Engine, free and open source 3D/2D renderer written in OpenGL
 //    In case of questions and bugs, please, refer to the issue tab on github
 //    Repo : https://github.com/schwq/YeagerEngine
-//    Copyright (C) 2023
+//    Copyright (C) 2023 - Present
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
@@ -86,6 +87,22 @@ struct EntityObjectType {
   YEAGER_ENUM_TO_STRING(EntityObjectType)
 };
 
+struct EntityBuilder {
+
+  Yeager::ApplicationCore* Application = YEAGER_NULLPTR;
+  String Name = YEAGER_NULL_LITERAL;
+  uuid_t UUID;
+  EntityObjectType::Enum Type = EntityObjectType::UNDEFINED;
+
+  EntityBuilder(Yeager::ApplicationCore* application, String name = YEAGER_NULL_LITERAL,
+                EntityObjectType::Enum type = EntityObjectType::UNDEFINED, uuid_t uuid = uuid_t())
+      : Application(application), Name(name), UUID(uuid), Type(type)
+  {
+    if (UUID.is_nil())
+      UUID = GetRandomUUID();
+  }
+};
+
 /**
  * @brief Entities are the most basic type of class that almost all classes in this engine inherit, it contains variables that all classes share in common
  * like the name and global id, also it can be used to set a object to non serialization status, where the object doesnt get saved in the configuration file.
@@ -93,34 +110,36 @@ struct EntityObjectType {
  */
 class Entity {
  public:
-  Entity(EntityObjectType::Enum type, Yeager::ApplicationCore* app, String name = YEAGER_NULL_LITERAL);
+  Entity(const EntityBuilder& builder);
   ~Entity();
 
   String GetName();
-  void SetName(const String& name) { m_Name = name; }
-  Uint GetEntityID();
+  void SetName(const String& name) { mName = name; }
+  uuid_t GetEntityUUID();
 
-  void SetEntityType(EntityObjectType::Enum type) { m_Type = type; }
-  EntityObjectType::Enum GetEntityType() const { return m_Type; }
+  void SetEntityType(EntityObjectType::Enum type) { mType = type; }
+  EntityObjectType::Enum GetEntityType() const { return mType; }
 
-  YEAGER_FORCE_INLINE bool CanBeSerialize() const { return m_CanBeSerialize; }
-  YEAGER_FORCE_INLINE void SetCanBeSerialize(bool serial) { m_CanBeSerialize = serial; }
+  YEAGER_FORCE_INLINE bool CanBeSerialize() const { return bCanBeSerialize; }
+  YEAGER_FORCE_INLINE void SetCanBeSerialize(bool serial) { bCanBeSerialize = serial; }
 
   /* User data can be any type of data that a object or class that ihherit the Entity class can link to it, and extract in some point during the process */
-  UserDataHandle* GetUserData() { return &m_UserData; }
+  UserDataHandle* GetUserData() { return &mUserData; }
 
   /* This can be useful when working with toolboxes or other areas without access to the application core pointer, why tho? i dont know, lazyness*/
-  Yeager::ApplicationCore* GetApplication() { return m_Application; }
+  Yeager::ApplicationCore* GetApplication() { return mApplication; }
 
  protected:
-  EntityObjectType::Enum m_Type = EntityObjectType::UNDEFINED;
-  Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
-  UserDataHandle m_UserData;
-  String m_Name = YEAGER_NULL_LITERAL;
-  bool m_Render = true;
-  bool m_CanBeSerialize = true;
-  const Uint m_EntityID;
-  static Uint m_EntityCountID;
+  EntityObjectType::Enum mType = EntityObjectType::UNDEFINED;
+  Yeager::ApplicationCore* mApplication = YEAGER_NULLPTR;
+  UserDataHandle mUserData;
+  String mName = YEAGER_NULL_LITERAL;
+  uuid_t mEntityUUID;
+
+  bool bRender = true;
+  bool bCanBeSerialize = true;
+
+  static Uint mEntityCount;
 };
 
 /**
@@ -131,33 +150,33 @@ class Entity {
  */
 class EditorEntity : public Entity {
  public:
-  EditorEntity(EntityObjectType::Enum type, Yeager::ApplicationCore* app, String name = YEAGER_NULL_LITERAL);
+  EditorEntity(const EntityBuilder& builder);
   ~EditorEntity();
 
-  std::shared_ptr<ToolboxHandle> GetToolbox() { return m_Toolbox; }
+  std::shared_ptr<ToolboxHandle> GetToolbox() { return mToolbox; }
 
   /**
    * @brief Sets to true, when the scene calls for search for schedule deletions, it will remove this entity from the 
    * application, basically, delete it 
   */
-  YEAGER_CONSTEXPR void SetScheduleDeletion(bool deletion) { m_ScheduleDeletion = deletion; }
+  YEAGER_CONSTEXPR void SetScheduleDeletion(bool deletion) { bScheduleDeletion = deletion; }
 
   /**
    * @brief returns true if the entity must have been requested for deletion
   */
-  YEAGER_CONSTEXPR bool GetScheduleDeletion() const { return m_ScheduleDeletion; }
+  YEAGER_CONSTEXPR bool GetScheduleDeletion() const { return bScheduleDeletion; }
 
   void BuildNode(std::shared_ptr<NodeComponent> parent);
-  std::shared_ptr<NodeComponent> GetNodeComponent() { return m_Node; }
+  std::shared_ptr<NodeComponent> GetNodeComponent() { return mNode; }
 
  protected:
   /* Toolbox object handles the information about the entity, name, id, and custom propieties*/
-  std::shared_ptr<ToolboxHandle> m_Toolbox = YEAGER_NULLPTR;
+  std::shared_ptr<ToolboxHandle> mToolbox = YEAGER_NULLPTR;
   /* Node component handles the relation of the entity with other entities, like if the are parent, children. 
     This build a hierarchy of information about parent nodes and their children */
-  std::shared_ptr<NodeComponent> m_Node = YEAGER_NULLPTR;
+  std::shared_ptr<NodeComponent> mNode = YEAGER_NULLPTR;
 
-  bool m_ScheduleDeletion = false;
+  bool bScheduleDeletion = false;
 };
 
 /**
@@ -166,21 +185,21 @@ class EditorEntity : public Entity {
  */
 class GameEntity : public EditorEntity {
  public:
-  GameEntity(EntityObjectType::Enum type, Yeager::ApplicationCore* app, String name = YEAGER_NULL_LITERAL);
+  GameEntity(const EntityBuilder& builder);
   ~GameEntity();
   Transformation3D GetTransformation();
   Transformation3D* GetTransformationPtr();
 
   virtual void ApplyTransformation(Shader* Shader);
-  YEAGER_FORCE_INLINE void SetTransformation(const Transformation3D& trans) { m_EntityTransformation = trans; }
+  YEAGER_FORCE_INLINE void SetTransformation(const Transformation3D& trans) { mEntityTransformation = trans; }
   YEAGER_CONSTEXPR YEAGER_FORCE_INLINE std::vector<MaterialBase*>* GetLoadedTextures()
   {
-    return &m_EntityLoadedTextures;
+    return &mEntityLoadedTextures;
   };
 
  protected:
-  std::vector<MaterialBase*> m_EntityLoadedTextures;
-  Transformation3D m_EntityTransformation;
+  std::vector<MaterialBase*> mEntityLoadedTextures;
+  Transformation3D mEntityTransformation;
 };
 
 }  // namespace Yeager
