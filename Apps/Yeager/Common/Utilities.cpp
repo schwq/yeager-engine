@@ -121,6 +121,22 @@ int Yeager::DisplayWarningPanicMessageBoxWindows(const String& cause, const std:
 }
 #endif
 
+#ifdef YEAGER_SYSTEM_LINUX
+
+int Yeager::ExLinuxCmd(const String& cmd)
+{
+  if (!CheckIFLinuxCmdExists(cmd))
+    Yeager::Log(WARNING, "Executing a unknown command on the linux machine!");
+  return system(cmd.c_str());
+}
+
+bool Yeager::CheckIFLinuxCmdExists(const String& cmd)
+{
+  return !system(String("command -v " + cmd + " > /dev/null 2>&1").c_str());
+}
+
+#endif
+
 String Yeager::ToLower(const String& str)
 {
   String result = str;

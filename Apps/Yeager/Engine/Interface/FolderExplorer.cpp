@@ -39,11 +39,11 @@ FileInformation FileInformation::GetWindowsFileInformation(const std::filesystem
   WIN32_FILE_ATTRIBUTE_DATA info = {0};
   GetFileAttributesEx(path.string().c_str(), GetFileExInfoStandard, &info);
   FileInformation file;
-  file.Attributes = info.dwFileAttributes;
-  file.CreationTime = WindowsFILETIMEToTimePoint(info.ftCreationTime);
-  file.LastAcessed = WindowsFILETIMEToTimePoint(info.ftLastAccessTime);
-  file.LastWritten = WindowsFILETIMEToTimePoint(info.ftLastWriteTime);
-  file.FileSize = Convert32BitsTo64Bits(info.nFileSizeHigh, info.nFileSizeLow);
+  file.mAttributes = info.dwFileAttributes;
+  file.mCreationTime = WindowsFILETIMEToTimePoint(info.ftCreationTime);
+  file.mLastAcessed = WindowsFILETIMEToTimePoint(info.ftLastAccessTime);
+  file.mLastWritten = WindowsFILETIMEToTimePoint(info.ftLastWriteTime);
+  file.mFileSize = Convert32BitsTo64Bits(info.nFileSizeHigh, info.nFileSizeLow);
   return file;
 }
 
@@ -71,12 +71,12 @@ void FolderExplorer::DrawWindow()
   if (ImGui::InputText("Search:", &mSearchPattern)) {
     if (!mSearchPattern.empty() && mSearchPattern != YEAGER_EMPTY_LITERAL) {
       for (auto& item : mCurrentItems) {
-        (!BruteForceStringSearch(ToLower(mSearchPattern), ToLower(item.Name)).empty()) ? item.m_SearchAppears = true
-                                                                                       : item.m_SearchAppears = false;
+        (!BruteForceStringSearch(ToLower(mSearchPattern), ToLower(item.mName)).empty()) ? item.bSearchAppears = true
+                                                                                       : item.bSearchAppears = false;
       }
     } else {
       for (auto& item : mCurrentItems) {
-        item.m_SearchAppears = true;
+        item.bSearchAppears = true;
       }
     }
   }
@@ -97,20 +97,20 @@ void FolderExplorer::DrawWindow()
   ImGui::BeginChild("##item");
 
   for (const auto& item : mCurrentItems) {
-    if (!item.m_SearchAppears)
+    if (!item.bSearchAppears)
       continue;
 
-    String type = (item.Type == DirectoryHierarchyType::eFOLDER ? "Folder" : "File");
-    String symbol = (item.Type == DirectoryHierarchyType::eFOLDER ? ICON_FA_FOLDER : ICON_FA_FILE);
-    String name = String(symbol + " [" + type + "] " + item.Name);
+    String type = (item.mType == DirectoryHierarchyType::eFOLDER ? "Folder" : "File");
+    String symbol = (item.mType == DirectoryHierarchyType::eFOLDER ? ICON_FA_FOLDER : ICON_FA_FILE);
+    String name = String(symbol + " [" + type + "] " + item.mName);
 
     if (ImGui::Selectable(name.c_str(), false, ImGuiSelectableFlags_AllowDoubleClick)) {
-      if (item.Type == DirectoryHierarchyType::eFOLDER) {
-        mCurrentPath = std::filesystem::path(mCurrentPath / item.Name);
+      if (item.mType == DirectoryHierarchyType::eFOLDER) {
+        mCurrentPath = std::filesystem::path(mCurrentPath / item.mName);
       } else {
-        const auto filetype = CheckFileExtensionType(item.Path, FileExtensionType::EExtensitonType3DModel);
+        const auto filetype = CheckFileExtensionType(item.mPath, FileExtensionType::EExtensitonType3DModel);
         if (filetype.first && filetype.second.Supported) {
-          mApplication->GetExplorer()->QuickLoadObject(item.Path);
+          mApplication->GetExplorer()->QuickLoadObject(item.mPath);
         }
       }
     }
@@ -128,12 +128,12 @@ std::vector<DirectoryHierarchyItem> FolderExplorer::GetItemsFromFolder(const Pat
 
   for (const auto& item : std::filesystem::directory_iterator(path)) {
     DirectoryHierarchyItem entry;
-    entry.Type =
+    entry.mType =
         (std::filesystem::is_directory(item) ? DirectoryHierarchyType::eFOLDER : DirectoryHierarchyType::eFILE);
-    entry.Name = (item.path().has_filename() ? item.path().filename().string() : YEAGER_NULL_LITERAL);
-    entry.Path = item.path();
-    entry.Parent = (item.path().has_parent_path() ? item.path().parent_path() : YEAGER_EMPTY_PATH);
-    entry.Info = (entry.Type == DirectoryHierarchyType::eFILE ? FileInformation::GetFileInformation(entry.Path)
+    entry.mName = (item.path().has_filename() ? item.path().filename().string() : YEAGER_NULL_LITERAL);
+    entry.mPath = item.path();
+    entry.mParent = (item.path().has_parent_path() ? item.path().parent_path() : YEAGER_EMPTY_PATH);
+    entry.mInfo = (entry.mType == DirectoryHierarchyType::eFILE ? FileInformation::GetFileInformation(entry.mPath)
                                                               : FileInformation());
     entries.push_back(entry);
   }
@@ -142,8 +142,8 @@ std::vector<DirectoryHierarchyItem> FolderExplorer::GetItemsFromFolder(const Pat
 
 std::vector<DirectoryHierarchyItem> FolderExplorer::GetItemsFromFolder(const DirectoryHierarchyItem& item)
 {
-  if (item.Type == DirectoryHierarchyType::eFOLDER)
-    return GetItemsFromFolder(item.Path);
+  if (item.mType == DirectoryHierarchyType::eFOLDER)
+    return GetItemsFromFolder(item.mPath);
   return std::vector<DirectoryHierarchyItem>{};  // Is a file!
 }
 

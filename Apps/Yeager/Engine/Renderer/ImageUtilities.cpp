@@ -5,83 +5,109 @@
 #include "stb_image_write.h"
 using namespace Yeager;
 
-bool Yeager::MakeScreenShot(Yeager::ApplicationCore* application, Cchar output) noexcept
-{
-  Vector2 wndSize = application->GetWindow()->GetWindowSize();
-  size_t lenght = wndSize.x * wndSize.y;
-  ImagePixel* pixels = new ImagePixel[lenght];
-  glPixelStorei(GL_PACK_ALIGNMENT, 1);
-  glReadBuffer(GL_BACK_LEFT);
-  glReadPixels(0, 0, wndSize.x, wndSize.y, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-
-  // Flip the Image in the X and Y axis
-  for (int line = 0; line != wndSize.y / 2; ++line) {
-    std::swap_ranges(
-        std::begin(pixels, lenght) + static_cast<int>(wndSize.x) * line,
-        std::begin(pixels, lenght) + static_cast<int>(wndSize.x) * (line + 1),
-        std::begin(pixels, lenght) + static_cast<int>(wndSize.x) * (static_cast<int>(wndSize.y) - line - 1));
-  }
-
-  stbi_write_jpg(output, wndSize.x, wndSize.y, 3, pixels, wndSize.x);
-  delete pixels;
-  return true;
-}
-
-String Yeager::ImageExtensionToString(ImageExtension ext)
+String ImageExtension::ImageExtensionToString(ImageExtension::Enum ext)
 {
   switch (ext) {
-    case ImageExtension::EJpeg:
+    case ImageExtension::eJPEG:
       return ".jpg";
-    case ImageExtension::EPng:
+    case ImageExtension::ePNG:
       return ".png";
+    case ImageExtension::eUNDEFINED:
     default:
-      return ".png";
+      return "";  // No extension
   }
 }
 
-bool Yeager::MakeScreenShotMiddle(Yeager::ApplicationCore* application, Cchar output) noexcept
+static void ProcessAlignmentAndRead(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type,
+                                    void* pixels)
 {
-  size_t lenght = 800 * 800;
-  const Vector2 wndSize = application->GetWindow()->GetWindowSize();
-  ImagePixel* pixels = new ImagePixel[lenght];
-  glPixelStorei(GL_PACK_ALIGNMENT, 1);
-  glReadBuffer(GL_BACK_LEFT);
-  int pos_x = (wndSize.x / 2) - 400;
-  int pos_y = (wndSize.y / 2) - 400;
-  glReadPixels(pos_x, pos_y, 800, 800, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-
-  // Flip the Image in the X and Y axis
-  for (int line = 0; line != 800 / 2; ++line) {
-    std::swap_ranges(std::begin(pixels, lenght) + 800 * line, std::begin(pixels, lenght) + 800 * (line + 1),
-                     std::begin(pixels, lenght) + 800 * (800 - line - 1));
+  GL_CALL(glPixelStorei(GL_PACK_ALIGNMENT, 1));
+  GL_CALL(glReadBuffer(GL_BACK_LEFT));
+  GL_CALL(glReadPixels(x, y, width, height, format, type, pixels));
+}
+template <typename T>
+static void ProcessSwapAxisImage(T buffer, size_t width, size_t height, size_t lenght)
+{
+  for (int line = 0; line != height / 2; ++line) {
+    std::swap_ranges(std::begin(buffer, lenght) + static_cast<int>(width) * line,
+                     std::begin(buffer, lenght) + static_cast<int>(width) * (line + 1),
+                     std::begin(buffer, lenght) + static_cast<int>(width) * (static_cast<int>(height) - line - 1));
   }
-
-  stbi_write_jpg(output, 800, 800, 3, pixels, 800);
-  delete pixels;
-  return true;
 }
 
-bool Yeager::MakeScreenShotInPosition(Yeager::ApplicationCore* application, Cchar output, Uint pos_x, Uint pos_y,
-                                      Uint size_x, Uint size_y)
+ProcessedImageInfo Yeager::MakeScreenShot(Yeager::ApplicationCore* application, const String& output) noexcept
+{
+  Vector2 wndSz = application->GetWindow()->GetWindowSize();
+  const size_t lenght = wndSz.x * wndSz.y;
+
+  auto pixels = std::make_unique<ImagePixelRGB[]>(lenght);
+
+  ProcessAlignmentAndRead(0, 0, wndSz.x, wndSz.y, GL_RGB, GL_UNSIGNED_BYTE, pixels.get());
+  ProcessSwapAxisImage(pixels.get(), wndSz.x, wndSz.y, lenght);
+
+  if (!stbi_write_jpg(output.c_str(), wndSz.x, wndSz.y, 3, pixels.get(), wndSz.x)) {
+    Yeager::Log(ERROR, "stbi_write_jpg cannot write to {}", output);
+    pixels.release();
+    return ProcessedImageInfo(false, 0, 0, 0, YEAGER_NULL_LITERAL);
+  }
+
+  pixels.release();
+  return ProcessedImageInfo(true, wndSz.x, wndSz.y, lenght, output);
+}
+
+ProcessedImageInfo Yeager::MakeScreenShotMiddle(Yeager::ApplicationCore* application, const String& output,
+                                                const UVector2 size) noexcept
 {
   const Vector2 wndSize = application->GetWindow()->GetWindowSize();
-  if (size_x == 0 || size_x > wndSize.x || size_y == 0 || size_y > wndSize.y) {
+
+  const size_t lenght = size.x * size.y;
+
+  auto pixels = std::make_unique<ImagePixelRGB[]>(lenght);
+
+  ProcessAlignmentAndRead((wndSize.x / 2) - static_cast<Uint>(size.x / 2),
+                          (wndSize.y / 2) - static_cast<Uint>(size.y / 2), size.x, size.y, GL_RGB, GL_UNSIGNED_BYTE,
+                          pixels.get());
+  ProcessSwapAxisImage(pixels.get(), size.x, size.y, lenght);
+
+  if (!stbi_write_jpg(output.c_str(), size.x, size.y, 3, pixels.get(), size.x)) {
+    Yeager::Log(ERROR, "stbi_write_jpg cannot write to {}", output);
+    pixels.release();
+    return ProcessedImageInfo(false, 0, 0, 0, YEAGER_NULL_LITERAL);
+  }
+
+  pixels.release();
+  return ProcessedImageInfo(true, size.x, size.y, lenght, output);
+}
+
+ProcessedImageInfo Yeager::MakeScreenShotInPosition(Yeager::ApplicationCore* application, const String& output,
+                                                    const UVector2 pos, const UVector2 size) noexcept
+{
+  const Vector2 wndSize = application->GetWindow()->GetWindowSize();
+
+  if (size.x == 0 || size.x > wndSize.x || size.y == 0 || size.y > wndSize.y) {
     Yeager::Log(WARNING, "Trying to make a screenshot with invalid size!");
-    return false;
+    return ProcessedImageInfo(false, 0, 0, 0, YEAGER_NULL_LITERAL);
   }
 
-  size_t lenght = size_x * size_y;
-  ImagePixel* pixels = new ImagePixel[lenght];
-  glPixelStorei(GL_PACK_ALIGNMENT, 1);
-  glReadBuffer(GL_BACK_LEFT);
-  glReadPixels(pos_x, pos_y, size_x, size_y, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-
-  // Flip the Image in the X and Y axis
-  for (int line = 0; line != size_y / 2; ++line) {
-    std::swap_ranges(std::begin(pixels, lenght) + size_x * line, std::begin(pixels, lenght) + size_x * (line + 1),
-                     std::begin(pixels, lenght) + size_x * (size_y - line - 1));
+  if (pos.x >= wndSize.x || pos.y >= wndSize.y) {
+    Yeager::Log(WARNING, "Trying to make a screenshot with invalid position!");
+    return ProcessedImageInfo(false, 0, 0, 0, YEAGER_NULL_LITERAL);
   }
-  stbi_write_jpg(output, size_x, size_y, 3, pixels, size_y);
-  delete pixels;
-  return true;
+
+  const size_t lenght = size.x * size.y;
+
+  auto pixels = std::make_unique<ImagePixelRGB[]>(lenght);
+
+  ProcessAlignmentAndRead(pos.x, pos.y, size.x, size.y, GL_RGB, GL_UNSIGNED_BYTE, pixels.get());
+
+  ProcessSwapAxisImage(pixels.get(), size.x, size.y, lenght);
+
+  if (!stbi_write_jpg(output.c_str(), size.x, size.y, 3, pixels.get(), size.y)) {
+    Yeager::Log(ERROR, "stbi_write_jpg cannot write to {}", output);
+    pixels.release();
+    return ProcessedImageInfo(false, 0, 0, 0, YEAGER_NULL_LITERAL);
+  }
+
+  pixels.release();
+  return ProcessedImageInfo(true, size.x, size.y, lenght, output);
 }

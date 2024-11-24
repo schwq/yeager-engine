@@ -27,7 +27,10 @@
 #include "PlataformDetect.h"
 
 // Enable all kind of important messages, useful for debugging
+#ifdef DEBUG_ENABLED_ALL
 #define YEAGER_DEBUG_VERBOSE true
+#define DEBUG_OPENGL_CALLS
+#endif
 
 #define YEAGER_API
 
@@ -167,9 +170,9 @@ typedef glm::mat4 Matrix4;
 typedef glm::mat3 Matrix3;
 typedef glm::vec2 Vector2;
 typedef glm::ivec2 IVector2;
+typedef glm::uvec2 UVector2;
 typedef glm::vec3 Vector3;
 typedef glm::vec4 Vector4;
-typedef glm::ivec2 IVector2;
 typedef glm::ivec3 IVector3;
 typedef unsigned int Uint;
 typedef uint64_t DFlags; // defined flags with the #define YEAGER_
@@ -200,5 +203,11 @@ typedef uint64_t DFlags; // defined flags with the #define YEAGER_
 #define IMGUI_WHITE_COMMON_COLOR ImVec4(1.0f, 1.0f, 1.0f, 1.0f)
 
 #define STATIC_ENUM_TO_STRING(name) static String ToString(Enum type);
+
+#ifdef DEBUG_OPENGL_CALLS
+#define GL_CALL(_call) do {_call; GLenum err = glGetError(); if(err != 0) {fprintf(stderr, "(Err)GL error 0x%x was returned by '%s'.\n", err, #_call);}} while(0);
+#else 
+#define GL_CALL(_call) _call
+#endif
 
 // clang-format on

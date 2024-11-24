@@ -26,16 +26,53 @@ namespace Yeager {
 
 class ApplicationCore;
 
-enum class ImageExtension { EPng, EJpeg };
-extern String ImageExtensionToString(ImageExtension ext);
-
-struct ImagePixel {
-  std::byte Colors[3];
+/**
+ * @brief Holds all types of file extensions relate to image, ex: jpeg, png, ect
+ */
+struct ImageExtension {
+  enum Enum { ePNG, eJPEG, eUNDEFINED };
+  static String ImageExtensionToString(ImageExtension::Enum ext);
 };
 
-extern bool MakeScreenShot(Yeager::ApplicationCore* application, Cchar output) noexcept;
-extern bool MakeScreenShotMiddle(Yeager::ApplicationCore* application, Cchar output) noexcept;
-extern bool MakeScreenShotInPosition(Yeager::ApplicationCore* application, Cchar output, Uint pos_x, Uint pos_y,
-                                     Uint size_x, Uint size_y);
+/**
+ * @brief The image pixel is made of 3 std::byte for rgb stored in a array 
+ */
+struct ImagePixelRGB {
+  std::byte mColors[3];
+};
+
+/**
+ * @brief ProcessedImageInfo holds information about a recent processed image, it have variables that indicate if the process was successful, and other
+ * information, like width, height, path, and the pixel count 
+ */
+struct ProcessedImageInfo {
+  ProcessedImageInfo() = default;
+  ProcessedImageInfo(bool succeded, size_t width, size_t height, size_t pixels, String path)
+      : bSucceeded(succeded), mWidth(width), mHeight(height), mPixelCount(pixels), mPathWrittenTo(path)
+  {}
+  bool bSucceeded = false;
+  size_t mWidth = 0, mHeight = 0, mPixelCount = 0;
+  String mPathWrittenTo = YEAGER_NULL_LITERAL;
+};
+
+/**
+ * @brief Reads all the pixels on the current framebuffer and stores them in an image .jpg on the given path
+ * @return ProcessImageInfo about the situation of the process
+ */
+extern ProcessedImageInfo MakeScreenShot(Yeager::ApplicationCore* application, const String& output) noexcept;
+
+/**
+ * @brief Reads the pixels of the middle of the screen, with the given size, and stores them in an image .jpg on the given path
+ * @return ProcessImageInfo about the situation of the process
+ */
+extern ProcessedImageInfo MakeScreenShotMiddle(Yeager::ApplicationCore* application, const String& output,
+                                               const UVector2 size) noexcept;
+
+/**
+ * @brief Reads the pixels in the given position of the screen and size, and stores them in an image .jpg on the given path
+ * @return ProcessImageInfo about the situation of the process
+ */
+extern ProcessedImageInfo MakeScreenShotInPosition(Yeager::ApplicationCore* application, const String& output,
+                                                   const UVector2 pos, const UVector2 size) noexcept;
 
 }  // namespace Yeager

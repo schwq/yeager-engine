@@ -519,6 +519,8 @@ void Object::PosProcessOnScreenProprieties()
 void Object::Draw(Yeager::Shader* shader, float delta)
 {
 
+  IntervalElapsedTimeManager::StartTimeInterval(this->mName);
+
   ProcessOnScreenProprieties();
 
   if (m_ObjectDataLoaded && bRender) {
@@ -540,6 +542,8 @@ void Object::Draw(Yeager::Shader* shader, float delta)
   }
 
   PosProcessOnScreenProprieties();
+
+  IntervalElapsedTimeManager::EndTimeInterval(this->mName);
 }
 
 void Object::Setup()
@@ -668,6 +672,8 @@ void AnimatedObject::Setup()
 
 void AnimatedObject::Draw(Shader* shader)
 {
+  IntervalElapsedTimeManager::StartTimeInterval(this->mName);
+
   ProcessOnScreenProprieties();
 
   if (m_ObjectDataLoaded && bRender) {
@@ -678,6 +684,8 @@ void AnimatedObject::Draw(Shader* shader)
   }
 
   PosProcessOnScreenProprieties();
+
+  IntervalElapsedTimeManager::EndTimeInterval(this->mName);
 }
 
 void AnimatedObject::DrawMeshes(Shader* shader)

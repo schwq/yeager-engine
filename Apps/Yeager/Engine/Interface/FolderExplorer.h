@@ -32,19 +32,22 @@ namespace Yeager {
 class ApplicationCore;
 
 /**
-	@brief Represents the type of the directory hierarchy item, if it is a file or folder, even unknown
-*/
+ * @brief Represents the type of the directory hierarchy item, if it is a file or folder, even unknown
+ */
 struct DirectoryHierarchyType {
   enum Enum { eFOLDER, eFILE, eUNKNOWN };
 };
 
+/**
+ * @brief Holds information about the file, like size, atrributes, creation time, last written and acessed.
+ */
 struct FileInformation {
   FileInformation() = default;
-  unsigned long Attributes = 0x00;
-  uint64_t FileSize = 0x00;
-  Yeager::TimePointType CreationTime;
-  Yeager::TimePointType LastAcessed;
-  Yeager::TimePointType LastWritten;
+  unsigned long mAttributes = 0x00;
+  uint64_t mFileSize = 0x00;
+  Yeager::TimePointType mCreationTime;
+  Yeager::TimePointType mLastAcessed;
+  Yeager::TimePointType mLastWritten;
 
   static FileInformation GetFileInformation(const std::filesystem::path& path);
 
@@ -56,17 +59,16 @@ struct FileInformation {
 };
 
 /**
-	@brief Represents a item that lives in the directory hierarchy of the system, like a folder or file
-*/
+ * @brief Represents a item that lives in the directory hierarchy of the system, like a folder or file
+ */
 struct DirectoryHierarchyItem {
-  std::filesystem::path Path;
-  /** If is a file, tells the folder the files lives, if it is a folder, tells the folder that it lives in */
-  std::filesystem::path Parent;
-  DirectoryHierarchyType::Enum Type = DirectoryHierarchyType::eUNKNOWN;
-  String Name = YEAGER_NULL_LITERAL;
-  bool m_IsSelected = false;
-  bool m_SearchAppears = true;
-  FileInformation Info;
+  std::filesystem::path mPath;
+  std::filesystem::path mParent;
+  DirectoryHierarchyType::Enum mType = DirectoryHierarchyType::eUNKNOWN;
+  String mName = YEAGER_NULL_LITERAL;
+  bool bIsSelected = false;
+  bool bSearchAppears = true;
+  FileInformation mInfo;
 };
 
 class FolderExplorer {

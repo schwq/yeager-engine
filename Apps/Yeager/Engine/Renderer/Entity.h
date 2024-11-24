@@ -22,7 +22,7 @@
 
 #include "../../Common/Common.h"
 #include "../../Common/LogEngine.h"
-#include "../../Kernel/Allocator.h"
+#include "../../Common/Utilities.h"
 
 namespace Yeager {
 
@@ -123,16 +123,12 @@ class Entity {
   YEAGER_FORCE_INLINE bool CanBeSerialize() const { return bCanBeSerialize; }
   YEAGER_FORCE_INLINE void SetCanBeSerialize(bool serial) { bCanBeSerialize = serial; }
 
-  /* User data can be any type of data that a object or class that ihherit the Entity class can link to it, and extract in some point during the process */
-  UserDataHandle* GetUserData() { return &mUserData; }
-
   /* This can be useful when working with toolboxes or other areas without access to the application core pointer, why tho? i dont know, lazyness*/
   Yeager::ApplicationCore* GetApplication() { return mApplication; }
 
  protected:
   EntityObjectType::Enum mType = EntityObjectType::UNDEFINED;
   Yeager::ApplicationCore* mApplication = YEAGER_NULLPTR;
-  UserDataHandle mUserData;
   String mName = YEAGER_NULL_LITERAL;
   uuid_t mEntityUUID;
 

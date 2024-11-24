@@ -476,7 +476,7 @@ void Interface::DrawConsole()
 void Interface::DrawExplorer()
 {
   //m_ExplorerWindow.Begin(m_Control.DontMoveWindowsEditor ? kWindowStatic : kWindowMoveable);
-  Begin(ICON_FA_ADDRESS_BOOK " Explorer", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBackground);
+  Begin(ICON_FA_ADDRESS_BOOK " Explorer", NULL, ImGuiWindowFlags_NoResize);
   m_Application->GetExplorer()->DrawExplorer();
   End();
 }
@@ -1192,23 +1192,40 @@ void Interface::PrepareAndMakeScreenShot()
    */
 
   String output = GetPathFromSourceCode("/Configuration/") + m_NewScreenShootName + ".jpg";
+  ProcessedImageInfo image;
   switch (m_ScreenShotMode) {
     case ScreenShotMode::ECustomSizedAndPosition:
-      MakeScreenShotInPosition(m_Application, output.c_str(), m_ScreenShotPosition[0], m_ScreenShotPosition[1],
-                               m_ScreenShotSize[0], m_ScreenShotSize[1]);
+      image =
+          MakeScreenShotInPosition(m_Application, output, UVector2(m_ScreenShotPosition[0], m_ScreenShotPosition[1]),
+                                   UVector2(m_ScreenShotSize[0], m_ScreenShotSize[1]));
       break;
     case ScreenShotMode::EFullScreen:
-      MakeScreenShot(m_Application, output.c_str());
+      image = MakeScreenShot(m_Application, output);
       break;
     case ScreenShotMode::EMiddleFixedSized:
-      MakeScreenShotMiddle(m_Application, output.c_str());
+      image = MakeScreenShotMiddle(m_Application, output, UVector2(800));
       break;
   }
+  Yeager::LogDebug(INFO, "Screenshot {}, Size x: {} y: {}, Path: {}", image.bSucceeded ? "success" : "fail",
+                   image.mWidth, image.mHeight, image.mPathWrittenTo);
   m_Application->GetInput()->SetCursorCanDisappear(true);
   m_Application->GetCamera()->SetShouldMove(true);
   Yeager::EngineEditorWindowShouldVanish = false;
   m_ReadyToScreenShot = false;
   m_MakeScreenShotWindowShouldAppear = false;
+}
+
+void Interface::DebugTimeInterval()
+{
+  Begin("Time Intervals", NULL, YEAGER_WINDOW_MOVEABLE);
+
+  int x = 0;
+
+  for (const auto& it : *IntervalElapsedTimeManager::GetIntervals()) {
+    Text("%d. %s : %d microseconds", ++x, it.mProcessName.c_str(), it.mDiff.count());
+  }
+
+  End();
 }
 
 void Interface::PhysXHandleControlWindow()

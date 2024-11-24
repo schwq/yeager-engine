@@ -56,15 +56,13 @@ void Skybox::GenerateCubemapGeometry()
   m_VerticesIndex = m_Data.Vertices.size() / 3;
 }
 
-bool Skybox::BuildSkyboxFromCubemap(String directory, Yeager::ImageExtension ext, bool flip)
+bool Skybox::BuildSkyboxFromCubemap(String directory, Yeager::ImageExtension::Enum ext, bool flip)
 {
   if (!m_SkyboxDataLoaded) {
     if (NumberOfFilesInDir(directory) == 6) {
-      std::vector<String> paths = {
-          (directory + "right" + ImageExtensionToString(ext)), (directory + "left" + ImageExtensionToString(ext)),
-          (directory + "top" + ImageExtensionToString(ext)),   (directory + "bottom" + ImageExtensionToString(ext)),
-
-          (directory + "front" + ImageExtensionToString(ext)), (directory + "back" + ImageExtensionToString(ext))};
+      String ex = ImageExtension::ImageExtensionToString(ext);
+      std::vector<String> paths = {(directory + "right" + ex),  (directory + "left" + ex),  (directory + "top" + ex),
+                                   (directory + "bottom" + ex), (directory + "front" + ex), (directory + "back" + ex)};
       m_Texture->GenerateCubeMapFromFile(paths, flip);
       m_SkyboxDataLoaded = true;
       m_Type = SkyboxTextureType::ESamplerCube;

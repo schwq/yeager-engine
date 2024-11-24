@@ -902,16 +902,21 @@ void Serialization::WriteEngineConfiguration(const String& path)
 {
   YAML::Emitter out;
   out << YAML::BeginMap;
-  SerializeObject(out, "YeagerLauncherWindowWidth",
-                  m_Application->GetWindow()->GetWindowInformationPtr()->LauncherSize.x);
-  SerializeObject(out, "YeagerLauncherWindowHeight",
-                  m_Application->GetWindow()->GetWindowInformationPtr()->LauncherSize.y);
-  SerializeObject(out, "YeagerEditorWindowWidth", m_Application->GetWindow()->GetWindowInformationPtr()->EditorSize.x);
-  SerializeObject(out, "YeagerEditorWindowHeight", m_Application->GetWindow()->GetWindowInformationPtr()->EditorSize.y);
-  SerializeObject(out, "YeagerWindowPositionWidth",
-                  m_Application->GetWindow()->GetWindowInformationPtr()->WindowPosition.x);
-  SerializeObject(out, "YeagerWindowPositionHeight",
-                  m_Application->GetWindow()->GetWindowInformationPtr()->WindowPosition.y);
+  WindowInfo* info = m_Application->GetWindow()->GetWindowInformationPtr();
+  SerializeObject(out, "YeagerLauncherWindowWidth", info->LauncherSize.x);
+  SerializeObject(out, "YeagerLauncherWindowHeight", info->LauncherSize.y);
+  SerializeObject(out, "YeagerEditorWindowWidth", info->EditorSize.x);
+  SerializeObject(out, "YeagerEditorWindowHeight", info->EditorSize.y);
+
+  if (info->WindowPosition.x < 0)
+    info->WindowPosition.x = -info->WindowPosition.x;
+
+  if (info->WindowPosition.y < 0)
+    info->WindowPosition.y = -info->WindowPosition.y;
+
+  SerializeObject(out, "YeagerWindowPositionWidth", info->WindowPosition.x);
+
+  SerializeObject(out, "YeagerWindowPositionHeight", info->WindowPosition.y);
   out << YAML::EndMap;
 
   Yeager::CreateFileAndWrites(path, out.c_str());

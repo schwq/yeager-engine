@@ -21,6 +21,9 @@
 #include "Common.h"
 
 namespace Yeager {
+
+#define YEAGER_MAX_PROCESS_TIME_MAN 364
+
 /**
 	@brief Represents a human readable date, month, weekday, day and year
 */
@@ -74,5 +77,33 @@ YEAGER_NODISCARD extern TimePointType WindowsFILETIMEToTimePoint(const FILETIME&
  */
 
 YEAGER_NODISCARD static String FormatFrontZeroStr(Uint number);
+
+struct IntervalElapsedTime {
+  String mProcessName = YEAGER_NULL_LITERAL;
+  std::chrono::steady_clock::time_point mStart;
+  std::chrono::steady_clock::time_point mEnd;
+  std::chrono::microseconds mDiff;
+};
+
+struct TimeDurationFormat {
+  enum Enum { eNANOSECONDS, eMILLISECONDS, eUNDEFINED };
+};
+
+class IntervalElapsedTimeManager {
+ public:
+  IntervalElapsedTimeManager() = default;
+
+  static IntervalElapsedTime StartTimeInterval(const String& process);
+
+  static IntervalElapsedTime EndTimeInterval(const String& process);
+
+  static std::vector<IntervalElapsedTime>* GetIntervals();
+
+  static void ResetIntervals();
+
+  static std::vector<IntervalElapsedTime> sIntervals;
+
+ private:
+};
 
 }  // namespace Yeager

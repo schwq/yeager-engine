@@ -401,14 +401,18 @@ void ApplicationCore::UpdateTheEngine()
 
   auto light = std::make_shared<PhysicalLightHandle>(
       EntityBuilder(this, "main"),
-      std::vector<Shader*>{ShaderFromVarName("Simple"), ShaderFromVarName("SimpleAnimated")},
+      std::vector<Shader*>{ShaderFromVarName("Simple"), ShaderFromVarName("SimpleAnimated"),
+                           ShaderFromVarName("TerrainGeneration")},
       ShaderFromVarName("Light"));
   light->SetCanBeSerialize(false);
   light->GetDirectionalLight()->Ambient = Vector3(1);
   m_Scene->GetLightSources()->push_back(light);
-
   BeginEngineTimer();
   while (ShouldRender()) {
+
+    IntervalElapsedTimeManager::ResetIntervals();
+    IntervalElapsedTimeManager::StartTimeInterval("Application Frame");
+
     ProcessArgumentsDuringRender();
     glfwPollEvents();
     OpenGLClear();
@@ -434,10 +438,14 @@ void ApplicationCore::UpdateTheEngine()
 
     GetInterface()->RenderUI();
     GetScene()->CheckScheduleDeletions();
-    m_Interface->TerminateRenderFrame();
     GetInput()->ProcessInputRender(GetWindow(), m_DeltaTime);
-    glfwSwapBuffers(GetWindow()->GetGLFWwindow());
     m_Request->HandleRequests();
+
+    IntervalElapsedTimeManager::EndTimeInterval("Application Frame");
+
+    m_Interface->DebugTimeInterval();
+    m_Interface->TerminateRenderFrame();
+    glfwSwapBuffers(GetWindow()->GetGLFWwindow());
   }
 
   TerminatePosRender();

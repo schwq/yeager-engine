@@ -101,17 +101,6 @@ struct EqualExists {
 };
 }  // namespace CHECK
 
-template <uint8_t Bytes>
-struct YgPadding {
-  uint8_t Padding[Bytes];
-  YgPadding()
-  {
-    for (Uint x = 0; x < Bytes; x++) {
-      Padding[x] = 0;
-    }
-  }
-};
-
 extern bool EvaluateIntToBool(const int i);
 
 extern Cchar g_OperatingSystemString;
@@ -161,6 +150,11 @@ extern int DisplayWarningPanicMessageBox(const String& cause, const std::filesys
 
 #ifdef YEAGER_SYSTEM_WINDOWS_x64
 extern int DisplayWarningPanicMessageBoxWindows(const String& cause, const std::filesystem::path& log);
+#endif
+
+#ifdef YEAGER_SYSTEM_LINUX
+extern int ExLinuxCmd(const String& cmd);
+extern bool CheckIFLinuxCmdExists(const String& cmd);
 #endif
 
 extern String ToLower(const String& str);

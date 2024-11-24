@@ -1,5 +1,8 @@
 #include "Time.h"
+#include "LogEngine.h"
 using namespace Yeager;
+
+std::vector<IntervalElapsedTime> IntervalElapsedTimeManager::sIntervals;
 
 String TimePointType::CurrentTimeFormatToString()
 {
@@ -118,4 +121,45 @@ String TimePointType::FormatTimeToString(const TimePointType& time)
 String Yeager::FormatFrontZeroStr(Uint number)
 {
   return (number < 10) ? String("0" + std::to_string(number)) : std::to_string(number);
+}
+
+IntervalElapsedTime IntervalElapsedTimeManager::StartTimeInterval(const String& process)
+{
+  if (IntervalElapsedTimeManager::sIntervals.size() >= YEAGER_MAX_PROCESS_TIME_MAN) {
+    Yeager::Log(WARNING, "The max size of processes in the interval time manager was reached! Max: {}",
+                YEAGER_MAX_PROCESS_TIME_MAN);
+    return IntervalElapsedTime();
+  }
+
+  IntervalElapsedTime time;
+  time.mProcessName = process;
+  time.mStart = std::chrono::steady_clock::now();
+  IntervalElapsedTimeManager::sIntervals.push_back(time);
+  return time;
+}
+
+IntervalElapsedTime IntervalElapsedTimeManager::EndTimeInterval(const String& process)
+{
+  using tm = IntervalElapsedTimeManager;
+  auto it = std::find_if(tm::sIntervals.begin(), tm::sIntervals.end(),
+                         [&](IntervalElapsedTime& time) { return time.mProcessName == process; });
+
+  if (it != tm::sIntervals.end()) {
+    it->mEnd = std::chrono::steady_clock::now();
+    it->mDiff = std::chrono::duration_cast<std::chrono::microseconds>(it->mEnd - it->mStart);
+    return (*it);
+  }
+
+  Yeager::Log(ERROR, "Cannot find process {} in the intervals of time!", process);
+  return IntervalElapsedTime();
+}
+
+std::vector<IntervalElapsedTime>* IntervalElapsedTimeManager::GetIntervals()
+{
+  return &IntervalElapsedTimeManager::sIntervals;
+}
+
+void IntervalElapsedTimeManager::ResetIntervals()
+{
+  IntervalElapsedTimeManager::sIntervals.clear();
 }

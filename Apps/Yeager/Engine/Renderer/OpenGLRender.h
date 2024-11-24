@@ -24,14 +24,19 @@
 
 namespace Yeager {
 
+/**
+ * @brief The simple renderer of OpenGL is a class that holds rendering information. It uses the glDrawArrays and dont have must optimizantion  
+ */
 class SimpleRenderer {
  public:
-  SimpleRenderer() {}
+  SimpleRenderer() = default;
+  ~SimpleRenderer();
+
+  static void UnbindVertexArray();
 
   virtual void GenBuffers();
   virtual void BindBuffers();
   virtual void BindVertexArray();
-  static void UnbindVertexArray();
   virtual void UnbindBuffers();
   virtual void BufferData(GLenum target, GLsizeiptr size, const void* data, GLenum usage);
   virtual void VertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride,
@@ -43,11 +48,14 @@ class SimpleRenderer {
   virtual void Draw(GLenum mode, GLint first, GLsizei count);
 
  protected:
-  GLuint m_Vao = NULL, m_Vbo = NULL;
-  bool m_Generated = false;
-  GLenum m_BufferUsage = GL_STATIC_DRAW;
+  GLuint mVao = NULL, mVbo = NULL;
+  GLenum mBufferUsage = GL_STATIC_DRAW;
+  bool bIsGenerated = false;
 };
 
+/**
+ * @brief The element buffer renderer of OpenGL is like the simple renderer, but is make uses of indices and calls glDrawElements on drawing
+ */
 class ElementBufferRenderer : public SimpleRenderer {
  public:
   ElementBufferRenderer();
@@ -62,7 +70,7 @@ class ElementBufferRenderer : public SimpleRenderer {
   virtual void Draw(GLenum mode, GLsizei count, GLenum type, const void* indices);
 
  protected:
-  GLuint m_Ebo = NULL;
+  GLuint mEbo = NULL;
 };
 
 }  // namespace Yeager

@@ -3,12 +3,12 @@ using namespace Yeager;
 
 Shader::Shader(Cchar fragmentPath, Cchar vertexPath, String name)
 {
-  m_Name = name;
+  mShaderName = name;
   Uint vt = CreateVertexGL(vertexPath);
   Uint fg = CreateFragmentGL(fragmentPath);
-  if (m_fragment_build && m_vertex_build) {
+  if (bIsFragmentShBuild && bIsVertexShBuild) {
     LinkShaders(vt, fg);
-    m_initialize = true;
+    bInitialize = true;
   } else {
     Yeager::Log(-2, "Cannot link shaders! One of them have not initialized!");
   }
@@ -43,11 +43,11 @@ Uint Shader::CreateVertexGL(Cchar vertexPath)
 
     if (!vertexShaderSuccess) {
       glGetShaderInfoLog(vertexShaderSource, 512, NULL, vertexInfoLog);
-      Yeager::Log(ERROR, "Cannot create vertex shader: {}, ID: {}, Error: {}", m_Name.c_str(), m_shader_num,
+      Yeager::Log(ERROR, "Cannot create vertex shader: {}, ID: {}, Error: {}", mShaderName.c_str(), mShaderN,
                   vertexInfoLog);
     } else {
-      Yeager::Log(INFO, "Success in creating vertex shader {}, UUID {}", m_Name.c_str(), m_shader_num);
-      m_vertex_build = true;
+      Yeager::Log(INFO, "Success in creating vertex shader {}, UUID {}", mShaderName.c_str(), mShaderN);
+      bIsVertexShBuild = true;
     }
 
     vertexFile.close();
@@ -81,11 +81,11 @@ Uint Shader::CreateFragmentGL(Cchar fragmentPath)
 
     if (!fragmentShaderSuccess) {
       glGetShaderInfoLog(fragmentShaderSource, 512, NULL, fragmentInfoLog);
-      Yeager::Log(ERROR, "Cannot create fragment shader: {}, ID: {}, Error: {}", m_Name.c_str(), m_shader_num,
+      Yeager::Log(ERROR, "Cannot create fragment shader: {}, ID: {}, Error: {}", mShaderName.c_str(), mShaderN,
                   fragmentInfoLog);
     } else {
-      Yeager::Log(INFO, "Success in creating fragment shader {}, UUID {}", m_Name.c_str(), m_shader_num);
-      m_fragment_build = true;
+      Yeager::Log(INFO, "Success in creating fragment shader {}, UUID {}", mShaderName.c_str(), mShaderN);
+      bIsFragmentShBuild = true;
     }
 
     fragmentFile.close();
@@ -98,20 +98,20 @@ Uint Shader::CreateFragmentGL(Cchar fragmentPath)
 
 void Shader::LinkShaders(Uint vertexShader, Uint fragmentShader)
 {
-  m_ShaderID = glCreateProgram();
-  glAttachShader(m_ShaderID, vertexShader);
-  glAttachShader(m_ShaderID, fragmentShader);
-  glLinkProgram(m_ShaderID);
+  mShaderID = glCreateProgram();
+  glAttachShader(mShaderID, vertexShader);
+  glAttachShader(mShaderID, fragmentShader);
+  glLinkProgram(mShaderID);
 
   int linkSuccess;
   char linkInfo[512];
 
-  glGetProgramiv(m_ShaderID, GL_LINK_STATUS, &linkSuccess);
+  glGetProgramiv(mShaderID, GL_LINK_STATUS, &linkSuccess);
   if (!linkSuccess) {
-    glGetProgramInfoLog(m_ShaderID, 512, NULL, linkInfo);
-    Yeager::Log(ERROR, "Cannot link shaders: {}, ID: {}, Error: {}", m_Name.c_str(), m_shader_num, linkInfo);
+    glGetProgramInfoLog(mShaderID, 512, NULL, linkInfo);
+    Yeager::Log(ERROR, "Cannot link shaders: {}, ID: {}, Error: {}", mShaderName.c_str(), mShaderN, linkInfo);
   } else {
-    Yeager::Log(INFO, "Success in linking shaders: {}, ID: {}", m_Name.c_str(), m_shader_num);
+    Yeager::Log(INFO, "Success in linking shaders: {}, ID: {}", mShaderName.c_str(), mShaderN);
   }
 
   glDeleteShader(vertexShader);
@@ -120,38 +120,38 @@ void Shader::LinkShaders(Uint vertexShader, Uint fragmentShader)
 
 void Shader::SetInt(const String& name, int value)
 {
-  glUniform1i(glGetUniformLocation(m_ShaderID, name.c_str()), value);
+  glUniform1i(glGetUniformLocation(mShaderID, name.c_str()), value);
 }
 void Shader::SetBool(const String& name, bool value)
 {
-  glUniform1i(glGetUniformLocation(m_ShaderID, name.c_str()), (int)value);
+  glUniform1i(glGetUniformLocation(mShaderID, name.c_str()), (int)value);
 }
 void Shader::SetFloat(const String& name, float value)
 {
-  glUniform1f(glGetUniformLocation(m_ShaderID, name.c_str()), value);
+  glUniform1f(glGetUniformLocation(mShaderID, name.c_str()), value);
 }
 void Shader::SetMat4(const String& name, Matrix4 value)
 {
-  glUniformMatrix4fv(glGetUniformLocation(m_ShaderID, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
+  glUniformMatrix4fv(glGetUniformLocation(mShaderID, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
 }
 void Shader::SetVec3(const String& name, Vector3 value)
 {
-  glUniform3fv(glGetUniformLocation(m_ShaderID, name.c_str()), 1, &value[0]);
+  glUniform3fv(glGetUniformLocation(mShaderID, name.c_str()), 1, &value[0]);
 }
 void Shader::SetVec2(const String& name, glm::vec2 value)
 {
-  glUniform2fv(glGetUniformLocation(m_ShaderID, name.c_str()), 1, &value[0]);
+  glUniform2fv(glGetUniformLocation(mShaderID, name.c_str()), 1, &value[0]);
 }
 void Shader::SetUniform1i(const String& name, int value)
 {
-  glUniform1i(glGetUniformLocation(m_ShaderID, name.c_str()), value);
+  glUniform1i(glGetUniformLocation(mShaderID, name.c_str()), value);
 }
 void Shader::SetVec4(const String& name, glm::vec4 value)
 {
-  glUniform4fv(glGetUniformLocation(m_ShaderID, name.c_str()), 1, &value[0]);
+  glUniform4fv(glGetUniformLocation(mShaderID, name.c_str()), 1, &value[0]);
 }
 
 void Shader::UseShader()
 {
-  glUseProgram(m_ShaderID);
+  glUseProgram(mShaderID);
 }

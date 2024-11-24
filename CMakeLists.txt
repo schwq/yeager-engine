@@ -115,15 +115,9 @@ set(SOURCEFILES
     Apps/Yeager/Kernel/Network/Connection.h
     Apps/Yeager/Kernel/Network/Connection.cpp
     Apps/Yeager/Kernel/HardwareInfo.h
-    Apps/Yeager/Kernel/HardwareInfo.h
     Apps/Yeager/Kernel/HardwareInfo.cpp
-    Apps/Yeager/Kernel/NvidiaCuda.h
-    Apps/Yeager/Kernel/NvidiaCuda.cpp
-    Apps/Yeager/Kernel/Thread.h 
-    Apps/Yeager/Kernel/Thread.cpp
     Apps/Yeager/Kernel/Caching/Cache.h
     Apps/Yeager/Kernel/Caching/Cache.cpp
-    
 )
 
 add_executable(${projectName} ${SOURCEFILES})
@@ -140,4 +134,4 @@ pthread
 freetype
 dl)
 
-add_definitions(-w) 
+add_definitions(-w -DDEBUG_ENABLED_ALL) 

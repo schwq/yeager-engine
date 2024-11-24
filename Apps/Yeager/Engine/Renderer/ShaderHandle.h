@@ -38,23 +38,23 @@ class Shader {
   void SetUniform1i(const String& name, int value);
   void SetVec4(const String& name, glm::vec4 value);
 
-  constexpr inline GLuint GetId() { return m_ShaderID; }
-  constexpr inline bool IsInitialized() { return m_initialize; }
+  constexpr inline GLuint GetId() { return mShaderID; }
+  constexpr inline bool IsInitialized() { return bInitialize; }
 
-  inline String GetName() { return m_Name; }
-  inline String GetVarName() { return m_VarName; }
-  inline void SetVarName(const String& str) { m_VarName = str; }
+  inline String GetName() { return mShaderName; }
+  inline String GetVarName() { return mVarName; }
+  inline void SetVarName(const String& str) { mVarName = str; }
 
  private:
-  GLuint m_ShaderID;
-  bool m_initialize = false;
-  bool m_fragment_build = false;
-  bool m_vertex_build = false;
-  static Uint m_shader_count;
-  Uint m_shader_num = 0;
+  GLuint mShaderID;
+  bool bInitialize = false;
+  bool bIsFragmentShBuild = false;
+  bool bIsVertexShBuild = false;
+  static Uint sShaderCompiledCount;
+  Uint mShaderN = 0;
 
-  String m_VarName;
-  String m_Name;
+  String mVarName;
+  String mShaderName;
 
   YEAGER_NODISCARD Uint CreateVertexGL(Cchar vertexPath);
   YEAGER_NODISCARD Uint CreateFragmentGL(Cchar fragmentPath);

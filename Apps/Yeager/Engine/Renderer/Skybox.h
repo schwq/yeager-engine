@@ -40,7 +40,7 @@ class Skybox : public EditorEntity {
   Skybox(const EntityBuilder& builder, ObjectGeometryType::Enum type);
   ~Skybox();
 
-  bool BuildSkyboxFromCubemap(String directory, Yeager::ImageExtension ext, bool flip = false);
+  bool BuildSkyboxFromCubemap(String directory, Yeager::ImageExtension::Enum ext, bool flip = false);
   bool BuildSkyboxFrom2DTexture(String path, bool flip = false);
   bool BuildSkyboxFromImport(String path, bool flip = false);
   void Draw(Yeager::Shader* shader, Matrix4 view, Matrix4 projection);

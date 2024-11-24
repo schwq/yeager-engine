@@ -281,6 +281,8 @@ class Interface {
 
   Vector3 GetOpenGLDebugClearColor() const { return m_OpenGLDebugClearScreenColor; }
 
+  void DebugTimeInterval();
+
  private:
   String m_NewProjectCurrentRenderer = "Default";
   String m_NewProjectAuthorName = "Default";
