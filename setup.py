@@ -2,7 +2,9 @@
 import os, sys, platform
 from enum import Enum
 
-import Utils.Dependencies.common_system as common_system
+import Utilities.Dependencies.common_system as common_system
+
+import Engine.Binaries.Build.Python.gen_cmakelists as gcmake
 
 
 class ModeRequested(Enum):
@@ -52,15 +54,16 @@ def executeInstructions():
         print("[INFO] Installing Yeager Engine on " + platform.platform())
 
         if os.name == "posix":
-            import Utils.Dependencies.linux_x64 as linux_x64
+            import Utilities.Dependencies.linux_x64 as linux_x64
 
             linux_x64.installEngineLinux()
         if os.name == "nt":
-            import Utils.Dependencies.windows_x64 as windows_x64
+            import Utilities.Dependencies.windows_x64 as windows_x64
 
             windows_x64.installEngineWindows()
 
 
+gcmake.PrintHelloWorld()
 common_system.checkPlatform()
 processArguments()
 executeInstructions()
