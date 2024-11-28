@@ -12,7 +12,7 @@ class OperatingSystem(Enum):
     UNDEFINED = 4
 
 
-currentOperatingSystem = OperatingSystem.UNDEFINED
+gCurrentOperatingSystem = OperatingSystem.UNDEFINED
 
 
 class FolderClass:
@@ -21,7 +21,7 @@ class FolderClass:
         self.folders = folders
 
 
-private_folders = FolderClass(
+gPrivateFolders = FolderClass(
     "YeagerEngine",
     [
         FolderClass("Binarie", []),
@@ -61,7 +61,7 @@ private_folders = FolderClass(
     ],
 )
 
-public_folders = FolderClass(
+gPublicFolders = FolderClass(
     "YeagerEngine",
     [
         FolderClass(
@@ -100,13 +100,13 @@ public_folders = FolderClass(
 )
 
 
-def compileEngine():
+def CompileEngine():
     home = os.getcwd()
     cmd = str("cmake --build " + home + "/build --config Debug --target all --")
     os.system(cmd)
 
 
-def copyFilesFromDir(src: str, dst: str, anounce: bool = False):
+def CopyFilesFromDir(src: str, dst: str, anounce: bool = False):
     files = os.listdir(src)
     for file in files:
         shutil.copy(os.path.join(src, file), dst)
@@ -114,44 +114,44 @@ def copyFilesFromDir(src: str, dst: str, anounce: bool = False):
             print("[INFO] Copied {} from {} to {}".format(file, src, dst))
 
 
-def verifyFileExists(path) -> bool:
+def VerifyFileExists(path) -> bool:
     return os.path.isfile(str(path))
 
 
-def verifyDirExists(dir) -> bool:
+def VerifyDirExists(dir) -> bool:
     return os.path.isdir(str(dir))
 
 
-def verifyItemExists(path) -> tuple[bool, str]:
-    if verifyDirExists(path):
+def VerifyItemExists(path) -> tuple[bool, str]:
+    if VerifyDirExists(path):
         return True, "Dir"
-    if verifyFileExists(path):
+    if VerifyFileExists(path):
         return True, "File"
     return False, None
 
 
 # retrieves a path in the unix format of /folder/file and converts to the windows version \folder\file
-def pathCompatible(path) -> str:
-    if currentOperatingSystem == OperatingSystem.WINDOWS_32:
+def GetPathCompatible(path) -> str:
+    if gCurrentOperatingSystem == OperatingSystem.WINDOWS_32:
         path = str(path).replace("/", "\\")
         return path
     return path
 
 
-def checkPlatform():
-    global currentOperatingSystem
+def CheckOSPlatform():
+    global gCurrentOperatingSystem
     if platform.system() == "Linux":
-        currentOperatingSystem = OperatingSystem.LINUX
+        gCurrentOperatingSystem = OperatingSystem.LINUX
     elif platform.system() == "Darwin":
-        currentOperatingSystem = OperatingSystem.DARWIN
+        gCurrentOperatingSystem = OperatingSystem.DARWIN
     elif platform.system() == "Windows":
-        currentOperatingSystem = OperatingSystem.WINDOWS_32
+        gCurrentOperatingSystem = OperatingSystem.WINDOWS_32
     else:
         print("[ERROR] Unknown operating system!")
         sys.exit(0)
 
 
-def safeFromArgv(n) -> str:
+def SafeFromArgv(n) -> str:
     if not n > len(sys.argv) - 1:
         return sys.argv[n]
     print(
@@ -163,7 +163,7 @@ def safeFromArgv(n) -> str:
     return None
 
 
-def checkIfUserExists(user):
+def CheckIfUserExists(user):
     try:
         if os.name == "posix":
             import pwd
@@ -174,7 +174,7 @@ def checkIfUserExists(user):
         sys.exit(0)
 
 
-def checkIfCmakeInstalled() -> bool:
+def CheckIfCmakeInstalled() -> bool:
     return (
         subprocess.call(
             ["cmake", "--version"],
@@ -186,7 +186,7 @@ def checkIfCmakeInstalled() -> bool:
     )
 
 
-def commandSystem(command: str) -> int:
+def CmdSystem(command: str) -> int:
     return os.system(command)
 
 
@@ -204,7 +204,7 @@ def copyType(src, dst):
 
 
 def changeDirectory(dir: str):
-    if verifyDirExists(dir):
+    if VerifyDirExists(dir):
         os.chdir(dir)
 
 

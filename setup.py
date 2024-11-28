@@ -17,14 +17,14 @@ class ModeRequested(Enum):
 scriptMode = ModeRequested.UNDEFINED
 
 
-def printHelp():
+def PromptHelp():
     print("Usage command: python3 setup.py [mode] [args] \nModes:")
     print("install -- Installs the Engine to the system", end="\n")
     print("reinstall -- Reinstals and cleans the system from the Engine", end="\n")
     print("uninstall -- Uninstall the Engine from the system, and cleans", end="\n")
 
 
-def iterateArguments(arg, n) -> int:
+def IterateGivenArguments(arg, n) -> int:
     global scriptMode
     if arg == "install":
         scriptMode = ModeRequested.INSTALL
@@ -37,33 +37,32 @@ def iterateArguments(arg, n) -> int:
     return 1
 
 
-def processArguments():
+def ProcessAllArguments():
 
     if len(sys.argv) > 1:
-        if str(common_system.safeFromArgv(1)) == "help":
-            printHelp()
+        if str(common_system.SafeFromArgv(1)) == "help":
+            PromptHelp()
             sys.exit(0)
 
     it = 1
     while it < len(sys.argv):
-        it += iterateArguments(str(sys.argv[it]), it)
+        it += IterateGivenArguments(str(sys.argv[it]), it)
 
 
-def executeInstructions():
+def ExeInstructions():
     if scriptMode == ModeRequested.INSTALL:
         print("[INFO] Installing Yeager Engine on " + platform.platform())
 
         if os.name == "posix":
             import Utilities.Dependencies.linux_x64 as linux_x64
 
-            linux_x64.installEngineLinux()
+            linux_x64.InstallEngineLinux()
         if os.name == "nt":
             import Utilities.Dependencies.windows_x64 as windows_x64
 
-            windows_x64.installEngineWindows()
+            windows_x64.InstallEngineWindows()
 
 
-gcmake.PrintHelloWorld()
-common_system.checkPlatform()
-processArguments()
-executeInstructions()
+common_system.CheckOSPlatform()
+ProcessAllArguments()
+ExeInstructions()
