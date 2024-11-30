@@ -11,7 +11,8 @@ class ModeRequested(Enum):
     INSTALL = 1
     REINSTALL = 2
     UNINSTALL = 3
-    UNDEFINED = 4
+    BUILD = 4
+    UNDEFINED = 5
 
 
 scriptMode = ModeRequested.UNDEFINED
@@ -22,6 +23,7 @@ def PromptHelp():
     print("install -- Installs the Engine to the system", end="\n")
     print("reinstall -- Reinstals and cleans the system from the Engine", end="\n")
     print("uninstall -- Uninstall the Engine from the system, and cleans", end="\n")
+    print("build -- Build the Engine using cmake and run", end="\n")
 
 
 def IterateGivenArguments(arg, n) -> int:
@@ -32,6 +34,8 @@ def IterateGivenArguments(arg, n) -> int:
         scriptMode = ModeRequested.REINSTALL
     elif arg == "uninstall":
         scriptMode = ModeRequested.UNINSTALL
+    elif arg == "build":
+        scriptMode = ModeRequested.BUILD
     else:
         print("[IGNORE] Argument invalid " + arg)
     return 1
@@ -63,6 +67,7 @@ def ExeInstructions():
             windows_x64.InstallEngineWindows()
 
 
-common_system.CheckOSPlatform()
-ProcessAllArguments()
-ExeInstructions()
+if __file__ == "__main__":
+    common_system.CheckOSPlatform()
+    ProcessAllArguments()
+    ExeInstructions()

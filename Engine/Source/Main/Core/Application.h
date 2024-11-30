@@ -26,10 +26,13 @@
 #include "Common/Utils/Utilities.h"
 
 #include "Components/Kernel/Caching/Cache.h"
+#include "Components/Kernel/Memory/Allocator.h"
 #include "Components/Kernel/Network/NetworkSocket.h"
+#include "Components/Kernel/Process/WpThread.h"
 #include "Components/Physics/PhysXHandle.h"
 #include "Components/Player/PlayableObject.h"
 #include "Components/Text/TextRendering.h"
+#include "Debug/GL/DebbugingGL.h"
 #include "Editor/Camera/Camera.h"
 #include "Editor/UI/Explorer.h"
 #include "Editor/UI/Interface.h"
@@ -41,7 +44,6 @@
 #include "Main/Settings/Settings.h"
 #include "Main/Window/Launcher.h"
 #include "Main/Window/Window.h"
-
 namespace Yeager {
 
 /** @brief Represent the current state for the Application, if its running, paused, crashed ect */
@@ -67,63 +69,51 @@ struct ApplicationMode {
 
 /** @brief Represent the matrices that the character needs to view the world */
 struct WorldCharacterMatrices {
-  Matrix4 Projection = YEAGER_IDENTITY_MATRIX4x4;
-  Matrix4 View = YEAGER_IDENTITY_MATRIX4x4;
-  Vector3 ViewerPos = YEAGER_ZERO_VECTOR3;
+  Matrix4 mProjection = YEAGER_IDENTITY_MATRIX4x4;
+  Matrix4 mView = YEAGER_IDENTITY_MATRIX4x4;
+  Vector3 mViewerPos = YEAGER_ZERO_VECTOR3;
 };
 
 /** @brief Handles the yeager engine projects loaded in the machine, represents the name, folder, configuration path */
 struct LoadedProjectHandle {
-  String ProjectName = YEAGER_NULL_LITERAL;
-  String ProjectFolderPath = YEAGER_NULL_LITERAL;
-  String ProjectConfigurationPath = YEAGER_NULL_LITERAL;
+  String mProjectName = YEAGER_NULL_LITERAL;
+  String mProjectFolderPath = YEAGER_NULL_LITERAL;
+  String mProjectConfigurationPath = YEAGER_NULL_LITERAL;
 };
 
 struct ForcedEntryProject {
-  bool Activated = false;
-  String ProjectName = YEAGER_NULL_LITERAL;
+  bool bActivated = false;
+  String mProjectName = YEAGER_NULL_LITERAL;
 };
 
 struct DebugTitleString {
-  bool Activated = false;
-  String Title = YEAGER_NULL_LITERAL;
+  bool bActivated = false;
+  String mTitle = YEAGER_NULL_LITERAL;
 };
 
 struct DebugVirtualMachine {
-  bool Activated = false;
-  float Timer = 10.0f;
-};
-
-struct NetworkStartupConnection {
-  void Start() { Socket.Initialize(IpAddr, Port); }
-  bool Activated = false;
-  String IpAddr = YEAGER_DEFAULT_IP_ADDR;
-  Uint Port = YEAGER_DEFAULT_NET_PORT;
-  Yeager::NetworkCommunicationRole::Enum Role = NetworkCommunicationRole::UNDEFINED;
-  Yeager::NetworkSocket Socket = NetworkSocket();
+  bool bActivated = false;
+  float mTimer = 10.0f;
 };
 
 struct ProgramArguments {
-  ForcedEntryProject ForcedEntry;
+  ForcedEntryProject mForcedEntry;
   std::optional<Yeager::LauncherProjectPicker> SearchForcedEntryProject(Yeager::ApplicationCore* application);
-  DebugTitleString DebugTitle;
-  DebugVirtualMachine VirtualMachine;
-  NetworkStartupConnection StartupNetwork;
+  DebugTitleString mDebugTitle;
+  DebugVirtualMachine mVirtualMachine;
+  NetworkStartupConnection mStartupNetwork;
 };
 
 struct UsableVariables {
-  String ImGuiConfigurationPath = YEAGER_NULL_LITERAL;
-  String LoadeProjectsConfigurationPath = YEAGER_NULL_LITERAL;
-  String EngineVariablesConfigurationPath = YEAGER_NULL_LITERAL;
+  String mImGuiConfigurationPath = YEAGER_NULL_LITERAL;
+  String mLoadeProjectsConfigurationPath = YEAGER_NULL_LITERAL;
+  String mEngineVariablesConfigurationPath = YEAGER_NULL_LITERAL;
 };
 
 /**
     @brief Panic is a critical error that the engine cannot run anymore withit, so we forced a crash!
 */
 void PanicCrashReport(const std::exception& exc);
-
-void GLAPIENTRY GLMessageDebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei lenght,
-                                       const GLchar* message, const void* userParam);
 
 /** 
     @brief The main class of the engine, handles everything! Every class is called in this class functions.
@@ -188,7 +178,7 @@ class ApplicationCore {
     @brief World matrices represent the projection, view and the position of the viewer 
     TODO: this must be in the player class, so multiple views can be created, for example for multiplayer
   */
-  YEAGER_NODISCARD WorldCharacterMatrices GetWorldMatrices() const { return m_WorldMatrices; }
+  YEAGER_NODISCARD WorldCharacterMatrices GetWorldMatrices() const { return mWorldMatrices; }
 
   using ConfigShaders = std::vector<
       std::pair<std::shared_ptr<Shader>, String>>;  // Big type name, better way of making functions declaration smaller
@@ -196,7 +186,7 @@ class ApplicationCore {
   /** 
     @brief Returns the configuration shaders been used by the application,  its a vector of pairs with shared_ptr<Shader> and a string represeting the name
   */
-  YEAGER_FORCE_INLINE ConfigShaders* GetConfigShaders() { return &m_ConfigShaders; }
+  YEAGER_FORCE_INLINE ConfigShaders* GetConfigShaders() { return &mConfigShaders; }
 
   /**
     @brief Shaders are loaded into the engine trough a configuration file, each one have a variable name associated with it. By giving the right variable name,
@@ -213,12 +203,12 @@ class ApplicationCore {
     @brief The arguments are evaluated during the startup of this class, the ProgramArguments struct holds the values set to each type of argument option
     For example, the option of forced entry in a project (quick way to bypass the launcher screen) holds if this options is turn on and which project to forced entry 
   */
-  YEAGER_NODISCARD ProgramArguments* GetArguments() { &m_Arguments; }
+  YEAGER_NODISCARD ProgramArguments* GetArguments() { &mArguments; }
 
   /**
     @brief Engine variables are mostly defined paths for configuration or serialization  to be used
   */
-  YEAGER_NODISCARD UsableVariables GetVariables() const { return m_EngineVariables; }
+  YEAGER_NODISCARD UsableVariables GetVariables() const { return mEngineVariables; }
 
   Uint GetReturnCode() { return mApplicationReturnCode; }
 
@@ -243,49 +233,49 @@ class ApplicationCore {
   void ProcessArgumentsDuringRender();
 
  private:
-  UsableVariables m_EngineVariables;
-  ProgramArguments m_Arguments;
-  TextRenderer m_CommonTextOnScreen;
+  UsableVariables mEngineVariables;
+  ProgramArguments mArguments;
+  TextRenderer mCommonTextOnScreen;
 
   using TimeElapsed = std::chrono::time_point<std::chrono::system_clock>;
-  TimeElapsed m_TimeElapsedSinceStart;
+  TimeElapsed mTimeElapsedSinceStart;
 
-  bool m_TimerHasStarted = false;
-  float m_DeltaTime = 0.0f;
-  float m_LastFrame = 0.0f;
-  float m_TimeBeforeRender = 0.0f;
-  long long m_FrameCurrentCount = 0;
+  bool mTimerHasStarted = false;
+  float mDeltaTime = 0.0f;
+  float mLastFrame = 0.0f;
+  float mTimeBeforeRender = 0.0f;
+  long long mFrameCurrentCount = 0;
 
   /**   
     @brief Every shader have a var name associated with it, so it can been called on the ShaderFromVar(var name) 
   */
-  ConfigShaders m_ConfigShaders;
-  std::vector<LoadedProjectHandle> m_LoadedProjectsHandles;
+  ConfigShaders mConfigShaders;
+  std::vector<LoadedProjectHandle> mLoadedProjectsHandles;
 
-  std::vector<String> m_AllArguments;
+  std::vector<String> mAllArguments;
 
   YEAGER_USING_SHARED_PTR
 
-  SharedPtr<physx::PxController> m_Controller = YEAGER_NULLPTR;
-  SharedPtr<Serialization> m_Serial = YEAGER_NULLPTR;
-  SharedPtr<Interface> m_Interface = YEAGER_NULLPTR;
-  SharedPtr<Input> m_Input = YEAGER_NULLPTR;
-  SharedPtr<Window> m_Window = YEAGER_NULLPTR;
-  SharedPtr<EditorExplorer> m_EditorExplorer = YEAGER_NULLPTR;
-  SharedPtr<BaseCamera> m_BaseCamera = YEAGER_NULLPTR;
-  SharedPtr<EditorCamera> m_EditorCamera = YEAGER_NULLPTR;
-  SharedPtr<RequestHandle> m_Request = YEAGER_NULLPTR;
-  SharedPtr<DefaultValues> m_Defaults = YEAGER_NULLPTR;
-  SharedPtr<AudioEngineHandle> m_AudioEngine = YEAGER_NULLPTR;
-  SharedPtr<Scene> m_Scene = YEAGER_NULLPTR;
-  SharedPtr<Launcher> m_Launcher = YEAGER_NULLPTR;
-  SharedPtr<PhysXHandle> m_PhysXHandle = YEAGER_NULLPTR;
-  SharedPtr<Settings> m_Settings = YEAGER_NULLPTR;
-  SharedPtr<AudioEngine> m_AudiosFromEngine = YEAGER_NULLPTR;
+  SharedPtr<physx::PxController> mController = YEAGER_NULLPTR;
+  SharedPtr<Serialization> mSerial = YEAGER_NULLPTR;
+  SharedPtr<Interface> mInterface = YEAGER_NULLPTR;
+  SharedPtr<Input> mInput = YEAGER_NULLPTR;
+  SharedPtr<Window> mWindow = YEAGER_NULLPTR;
+  SharedPtr<EditorExplorer> mEditorExplorer = YEAGER_NULLPTR;
+  SharedPtr<BaseCamera> mBaseCamera = YEAGER_NULLPTR;
+  SharedPtr<EditorCamera> mEditorCamera = YEAGER_NULLPTR;
+  SharedPtr<RequestHandle> mRequest = YEAGER_NULLPTR;
+  SharedPtr<DefaultValues> mDefaults = YEAGER_NULLPTR;
+  SharedPtr<AudioEngineHandle> mAudioEngine = YEAGER_NULLPTR;
+  SharedPtr<Scene> mScene = YEAGER_NULLPTR;
+  SharedPtr<Launcher> mLauncher = YEAGER_NULLPTR;
+  SharedPtr<PhysXHandle> mPhysXHandle = YEAGER_NULLPTR;
+  SharedPtr<Settings> mSettings = YEAGER_NULLPTR;
+  SharedPtr<AudioEngine> mAudiosFromEngine = YEAGER_NULLPTR;
 
-  WorldCharacterMatrices m_WorldMatrices;
-  ApplicationState::Enum m_CurrentState = ApplicationState::eAPPLICATION_RUNNING;
-  ApplicationMode::Enum m_CurrentMode = ApplicationMode::eAPPLICATION_LAUNCHER;
+  WorldCharacterMatrices mWorldMatrices;
+  ApplicationState::Enum mCurrentState = ApplicationState::eAPPLICATION_RUNNING;
+  ApplicationMode::Enum mCurrentMode = ApplicationMode::eAPPLICATION_LAUNCHER;
 
   Locale mCurrentLocale;
 

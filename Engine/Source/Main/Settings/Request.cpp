@@ -88,7 +88,7 @@ bool RequestHandle::HandleRebuildGLFWWindow()
     Yeager::Window* wnd = m_Application->GetWindow();
     Yeager::WindowInfo* info = wnd->GetWindowInformationPtr();
     bool success = true;
-    if (!wnd->RegenerateMainWindow(info->EditorSize.x, info->EditorSize.y, info->EditorTitle, info->CursorFunc))
+    if (!wnd->RegenerateMainWindow(UVector2(info->mEditorSize.x, info->mEditorSize.y), info->mEditorTitle))
       success = false;
     m_Application->GetInterface()->RequestRestartInterface(wnd);
 

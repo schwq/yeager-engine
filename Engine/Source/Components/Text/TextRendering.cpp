@@ -103,7 +103,7 @@ void TextRenderer::RenderText(Yeager::Shader* shader, const String& text, float 
                               const Vector3& color)
 {
 
-  const Vector2 size = m_Application->GetWindow()->GetWindowInformationPtr()->EditorSize;
+  const Vector2 size = m_Application->GetWindow()->GetWindowInformationPtr()->mEditorSize;
   const Matrix4 proj = glm::ortho(0.0f, size.x, 0.0f, size.y);
 
   shader->UseShader();

@@ -10,8 +10,8 @@ DefaultValues::DefaultValues(Yeager::ApplicationCore* application) : m_Applicati
 
 void DefaultValues::GenerateDefaults()
 {
-  m_DefaultTexture = std::make_shared<MaterialTexture2D>(EntityBuilder(m_Application, "Default_Scene_Texture"),
-                                                         MaterialTextureType::eDIFFUSE);
+  m_DefaultTexture = BaseAllocator::MakeSharedPtr<MaterialTexture2D>(
+      EntityBuilder(m_Application, "Default_Scene_Texture"), MaterialTextureType::eDIFFUSE);
   m_DefaultTexture->GenerateFromFile(GetPathFromShared("/Resources/Textures/Default/image.jpg").value());
 }
 

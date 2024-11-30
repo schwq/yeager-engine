@@ -352,7 +352,7 @@ void Serialization::SerializeScene(Yeager::Scene* scene, String path)
       ObjectPointLight light = obj->GetObjectPointLights()->at(x);
       out << YAML::BeginMap;
       SerializeBasicEntity(out, light.ObjSource->GetName(), light.ObjSource->GetEntityUUID(), "ObjectPointLight");
-      SerializeBasicObjectType(out, light.ObjSource);
+      SerializeBasicObjectType(out, light.ObjSource.get());
       /** Remember, this object point light, have a base class point light, which have a position variable, 
        * the object point light ONLY serialize the position of its engine object */
       SerializeObject(out, "Constant", light.Constant);
@@ -456,8 +456,8 @@ void Serialization::ReadSceneShadersConfig(String path)
         String fragment = shader["FragmentPath"].as<String>();
         String vertex = shader["VertexPath"].as<String>();
         String var = shader["VarName"].as<String>();
-        auto ps_shader = std::make_shared<Yeager::Shader>(GetPathFromShared(fragment).value().c_str(),
-                                                          GetPathFromShared(vertex).value().c_str(), name);
+        auto ps_shader = BaseAllocator::MakeSharedPtr<Yeager::Shader>(GetPathFromShared(fragment).value().c_str(),
+                                                                      GetPathFromShared(vertex).value().c_str(), name);
         ps_shader->SetVarName(var);
         std::pair<std::shared_ptr<Shader>, String> sh;
         sh.first = ps_shader;
@@ -575,7 +575,7 @@ YEAGER_FORCE_INLINE std::vector<std::shared_ptr<Transformation3D>> Serialization
   std::vector<std::shared_ptr<Transformation3D>> tr;
   YAML::Node props = entity["Props"];
   for (const auto& propertie : props) {
-    auto trans = std::make_shared<Transformation3D>(Vector3(0.0f), Vector3(0.0f), Vector3(0.0f));
+    auto trans = BaseAllocator::MakeSharedPtr<Transformation3D>(Vector3(0.0f), Vector3(0.0f), Vector3(0.0f));
     trans->position = propertie["Position"].as<Vector3>();
     trans->scale = propertie["Scale"].as<Vector3>();
     trans->rotation = propertie["Rotation"].as<Vector3>();
@@ -646,8 +646,8 @@ void Serialization::DeserializeSkybox(YAML::detail::iterator_value& entity, Yeag
     std::replace(p.begin(), p.end(), '/', '\\');
   path += p;
 
-  auto skybox = std::make_shared<Skybox>(EntityBuilder(m_Application, name, EntityObjectType::SKYBOX, uuid),
-                                         ObjectGeometryType::eCUSTOM);
+  auto skybox = BaseAllocator::MakeSharedPtr<Skybox>(EntityBuilder(m_Application, name, EntityObjectType::SKYBOX, uuid),
+                                                     ObjectGeometryType::eCUSTOM);
   skybox->BuildSkyboxFromImport(path, true);
   scene->SetSkybox(skybox);
 }
@@ -656,9 +656,9 @@ void Serialization::DeserializeAudioHandle(YAML::detail::iterator_value& entity,
                                            const String& name, const String& type, const uuids::uuid uuid)
 {
   String path = entity["Path"].as<String>();
-  auto audio =
-      std::make_shared<Yeager::AudioHandle>(EntityBuilder(m_Application, name, EntityObjectType::AUDIO_HANDLE, uuid),
-                                            path, m_Application->GetAudioEngineHandle(), false);
+  auto audio = BaseAllocator::MakeSharedPtr<Yeager::AudioHandle>(
+      EntityBuilder(m_Application, name, EntityObjectType::AUDIO_HANDLE, uuid), path,
+      m_Application->GetAudioEngineHandle(), false);
   scene->GetAudios()->push_back(audio);
 }
 
@@ -667,7 +667,7 @@ void Serialization::DeserializeAudio3DHandle(YAML::detail::iterator_value& entit
 {
   String path = entity["Path"].as<String>();
   Vector3 position = entity["Position"].as<Vector3>();
-  auto audio = std::make_shared<Yeager::Audio3DHandle>(
+  auto audio = BaseAllocator::MakeSharedPtr<Yeager::Audio3DHandle>(
       EntityBuilder(m_Application, name, EntityObjectType::AUDIO_3D_HANDLE, uuid), path,
       m_Application->GetAudioEngineHandle(), false, GLMVec3ToVec3df(position));
   scene->GetAudios3D()->push_back(audio);
@@ -680,12 +680,14 @@ void Serialization::DeserializeObject(YAML::detail::iterator_value& entity, Yeag
 
   String instancedType = entity["InstancedType"].as<String>();
   if (instancedType == "Instanced") {
-    obj = std::make_shared<Yeager::Object>(EntityBuilder(m_Application, name, EntityObjectType::OBJECT_INSTANCED, uuid),
-                                           entity["InstancedCount"].as<int>());
+    obj = BaseAllocator::MakeSharedPtr<Yeager::Object>(
+        EntityBuilder(m_Application, name, EntityObjectType::OBJECT_INSTANCED, uuid),
+        entity["InstancedCount"].as<int>());
     std::vector<std::shared_ptr<Transformation3D>> positions = DeserializeObjectProperties(entity);
     obj->BuildProps(positions, m_Application->ShaderFromVarName("SimpleInstanced"));
   } else {
-    obj = std::make_shared<Yeager::Object>(EntityBuilder(m_Application, name, EntityObjectType::OBJECT, uuid));
+    obj = BaseAllocator::MakeSharedPtr<Yeager::Object>(
+        EntityBuilder(m_Application, name, EntityObjectType::OBJECT, uuid));
   }
 
   // Gets transformation, and geometry of the object serialized
@@ -734,13 +736,13 @@ void Serialization::DeserializeAnimatedObject(YAML::detail::iterator_value& enti
   std::shared_ptr<Yeager::AnimatedObject> obj;
   String instancedType = entity["InstancedType"].as<String>();
   if (instancedType == "Instanced") {
-    obj = std::make_shared<Yeager::AnimatedObject>(
+    obj = BaseAllocator::MakeSharedPtr<Yeager::AnimatedObject>(
         EntityBuilder(m_Application, name, EntityObjectType::OBJECT_INSTANCED_ANIMATED, uuid),
         entity["InstancedCount"].as<int>());
     std::vector<std::shared_ptr<Transformation3D>> positions = DeserializeObjectProperties(entity);
     obj->BuildProps(positions, m_Application->ShaderFromVarName("SimpleInstanced"));
   } else {
-    obj = std::make_shared<Yeager::AnimatedObject>(
+    obj = BaseAllocator::MakeSharedPtr<Yeager::AnimatedObject>(
         EntityBuilder(m_Application, name, EntityObjectType::OBJECT_ANIMATED, uuid));
   }
 
@@ -780,7 +782,7 @@ void Serialization::DeserializeLightSource(YAML::detail::iterator_value& entity,
       Yeager::Log(WARNING, "Configuration file trying to push a uninitialized shader to the light source!");
     }
   }
-  auto obj = std::make_shared<Yeager::PhysicalLightHandle>(
+  auto obj = BaseAllocator::MakeSharedPtr<Yeager::PhysicalLightHandle>(
       EntityBuilder(m_Application, name, EntityObjectType::LIGHT_HANDLE, uuid), link_shader,
       m_Application->ShaderFromVarName(drawable_shader_var));
 
@@ -840,11 +842,11 @@ void Serialization::ReadEngineConfiguration(const String& path)
       launcherWindowWidth = 300;
     }
     conf->LauncherWindowSize.x = launcherWindowWidth;
-    wnd->LauncherSize.x = launcherWindowWidth;
+    wnd->mLauncherSize.x = launcherWindowWidth;
   } else {
     Yeager::LogDebug(WARNING, "YeagerLauncherWindowWidth not found in the configuration file: {}", path);
     conf->LauncherWindowSize.x = 800;
-    wnd->LauncherSize.x = 800;
+    wnd->mLauncherSize.x = 800;
   }
 
   if (node["YeagerLauncherWindowHeight"]) {
@@ -853,11 +855,11 @@ void Serialization::ReadEngineConfiguration(const String& path)
       launcherWindowHeight = 300;
     }
     conf->LauncherWindowSize.y = launcherWindowHeight;
-    wnd->LauncherSize.y = launcherWindowHeight;
+    wnd->mLauncherSize.y = launcherWindowHeight;
   } else {
     Yeager::LogDebug(WARNING, "YeagerLauncherWindowHeight not found in the configuration file: {}", path);
     conf->LauncherWindowSize.y = 800;
-    wnd->LauncherSize.y = 800;
+    wnd->mLauncherSize.y = 800;
   }
 
   if (node["YeagerEditorWindowWidth"]) {
@@ -866,11 +868,11 @@ void Serialization::ReadEngineConfiguration(const String& path)
       editorWindowWidth = 800;
     }
     conf->EditorWindowSize.x = editorWindowWidth;
-    wnd->EditorSize.x = editorWindowWidth;
+    wnd->mEditorSize.x = editorWindowWidth;
   } else {
     Yeager::LogDebug(WARNING, "YeagerEditorWindowWidth not found in the configuration file: {}", path);
     conf->EditorWindowSize.x = 1920;
-    wnd->EditorSize.x = 1920;
+    wnd->mEditorSize.x = 1920;
   }
 
   if (node["YeagerEditorWindowHeight"]) {
@@ -879,22 +881,22 @@ void Serialization::ReadEngineConfiguration(const String& path)
       editorWindowHeight = 800;
     }
     conf->EditorWindowSize.y = editorWindowHeight;
-    wnd->EditorSize.y = editorWindowHeight;
+    wnd->mEditorSize.y = editorWindowHeight;
   } else {
     Yeager::LogDebug(WARNING, "YeagerEditorWindowHeight not found in the configuration file: {}", path);
     conf->EditorWindowSize.y = 1080;
-    wnd->EditorSize.y = 1080;
+    wnd->mEditorSize.y = 1080;
   }
 
   // TODO: Security measures here to avoid the window position to be out of the montior borders !!
   if (node["YeagerWindowPositionWidth"]) {
     Uint windowPositionWidth = node["YeagerWindowPositionWidth"].as<Uint>();
-    wnd->WindowPosition.x = windowPositionWidth;
+    wnd->mWindowPosition.x = windowPositionWidth;
   }
 
   if (node["YeagerWindowPositionHeight"]) {
     Uint windowPositionHeight = node["YeagerWindowPositionHeight"].as<Uint>();
-    wnd->WindowPosition.y = windowPositionHeight;
+    wnd->mWindowPosition.y = windowPositionHeight;
   }
 }
 
@@ -903,20 +905,20 @@ void Serialization::WriteEngineConfiguration(const String& path)
   YAML::Emitter out;
   out << YAML::BeginMap;
   WindowInfo* info = m_Application->GetWindow()->GetWindowInformationPtr();
-  SerializeObject(out, "YeagerLauncherWindowWidth", info->LauncherSize.x);
-  SerializeObject(out, "YeagerLauncherWindowHeight", info->LauncherSize.y);
-  SerializeObject(out, "YeagerEditorWindowWidth", info->EditorSize.x);
-  SerializeObject(out, "YeagerEditorWindowHeight", info->EditorSize.y);
+  SerializeObject(out, "YeagerLauncherWindowWidth", info->mLauncherSize.x);
+  SerializeObject(out, "YeagerLauncherWindowHeight", info->mLauncherSize.y);
+  SerializeObject(out, "YeagerEditorWindowWidth", info->mEditorSize.x);
+  SerializeObject(out, "YeagerEditorWindowHeight", info->mEditorSize.y);
 
-  if (info->WindowPosition.x < 0)
-    info->WindowPosition.x = -info->WindowPosition.x;
+  if (info->mWindowPosition.x < 0)
+    info->mWindowPosition.x = -info->mWindowPosition.x;
 
-  if (info->WindowPosition.y < 0)
-    info->WindowPosition.y = -info->WindowPosition.y;
+  if (info->mWindowPosition.y < 0)
+    info->mWindowPosition.y = -info->mWindowPosition.y;
 
-  SerializeObject(out, "YeagerWindowPositionWidth", info->WindowPosition.x);
+  SerializeObject(out, "YeagerWindowPositionWidth", info->mWindowPosition.x);
 
-  SerializeObject(out, "YeagerWindowPositionHeight", info->WindowPosition.y);
+  SerializeObject(out, "YeagerWindowPositionHeight", info->mWindowPosition.y);
   out << YAML::EndMap;
 
   Yeager::CreateFileAndWrites(path, out.c_str());
@@ -927,9 +929,9 @@ void Serialization::ReadLoadedProjectsHandles(String externalFolder)
   YAML::Node node = YAML::LoadFile(externalFolder + YG_PS + "LoadedProjectsPath.yml");
   for (const auto& project : node["ProjectsLoaded"]) {
     LoadedProjectHandle handle;
-    handle.ProjectName = project["ProjectName"].as<String>();
-    handle.ProjectFolderPath = project["ProjectFolderPath"].as<String>();
-    handle.ProjectConfigurationPath = project["ProjectConfigurationPath"].as<String>();
+    handle.mProjectName = project["ProjectName"].as<String>();
+    handle.mProjectFolderPath = project["ProjectFolderPath"].as<String>();
+    handle.mProjectConfigurationPath = project["ProjectConfigurationPath"].as<String>();
     m_Application->GetLoadedProjectsHandles()->push_back(handle);
   }
 }
@@ -941,9 +943,9 @@ void Serialization::WriteLoadedProjectsHandles(String externalFolder)
   out << YAML::Key << "ProjectsLoaded" << YAML::Value << YAML::BeginSeq;
   for (const auto& project : *m_Application->GetLoadedProjectsHandles()) {
     out << YAML::BeginMap;
-    out << YAML::Key << "ProjectName" << YAML::Value << project.ProjectName;
-    out << YAML::Key << "ProjectFolderPath" << YAML::Value << project.ProjectFolderPath;
-    out << YAML::Key << "ProjectConfigurationPath" << YAML::Value << project.ProjectConfigurationPath;
+    out << YAML::Key << "ProjectName" << YAML::Value << project.mProjectName;
+    out << YAML::Key << "ProjectFolderPath" << YAML::Value << project.mProjectFolderPath;
+    out << YAML::Key << "ProjectConfigurationPath" << YAML::Value << project.mProjectConfigurationPath;
     out << YAML::EndMap;
   }
   out << YAML::EndSeq;

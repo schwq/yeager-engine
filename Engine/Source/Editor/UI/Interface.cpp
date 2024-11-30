@@ -197,7 +197,7 @@ bool Interface::FindProjectHandleInApplicationAndDelete(String path)
 {
   for (Uint index = 0; index < m_Application->GetLoadedProjectsHandles()->size(); index++) {
     Yeager::LoadedProjectHandle* project = &m_Application->GetLoadedProjectsHandles()->at(index);
-    if (project->ProjectFolderPath == path) {
+    if (project->mProjectFolderPath == path) {
       m_Application->GetLoadedProjectsHandles()->erase(m_Application->GetLoadedProjectsHandles()->begin() + index);
       return true;
     }
@@ -331,12 +331,14 @@ void Interface::LaunchImGui(Window* window)
   m_imgui_io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Keyboard Controls
 
   if (GetPathFromLocal("/Configuration/Interface/imgui.ini").has_value()) {
-    m_ImGuiConfigurationPath = std::make_shared<String>(GetPathFromLocal("/Configuration/Interface/imgui.ini").value());
+    m_ImGuiConfigurationPath =
+        BaseAllocator::MakeSharedPtr<String>(GetPathFromLocal("/Configuration/Interface/imgui.ini").value());
     m_imgui_io.IniFilename = m_ImGuiConfigurationPath->c_str();
     LoadIniSettingsFromDisk(m_ImGuiConfigurationPath->c_str());
   } else {
-    m_ImGuiConfigurationPath =
-        std::make_shared<String>(GetPathFromSourceCode("/Assets/Configuration/Editor/Public/Interface/imgui.ini"));
+    // TODO: This is dangeous!
+    m_ImGuiConfigurationPath = BaseAllocator::MakeSharedPtr<String>(
+        GetPathFromSourceCode("/Assets/Configuration/Editor/Public/Interface/imgui.ini"));
     m_imgui_io.IniFilename = m_ImGuiConfigurationPath->c_str();
   }
 
@@ -347,11 +349,13 @@ void Interface::LaunchImGui(Window* window)
 
 void Interface::RequestRestartInterface(Window* window)
 {
+  /*
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
 
   ImGui_ImplGlfw_InitForOpenGL(window->GetGLFWwindow(), true);
   ImGui_ImplOpenGL3_Init(YEAGER_IMGUI_OPENGL_VERSION);
+  */
 }
 
 void Interface::CreateImGuiContext()
@@ -757,9 +761,9 @@ void Interface::NewProjectWindow(Yeager::Launcher* launcher, InterfaceButton& bu
         launcher->SetUserHasSelect(true);
         launcher->SetNewProjectLoaded(true);
         LoadedProjectHandle handle;
-        handle.ProjectName = m_NewProjectHandle->m_Name;
-        handle.ProjectFolderPath = m_NewProjectHandle->m_ProjectFolderPath;
-        handle.ProjectConfigurationPath = m_NewProjectHandle->m_ProjectConfigurationPath;
+        handle.mProjectName = m_NewProjectHandle->m_Name;
+        handle.mProjectFolderPath = m_NewProjectHandle->m_ProjectFolderPath;
+        handle.mProjectConfigurationPath = m_NewProjectHandle->m_ProjectConfigurationPath;
         m_Application->GetLoadedProjectsHandles()->push_back(handle);
         delete m_NewProjectHandle;
       }
@@ -888,14 +892,14 @@ bool Interface::RenderLauncher(Yeager::Launcher* launcher)
 
   Yeager::WindowInfo* wnd = m_Application->GetWindow()->GetWindowInformationPtr();
   Yeager::InterfaceWindow open_project_window(m_Application, "Open Project", ImVec2(1000, 400),
-                                              ImVec2(wnd->LauncherSize.x / 2, wnd->LauncherSize.y / 2), true,
+                                              ImVec2(wnd->mLauncherSize.x / 2, wnd->mLauncherSize.y / 2), true,
                                               Yeager::WindowRelativePos::MIDDLE);
   Yeager::InterfaceWindow new_project_window(m_Application, "Create New Project", ImVec2(1000, 400),
-                                             ImVec2(wnd->LauncherSize.x / 2, wnd->LauncherSize.y / 2), true,
+                                             ImVec2(wnd->mLauncherSize.x / 2, wnd->mLauncherSize.y / 2), true,
                                              Yeager::WindowRelativePos::MIDDLE);
 
   Yeager::InterfaceWindow settings_window(m_Application, "Launcher Settings", ImVec2(1000, 400),
-                                          ImVec2(wnd->LauncherSize.x / 2, wnd->LauncherSize.y / 2), true,
+                                          ImVec2(wnd->mLauncherSize.x / 2, wnd->mLauncherSize.y / 2), true,
                                           Yeager::WindowRelativePos::MIDDLE);
 
   const Vector2 windowSize = m_Application->GetWindow()->GetWindowSize();
@@ -1117,12 +1121,12 @@ void Interface::RenderDebugger()
   InputVector3(locale.Translate("Debug.Dev.OpenGL.Clear.Color.Txt").c_str(), &m_OpenGLDebugClearScreenColor);
 
   WindowInfo* wnd = m_Application->GetWindow()->GetWindowInformationPtr();
-  Text("%s: x: %f y: %f", locale.Translate("Debug.Dev.Wnd.Editor.Size.Txt").c_str(), wnd->EditorSize.x,
-       wnd->EditorSize.y);
-  Text("%s: x: %f y: %f", locale.Translate("Debug.Dev.Wnd.Launcher.Size.Txt").c_str(), wnd->LauncherSize.x,
-       wnd->LauncherSize.y);
-  Text("%s: x: %f y: %f", locale.Translate("Debug.Dev.Wnd.Framebuffer.Size.Txt").c_str(), wnd->FrameBufferSize.x,
-       wnd->FrameBufferSize.y);
+  Text("%s: x: %f y: %f", locale.Translate("Debug.Dev.Wnd.Editor.Size.Txt").c_str(), wnd->mEditorSize.x,
+       wnd->mEditorSize.y);
+  Text("%s: x: %f y: %f", locale.Translate("Debug.Dev.Wnd.Launcher.Size.Txt").c_str(), wnd->mLauncherSize.x,
+       wnd->mLauncherSize.y);
+  Text("%s: x: %f y: %f", locale.Translate("Debug.Dev.Wnd.Framebuffer.Size.Txt").c_str(), wnd->mFrameBufferSize.x,
+       wnd->mFrameBufferSize.y);
 
   if (CollapsingHeader(locale.Translate("Debug.Dev.Engine.Sounds.Test.Txt").c_str())) {
     for (const auto& sound : *m_Application->GetAudioFromEngine()->GetSounds()) {

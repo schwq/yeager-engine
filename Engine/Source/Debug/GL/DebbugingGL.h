@@ -22,43 +22,8 @@
 #include "Common/Utils/LogEngine.h"
 #include "Common/Utils/Utilities.h"
 
-#include "Connection.h"
-
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <unistd.h>
-
 namespace Yeager {
 
-struct NetworkCommunicationRole {
-  enum Enum { SERVER, CLIENT, UNDEFINED };
-};
-
-class NetworkSocket {
- public:
-  NetworkSocket();
-  NetworkSocket(const String& ip, int port);
-  ~NetworkSocket();
-
-  void Initialize(const String& ip = YEAGER_DEFAULT_IP_ADDR, int port = YEAGER_DEFAULT_NET_PORT);
-  void Send(const String& message);
-
-  void Send(const std::vector<unsigned int>& vec);
-  String Receive();
-
- private:
-  int mClient = -1;
-  const int mMessageSizeLenght = 16;
-  bool bConnected = false;
-};
-
-struct NetworkStartupConnection {
-  void Start() { mSocket.Initialize(mIpAddr, mPort); }
-  bool bActivated = false;
-  String mIpAddr = YEAGER_DEFAULT_IP_ADDR;
-  Uint mPort = YEAGER_DEFAULT_NET_PORT;
-  Yeager::NetworkCommunicationRole::Enum mRole = NetworkCommunicationRole::UNDEFINED;
-  Yeager::NetworkSocket mSocket = NetworkSocket();
-};
-
-}  // namespace Yeager
+void GLAPIENTRY GLMessageDebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei lenght,
+                                       const GLchar* message, const void* userParam);
+}

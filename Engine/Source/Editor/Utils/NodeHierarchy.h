@@ -52,13 +52,7 @@ class NodeComponent {
   // copy assignment
   Yeager::NodeComponent& operator=(const Yeager::NodeComponent& other);
 
-  std::shared_ptr<NodeComponent> GetParent()
-  {
-    if (!m_IsRoot)
-      return m_Parent;
-    return std::make_shared<NodeComponent>(*this);
-  }
-
+  std::shared_ptr<NodeComponent> GetParent();
   /* Just for the non root nodes */
   Yeager::EditorEntity* GetEntity();
 

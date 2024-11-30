@@ -9,7 +9,8 @@ Skybox::Skybox(const EntityBuilder& builder, ObjectGeometryType::Enum type)
       m_Geometry(type)
 {
   Yeager::Log(INFO, "Loading skybox {}", mName);
-  m_Texture = std::make_shared<MaterialTexture2D>(EntityBuilder(mApplication, mName), MaterialTextureType::eDIFFUSE);
+  m_Texture = BaseAllocator::MakeSharedPtr<MaterialTexture2D>(EntityBuilder(mApplication, mName),
+                                                              MaterialTextureType::eDIFFUSE);
 }
 
 bool Skybox::BuildSkyboxFromImport(String path, bool flip)

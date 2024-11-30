@@ -84,7 +84,7 @@ std::optional<Yeager::LauncherProjectPicker> ProgramArguments::SearchForcedEntry
       GetPathFromLocal("/Configuration/Projects/LoadedProjectsPath.yml").value(), application);
 
   for (const auto& proj : projects) {
-    if (proj.Name == ForcedEntry.ProjectName) {
+    if (proj.Name == mForcedEntry.mProjectName) {
       LauncherProjectPicker project(proj);
       return project;
     }
@@ -93,34 +93,34 @@ std::optional<Yeager::LauncherProjectPicker> ProgramArguments::SearchForcedEntry
 }
 
 ApplicationCore::ApplicationCore(int argc, char* argv[])
-    : m_Serial(std::make_shared<Serialization>(this)),
-      m_Scene(std::make_shared<Scene>(this)),
-      m_Window(std::make_shared<Window>(this)),
-      m_CommonTextOnScreen(this),
+    : mSerial(BaseAllocator::MakeSharedPtr<Serialization>(this)),
+      mScene(BaseAllocator::MakeSharedPtr<Scene>(this)),
+      mWindow(BaseAllocator::MakeSharedPtr<Window>(this)),
+      mCommonTextOnScreen(this),
       mCurrentLocale(this, ELanguangeRegion::EN_US, true)
 {
   InitializeRandomGenerator();
   ProcessArguments(argc, argv);
   ValidatesExternalEngineFolder();
-  m_Serial->ReadLoadedProjectsHandles(GetPathFromLocal("/Configuration/Projects").value());
+  mSerial->ReadLoadedProjectsHandles(GetPathFromLocal("/Configuration/Projects").value());
   Setup();
 }
 
 std::optional<const String> ApplicationCore::AcessableArgumentArray(Uint index)
 {
-  if (index > m_AllArguments.size())
+  if (index > mAllArguments.size())
     return std::nullopt;
-  return m_AllArguments.at(index);
+  return mAllArguments.at(index);
 }
 
 void ApplicationCore::ProcessArguments(int argc, char* argv[])
 {
 
   if (argc > 1) {
-    m_AllArguments.assign(argv + 1, argv + argc);
+    mAllArguments.assign(argv + 1, argv + argc);
 
     Uint index = 0;
-    while (index < m_AllArguments.size()) {
+    while (index < mAllArguments.size()) {
       std::optional<const String> arg = AcessableArgumentArray(index);
       if (!arg.has_value()) {
         Yeager::Log(ERROR, "Cannot process arguments properly, trying to access array from undefined index!");
@@ -140,8 +140,8 @@ Uint ApplicationCore::IterateArguments(const String& arg, Uint index)
         Yeager::Log(ERROR, "Cannot process arguments properly, trying to access array from undefined index!");
         return 1;
       }
-      m_Arguments.ForcedEntry.Activated = true;
-      m_Arguments.ForcedEntry.ProjectName = entry.value();
+      mArguments.mForcedEntry.bActivated = true;
+      mArguments.mForcedEntry.mProjectName = entry.value();
       return 2;
     }
     case StringToInterger("-DebugTitleString"): {
@@ -152,15 +152,15 @@ Uint ApplicationCore::IterateArguments(const String& arg, Uint index)
         return 1;
       }
 
-      m_Arguments.DebugTitle.Activated = true;
-      m_Arguments.DebugTitle.Title = title.value();
+      mArguments.mDebugTitle.bActivated = true;
+      mArguments.mDebugTitle.mTitle = title.value();
       return 2;
     }
     case StringToInterger("-DebugVirtualMachine"): {
       std::optional<const String> vm = AcessableArgumentArray(index + 1);
       if (vm.has_value() && vm.value() == "valgrind") {
         Yeager::Log(INFO, "Current debugging virtual machine is set to VALGRIND!");
-        m_Arguments.VirtualMachine.Activated = true;
+        mArguments.mVirtualMachine.bActivated = true;
         return 2;
       }
       Yeager::Log(ERROR, "Cannot process arguments properly, trying to access array from undefined index!");
@@ -177,13 +177,13 @@ Uint ApplicationCore::IterateArguments(const String& arg, Uint index)
       std::optional<const String> ip = AcessableArgumentArray(index + 2);
       std::optional<const String> port = AcessableArgumentArray(index + 3);
       if (role.has_value() && ip.has_value() && port.has_value()) {
-        m_Arguments.StartupNetwork.IpAddr = ip.value();
-        m_Arguments.StartupNetwork.Port = std::stoi(port.value());
-        m_Arguments.StartupNetwork.Role = NetworkCommunicationRole::CLIENT;
-        m_Arguments.StartupNetwork.Start();
-        m_Arguments.StartupNetwork.Socket.Send("Hello from Yeager Engine!");
+        mArguments.mStartupNetwork.mIpAddr = ip.value();
+        mArguments.mStartupNetwork.mPort = std::stoi(port.value());
+        mArguments.mStartupNetwork.mRole = NetworkCommunicationRole::CLIENT;
+        mArguments.mStartupNetwork.Start();
+        mArguments.mStartupNetwork.mSocket.Send("Hello from Yeager Engine!");
         std::vector<unsigned int> v = {1, 2, 3, 4, 5};
-        m_Arguments.StartupNetwork.Socket.Send(v);
+        mArguments.mStartupNetwork.mSocket.Send(v);
         return 4;
       }
       return 1;
@@ -201,31 +201,31 @@ void ApplicationCore::ValidatesExternalEngineFolder() {}
 std::optional<LauncherProjectPicker> ApplicationCore::RequestLauncher()
 {
   String title = "Yeager Launcher";
-  if (m_Arguments.DebugTitle.Activated) {
-    title += " " + m_Arguments.DebugTitle.Title;
+  if (mArguments.mDebugTitle.bActivated) {
+    title += " " + mArguments.mDebugTitle.mTitle;
   }
 
-  const ImVec2 launcherWindowSize = m_Settings->GetEngineConfiguration()->LauncherWindowSize;
-  m_Window->GetWindowInformationPtr()->LauncherSize = Vector2(launcherWindowSize.x, launcherWindowSize.y);
-  m_Launcher = std::make_shared<Yeager::Launcher>(launcherWindowSize.x, launcherWindowSize.y, title, this);
+  const ImVec2 launcherWindowSize = mSettings->GetEngineConfiguration()->LauncherWindowSize;
+  mWindow->GetWindowInformationPtr()->mLauncherSize = Vector2(launcherWindowSize.x, launcherWindowSize.y);
+  mLauncher = BaseAllocator::MakeSharedPtr<Yeager::Launcher>(launcherWindowSize.x, launcherWindowSize.y, title, this);
 
-  if (m_Arguments.ForcedEntry.Activated) {
-    std::optional<Yeager::LauncherProjectPicker> project = m_Arguments.SearchForcedEntryProject(this);
+  if (mArguments.mForcedEntry.bActivated) {
+    std::optional<Yeager::LauncherProjectPicker> project = mArguments.SearchForcedEntryProject(this);
     if (project.has_value()) {
-      m_Interface->SetSceneFileText(Yeager::FileContentToString(project.value().m_ProjectConfigurationPath));
+      mInterface->SetSceneFileText(Yeager::FileContentToString(project.value().m_ProjectConfigurationPath));
       return project.value();
     }
-    Yeager::Log(ERROR, "Cannot find project in configuration file: {}", m_Arguments.ForcedEntry.ProjectName);
+    Yeager::Log(ERROR, "Cannot find project in configuration file: {}", mArguments.mForcedEntry.mProjectName);
   }
 
-  m_Launcher->Render();
+  mLauncher->Render();
 
   if (ShouldRender()) {
     // The user have not decided to exit the program during the launcher phase
-    return m_Launcher->GetSelectedProject();
+    return mLauncher->GetSelectedProject();
   } else {
     // The user have requested a exit program, it returns a "fake" project with the (UserWantToExit) variable set to true
-    m_Launcher->GetSelectedProjectPtr()->UserWantToExit = true;
+    mLauncher->GetSelectedProjectPtr()->UserWantToExit = true;
     return std::nullopt;
   }
 }
@@ -235,51 +235,51 @@ String ApplicationCore::RequestWindowEngineName(const LauncherProjectPicker& pro
   String scene_renderer_str = Yeager::SceneRendererToString(project.m_SceneRenderer);
   std::replace(scene_renderer_str.begin(), scene_renderer_str.end(), '_', ' ');
   String engine_new_name = "Yeager Engine : " + project.m_Name + " / " + scene_renderer_str;
-  if (m_Arguments.DebugTitle.Activated)
-    engine_new_name += " " + m_Arguments.DebugTitle.Title;
+  if (mArguments.mDebugTitle.bActivated)
+    engine_new_name += " " + mArguments.mDebugTitle.mTitle;
   return engine_new_name;
 }
 
 void ApplicationCore::BuildApplicationCoreCompoments()
 {
-  m_Settings = std::make_shared<Settings>(this);
-  m_Request = std::make_shared<RequestHandle>(this);
-  m_Input = std::make_shared<Input>(this);
+  mSettings = BaseAllocator::MakeSharedPtr<Settings>(this);
+  mRequest = BaseAllocator::MakeSharedPtr<RequestHandle>(this);
+  mInput = BaseAllocator::MakeSharedPtr<Input>(this);
 
-  m_Serial->ReadEngineConfiguration(GetPathFromLocal("/Configuration/Variables/EngineConfiguration.yml").value());
+  mSerial->ReadEngineConfiguration(GetPathFromLocal("/Configuration/Variables/EngineConfiguration.yml").value());
 
-  m_Window->GenerateWindow("Yeager Engine", m_Input->MouseCallback, YEAGER_GENERATE_LAUNCHER_WINDOW);
-  m_Input->InitializeCallbacks();
-  m_AudioEngine = std::make_shared<AudioEngineHandle>();
-  m_AudioEngine->InitAudioEngine();
-  m_AudiosFromEngine = std::make_shared<AudioEngine>(this, m_AudioEngine.get());
-  m_Serial->ReadEditorSoundsConfiguration(GetPathFromShared("/Configuration/Theme/Sound/EditorSounds.yml").value());
+  mWindow->GenerateWindow("Yeager Engine", mInput->MouseCallback, YEAGER_GENERATE_LAUNCHER_WINDOW);
+  mInput->InitializeCallbacks();
+  mAudioEngine = BaseAllocator::MakeSharedPtr<AudioEngineHandle>();
+  mAudioEngine->InitAudioEngine();
+  mAudiosFromEngine = BaseAllocator::MakeSharedPtr<AudioEngine>(this, mAudioEngine.get());
+  mSerial->ReadEditorSoundsConfiguration(GetPathFromShared("/Configuration/Theme/Sound/EditorSounds.yml").value());
   CheckGLADIntegrity();
 
-  m_Defaults = std::make_shared<DefaultValues>(this);
-  m_Interface = std::make_shared<Interface>(m_Window.get(), this);
+  mDefaults = BaseAllocator::MakeSharedPtr<DefaultValues>(this);
+  mInterface = BaseAllocator::MakeSharedPtr<Interface>(mWindow.get(), this);
   SetupCamera();
-  m_EditorExplorer = std::make_shared<EditorExplorer>(this);
-  m_PhysXHandle = std::make_shared<PhysXHandle>(this);
-  if (!m_PhysXHandle->InitPxEngine()) {
+  mEditorExplorer = BaseAllocator::MakeSharedPtr<EditorExplorer>(this);
+  mPhysXHandle = BaseAllocator::MakeSharedPtr<PhysXHandle>(this);
+  if (!mPhysXHandle->InitPxEngine()) {
     Yeager::Log(ERROR, "PhysX cannot initialize correctly, something must went wrong!");
   }
-  m_CommonTextOnScreen.Initialize();
-  m_CommonTextOnScreen.LoadFont(GetPathFromShared("/Resources/Fonts/Editor/firacode.ttf").value(), 48);
+  mCommonTextOnScreen.Initialize();
+  mCommonTextOnScreen.LoadFont(GetPathFromShared("/Resources/Fonts/Editor/firacode.ttf").value(), 48);
 }
 
 void ApplicationCore::SetupCamera()
 {
-  m_EditorCamera = std::make_shared<EditorCamera>(EntityBuilder(this));
-  m_BaseCamera = std::make_shared<BaseCamera>(EntityBuilder(this));
-  m_BaseCamera = static_cast<std::shared_ptr<BaseCamera>>(m_EditorCamera);
+  mEditorCamera = BaseAllocator::MakeSharedPtr<EditorCamera>(EntityBuilder(this));
+  mBaseCamera = BaseAllocator::MakeSharedPtr<BaseCamera>(EntityBuilder(this));
+  mBaseCamera = static_cast<std::shared_ptr<BaseCamera>>(mEditorCamera);
 }
 
 void ApplicationCore::UpdateCamera()
 {
-  if (m_BaseCamera->GetCameraType() == YgCameraType::eCAMERA_PLAYER) {
-    PlayerCamera* camera = static_cast<PlayerCamera*>(m_BaseCamera.get());
-    camera->Update(m_DeltaTime);
+  if (mBaseCamera->GetCameraType() == YgCameraType::eCAMERA_PLAYER) {
+    PlayerCamera* camera = static_cast<PlayerCamera*>(mBaseCamera.get());
+    camera->Update(mDeltaTime);
   }
 }
 
@@ -291,104 +291,102 @@ void ApplicationCore::Setup()
 
   if (project.has_value()) {
 
-    m_CurrentMode = ApplicationMode::eAPPLICATION_EDITOR;
-    m_Window->RegenerateMainWindow(m_Window->GetWindowInformationPtr()->EditorSize.x,
-                                   m_Window->GetWindowInformationPtr()->EditorSize.y,
-                                   RequestWindowEngineName(project.value()), m_Input->MouseCallback);
-    m_Input->InitializeCallbacks();
-    m_Interface->RequestRestartInterface(m_Window.get());
+    mCurrentMode = ApplicationMode::eAPPLICATION_EDITOR;
+
+    UVector2 wndSz(mWindow->GetWindowInformationPtr()->mEditorSize.x,
+                   mWindow->GetWindowInformationPtr()->mEditorSize.y);
+
+    mWindow->RegenerateMainWindow(wndSz, RequestWindowEngineName(project.value()));
 
     PrepareSceneToLoad(project.value());
 
   } else {
-    m_AudioEngine->TerminateAudioEngine();
-    m_Serial->WriteEngineConfiguration(GetPathFromLocal("/Configuration/Variables/EngineConfiguration.yml").value());
+    mAudioEngine->TerminateAudioEngine();
+    mSerial->WriteEngineConfiguration(GetPathFromLocal("/Configuration/Variables/EngineConfiguration.yml").value());
   }
 }
 
 void ApplicationCore::PrepareSceneToLoad(const LauncherProjectPicker& project)
 {
-  m_Scene->BuildScene(project);
-  m_Serial->ReadSceneShadersConfig(GetPathFromShared("/Configuration/Shader/default_shaders.yaml").value());
-  m_Launcher->GetNewProjectLoaded()
-      ? m_Scene->Save()
-      : m_Scene->Load(project.m_ProjectConfigurationPath);  // Check if project is new or already exists
+  mScene->BuildScene(project);
+  mSerial->ReadSceneShadersConfig(GetPathFromShared("/Configuration/Shader/DefaultShaders.yaml").value());
+  mLauncher->GetNewProjectLoaded()
+      ? mScene->Save()
+      : mScene->Load(project.m_ProjectConfigurationPath);  // Check if project is new or already exists
 }
 
 bool ApplicationCore::ShouldRender()
 {
-  return (glfwWindowShouldClose(m_Window->GetGLFWwindow())) ? false : true;
+  return (glfwWindowShouldClose(mWindow->GetGLFWwindow())) ? false : true;
 }
 
 ApplicationCore::~ApplicationCore()
 {
-  m_Serial->WriteLoadedProjectsHandles(GetPathFromLocal("/Configuration/Projects").value());
-  m_Serial.reset();
+  mSerial->WriteLoadedProjectsHandles(GetPathFromLocal("/Configuration/Projects").value());
 
-  m_BaseCamera = YEAGER_NULLPTR;
-  m_BaseCamera.reset();
-  m_EditorCamera.reset();
-
-  m_EditorExplorer.reset();
-  m_AudioEngine.reset();
-  m_Scene.reset();
-  m_Defaults.reset();
-  m_Interface.reset();
-  m_Input.reset();
-  m_Window.reset();
-  m_Settings.reset();
+  mSerial.reset();
+  mBaseCamera.reset();
+  mEditorCamera.reset();
+  mEditorExplorer.reset();
+  mAudioEngine.reset();
+  mScene.reset();
+  mDefaults.reset();
+  mInterface.reset();
+  mInput.reset();
+  mWindow.reset();
+  mSettings.reset();
 }
 
 void ApplicationCore::UpdateDeltaTime()
 {
-  m_FrameCurrentCount++;
+  mFrameCurrentCount++;
   const auto currentFrame = static_cast<float>(glfwGetTime());
-  m_DeltaTime = currentFrame - m_LastFrame;
-  m_LastFrame = currentFrame;
+  mDeltaTime = currentFrame - mLastFrame;
+  mLastFrame = currentFrame;
 }
 
 void ApplicationCore::UpdateWorldMatrices()
 {
-  if (m_Settings->GetVideoSettingsStruct().WindowObeysAspectRatio) {
-    const float aspect = AspectRatio::ToValue(m_Settings->GetVideoSettingsStruct().WindowDesireAspectRatio);
-    m_WorldMatrices.Projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 1000.0f);
+  if (mSettings->GetVideoSettingsStruct().WindowObeysAspectRatio) {
+    const float aspect = AspectRatio::ToValue(mSettings->GetVideoSettingsStruct().WindowDesireAspectRatio);
+    mWorldMatrices.mProjection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 1000.0f);
   } else {
-    const Vector2 windowSize = m_Window->GetWindowInformationPtr()->EditorSize;
-    m_WorldMatrices.Projection = glm::perspective(glm::radians(45.0f), windowSize.x / windowSize.y, 0.1f, 1000.0f);
+    const Vector2 windowSize = mWindow->GetWindowInformationPtr()->mEditorSize;
+    mWorldMatrices.mProjection = glm::perspective(glm::radians(45.0f), windowSize.x / windowSize.y, 0.1f, 1000.0f);
   }
-  m_WorldMatrices.View = GetCamera()->ReturnViewMatrix();
-  m_WorldMatrices.ViewerPos = GetCamera()->GetPosition();
+  mWorldMatrices.mView = GetCamera()->ReturnViewMatrix();
+  mWorldMatrices.mViewerPos = GetCamera()->GetPosition();
 }
 
 void ApplicationCore::UpdateListenerPosition()
 {
-  const irrklang::vec3df cameraPos = Yeager::GLMVec3ToVec3df(m_WorldMatrices.ViewerPos);
+  const irrklang::vec3df cameraPos = Yeager::GLMVec3ToVec3df(mWorldMatrices.mViewerPos);
   const irrklang::vec3df cameraDir = Yeager::GLMVec3ToVec3df(GetCamera()->GetDirection());
-  m_AudioEngine->SetListernerPos(cameraPos, cameraDir, irrklang::vec3df(0.0f, 0.0f, 0.0f),
-                                 irrklang::vec3df(0.0f, 1.0f, 0.0f));
+  mAudioEngine->SetListernerPos(cameraPos, cameraDir, irrklang::vec3df(0.0f, 0.0f, 0.0f),
+                                irrklang::vec3df(0.0f, 1.0f, 0.0f));
 }
 
 void ApplicationCore::ShowCommonTextOnScreen()
 {
-  if (m_Scene->GetThreadAnimatedImporters()->size() + m_Scene->GetThreadImporters()->size() > 0) {
-    m_CommonTextOnScreen.RenderText(ShaderFromVarName("Font2D"), "Loading Assets", 0, 100,
-                                    m_Settings->GetInterfaceSettingsStruct().GlobalOnScreenTextScale, Vector3(1));
+  if (mScene->GetThreadAnimatedImporters()->size() + mScene->GetThreadImporters()->size() > 0) {
+    mCommonTextOnScreen.RenderText(ShaderFromVarName("Font2D"), "Loading Assets", 0, 100,
+                                   mSettings->GetInterfaceSettingsStruct().GlobalOnScreenTextScale, Vector3(1));
   }
 
   if ((unsigned int)GetSecondsElapsedSinceStart() > 0) {
     String fps = std::to_string(GetFrameCurrentCount() / (unsigned int)GetSecondsElapsedSinceStart());
     String t = String("FPS: " + fps);
-    Yeager::WindowInfo* wnd = m_Window->GetWindowInformationPtr();
-    m_CommonTextOnScreen.RenderText(ShaderFromVarName("Font2D"), t, 0, 0,
-                                    m_Settings->GetInterfaceSettingsStruct().GlobalOnScreenTextScale, Vector3(1));
+    Yeager::WindowInfo* wnd = mWindow->GetWindowInformationPtr();
+    mCommonTextOnScreen.RenderText(ShaderFromVarName("Font2D"), t, 0, 0,
+                                   mSettings->GetInterfaceSettingsStruct().GlobalOnScreenTextScale, Vector3(1));
   }
 }
 
 void ApplicationCore::ProcessArgumentsDuringRender()
 {
-  if (m_Arguments.VirtualMachine.Activated) {
-    if (GetSecondsElapsedSinceStart() > m_Arguments.VirtualMachine.Timer) {
-      glfwSetWindowShouldClose(m_Window->GetGLFWwindow(), GLFW_TRUE);
+  if (mArguments.mVirtualMachine.bActivated) {
+    if (GetSecondsElapsedSinceStart() > mArguments.mVirtualMachine.mTimer) {
+      glfwSetWindowShouldClose(mWindow->GetGLFWwindow(), GLFW_TRUE);
     }
   }
 }
@@ -397,17 +395,18 @@ void ApplicationCore::UpdateTheEngine()
 {
   OpenGLFunc();
 
-  m_TimeBeforeRender = static_cast<float>(glfwGetTime());
+  mTimeBeforeRender = static_cast<float>(glfwGetTime());
 
-  auto light = std::make_shared<PhysicalLightHandle>(
+  auto light = BaseAllocator::MakeSharedPtr<PhysicalLightHandle>(
       EntityBuilder(this, "main"),
       std::vector<Shader*>{ShaderFromVarName("Simple"), ShaderFromVarName("SimpleAnimated"),
                            ShaderFromVarName("TerrainGeneration")},
       ShaderFromVarName("Light"));
   light->SetCanBeSerialize(false);
   light->GetDirectionalLight()->Ambient = Vector3(1);
-  m_Scene->GetLightSources()->push_back(light);
+  mScene->GetLightSources()->push_back(light);
   BeginEngineTimer();
+
   while (ShouldRender()) {
 
     IntervalElapsedTimeManager::ResetIntervals();
@@ -417,8 +416,8 @@ void ApplicationCore::UpdateTheEngine()
     glfwPollEvents();
     OpenGLClear();
 
-    m_Interface->InitRenderFrame();
-    m_Scene->CheckThreadsAndTriggerActions();
+    mInterface->InitRenderFrame();
+    mScene->CheckThreadsAndTriggerActions();
 
     UpdateDeltaTime();
     UpdateWorldMatrices();
@@ -426,29 +425,30 @@ void ApplicationCore::UpdateTheEngine()
     ManifestAllShaders();
     UpdateCamera();
 
-    m_AudioEngine->Engine->update();
+    mAudioEngine->Engine->update();
 
-    m_PhysXHandle->StartSimulation(m_DeltaTime);
-    m_PhysXHandle->EndSimulation();
+    mPhysXHandle->StartSimulation(mDeltaTime);
+    mPhysXHandle->EndSimulation();
 
     DrawObjects();
     BuildAndDrawLightSources();
 
-    m_Scene->DrawSkybox(ShaderFromVarName("Skybox"), m_WorldMatrices.View, m_WorldMatrices.Projection);
+    mScene->DrawSkybox(ShaderFromVarName("Skybox"), mWorldMatrices.mView, mWorldMatrices.mProjection);
 
     GetInterface()->RenderUI();
     GetScene()->CheckScheduleDeletions();
-    GetInput()->ProcessInputRender(GetWindow(), m_DeltaTime);
-    m_Request->HandleRequests();
+    GetInput()->ProcessInputRender(GetWindow(), mDeltaTime);
+    mRequest->HandleRequests();
 
     IntervalElapsedTimeManager::EndTimeInterval("Application Frame");
 
-    m_Interface->DebugTimeInterval();
-    m_Interface->TerminateRenderFrame();
+    mInterface->DebugTimeInterval();
+    mInterface->TerminateRenderFrame();
     glfwSwapBuffers(GetWindow()->GetGLFWwindow());
   }
 
   TerminatePosRender();
+  ThreadManagement::TerminateThreads();
 }
 
 void ApplicationCore::TerminatePosRender()
@@ -456,48 +456,48 @@ void ApplicationCore::TerminatePosRender()
   GetScene()->CheckAndAwaitThreadsToFinish();
   GetScene()->Save();
 
-  m_AudioEngine->TerminateAudioEngine();
-  m_PhysXHandle->TerminateEngine();
+  mAudioEngine->TerminateAudioEngine();
+  mPhysXHandle->TerminateEngine();
 
-  m_Serial->WriteEngineConfiguration(GetPathFromLocal("/Configuration/Variables/EngineConfiguration.yml").value());
+  mSerial->WriteEngineConfiguration(GetPathFromLocal("/Configuration/Variables/EngineConfiguration.yml").value());
 
-  m_PhysXHandle.reset();
-  m_Scene->Terminate();
-  m_Interface->Terminate();
-  m_Window->Terminate();
+  mPhysXHandle.reset();
+  mScene->Terminate();
+  mInterface->Terminate();
+  mWindow->Terminate();
 }
 
 void ApplicationCore::BuildAndDrawLightSources()
 {
   for (const auto& light : *GetScene()->GetLightSources()) {
     light->BuildShaderProps(GetCamera()->GetPosition(), GetCamera()->GetDirection(), 32.0f);
-    light->DrawLightSources(m_DeltaTime);
+    light->DrawLightSources(mDeltaTime);
   }
 }
 
 void ApplicationCore::AttachPlayerCamera(std::shared_ptr<PlayerCamera> camera)
 {
-  camera->TransferInformation(m_BaseCamera.get());
-  m_BaseCamera = static_cast<std::shared_ptr<BaseCamera>>(camera);
+  camera->TransferInformation(mBaseCamera.get());
+  mBaseCamera = static_cast<std::shared_ptr<BaseCamera>>(camera);
 }
 
 void ApplicationCore::DetachPlayerCamera()
 {
-  m_EditorCamera->TransferInformation(m_BaseCamera.get());
-  m_BaseCamera = static_cast<std::shared_ptr<BaseCamera>>(m_EditorCamera);
+  mEditorCamera->TransferInformation(mBaseCamera.get());
+  mBaseCamera = static_cast<std::shared_ptr<BaseCamera>>(mEditorCamera);
 }
 
 void ApplicationCore::BeginEngineTimer()
 {
-  m_TimeElapsedSinceStart = std::chrono::system_clock::now();
-  m_TimerHasStarted = true;
+  mTimeElapsedSinceStart = std::chrono::system_clock::now();
+  mTimerHasStarted = true;
 }
 
 float ApplicationCore::GetSecondsElapsedSinceStart() const
 {
-  if (m_TimerHasStarted) {
+  if (mTimerHasStarted) {
     std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
-    std::chrono::duration<float> elapsed = end - m_TimeElapsedSinceStart;
+    std::chrono::duration<float> elapsed = end - mTimeElapsedSinceStart;
     return elapsed.count();
   }
   return 1;
@@ -507,9 +507,9 @@ void ApplicationCore::DrawObjects()
 {
   for (const auto& obj : *GetScene()->GetObjects()) {
     if (obj->IsInstanced()) {
-      obj->Draw(ShaderFromVarName("SimpleInstanced"), m_DeltaTime);
+      obj->Draw(ShaderFromVarName("SimpleInstanced"), mDeltaTime);
     } else {
-      obj->Draw(ShaderFromVarName("Simple"), m_DeltaTime);
+      obj->Draw(ShaderFromVarName("Simple"), mDeltaTime);
     }
   }
 
@@ -523,7 +523,7 @@ void ApplicationCore::DrawObjects()
     }
 
     shader->UseShader();
-    obj->UpdateAnimation(m_DeltaTime);
+    obj->UpdateAnimation(mDeltaTime);
     obj->BuildAnimationMatrices(shader);
     obj->Draw(shader);
   }
@@ -531,140 +531,64 @@ void ApplicationCore::DrawObjects()
 
 AudioEngine* ApplicationCore::GetAudioFromEngine()
 {
-  return m_AudiosFromEngine.get();
+  return mAudiosFromEngine.get();
 }
 Interface* ApplicationCore::GetInterface()
 {
-  return m_Interface.get();
+  return mInterface.get();
 }
 Input* ApplicationCore::GetInput()
 {
-  return m_Input.get();
+  return mInput.get();
 }
 Window* ApplicationCore::GetWindow()
 {
-  return m_Window.get();
+  return mWindow.get();
 }
 EditorExplorer* ApplicationCore::GetExplorer()
 {
-  return m_EditorExplorer.get();
+  return mEditorExplorer.get();
 }
 BaseCamera* ApplicationCore::GetCamera()
 {
-  return m_BaseCamera.get();
+  return mBaseCamera.get();
 }
 Yeager::Scene* ApplicationCore::GetScene()
 {
-  return m_Scene.get();
+  return mScene.get();
 }
 
 ApplicationMode::Enum ApplicationCore::GetMode() const noexcept
 {
-  return m_CurrentMode;
+  return mCurrentMode;
 }
 ApplicationState::Enum ApplicationCore::GetState() const noexcept
 {
-  return m_CurrentState;
+  return mCurrentState;
 }
 
 void ApplicationCore::SetMode(ApplicationMode::Enum mode) noexcept
 {
-  m_CurrentMode = mode;
+  mCurrentMode = mode;
 }
 void ApplicationCore::SetState(ApplicationState::Enum state) noexcept
 {
-  m_CurrentState = state;
+  mCurrentState = state;
 }
 
 void ApplicationCore::ManifestShaderProps(Yeager::Shader* shader)
 {
   shader->UseShader();
-  shader->SetMat4("view", m_WorldMatrices.View);
-  shader->SetMat4("projection", m_WorldMatrices.Projection);
-  shader->SetVec3("viewPos", m_WorldMatrices.ViewerPos);
+  shader->SetMat4("view", mWorldMatrices.mView);
+  shader->SetMat4("projection", mWorldMatrices.mProjection);
+  shader->SetVec3("viewPos", mWorldMatrices.mViewerPos);
 }
 
 void ApplicationCore::ManifestAllShaders()
 {
-  for (const auto& shader : m_ConfigShaders) {
+  for (const auto& shader : mConfigShaders) {
     ManifestShaderProps(ShaderFromVarName(shader.second));
   }
-}
-
-void GLAPIENTRY Yeager::GLMessageDebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei lenght,
-                                               const GLchar* message, const void* userParam)
-{
-  String src;
-  switch (source) {
-    case GL_DEBUG_SOURCE_API:
-      src = "Source: API";
-      break;
-    case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
-      src = "Source: Window System";
-      break;
-    case GL_DEBUG_SOURCE_SHADER_COMPILER:
-      src = "Source: Shader Compiler";
-      break;
-    case GL_DEBUG_SOURCE_THIRD_PARTY:
-      src = "Source: Third Party";
-      break;
-    case GL_DEBUG_SOURCE_APPLICATION:
-      src = "Source: Application";
-      break;
-    case GL_DEBUG_SOURCE_OTHER:
-      src = "Source: Other";
-      break;
-  }
-
-  String t;
-  switch (type) {
-    case GL_DEBUG_TYPE_ERROR:
-      t = "Type: Error";
-      break;
-    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-      t = "Type: Deprecated Behaviour";
-      break;
-    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-      t = "Type: Undefined Behaviour";
-      break;
-    case GL_DEBUG_TYPE_PORTABILITY:
-      t = "Type: Portability";
-      break;
-    case GL_DEBUG_TYPE_PERFORMANCE:
-      t = "Type: Performance";
-      break;
-    case GL_DEBUG_TYPE_MARKER:
-      t = "Type: Marker";
-      break;
-    case GL_DEBUG_TYPE_PUSH_GROUP:
-      t = "Type: Push Group";
-      break;
-    case GL_DEBUG_TYPE_POP_GROUP:
-      t = "Type: Pop Group";
-      break;
-    case GL_DEBUG_TYPE_OTHER:
-      t = "Type: Other";
-      break;
-  }
-
-  String sev;
-  switch (severity) {
-    case GL_DEBUG_SEVERITY_HIGH:
-      sev = "Severity: high";
-      break;
-    case GL_DEBUG_SEVERITY_MEDIUM:
-      sev = "Severity: medium";
-      break;
-    case GL_DEBUG_SEVERITY_LOW:
-      sev = "Severity: low";
-      break;
-    case GL_DEBUG_SEVERITY_NOTIFICATION:
-      sev = "Severity: notification";
-      break;
-  }
-
-  Yeager::LogDebug(ERROR, "GL CALLBACK: {}, Type {}, Severity {}, Message {}, Source {}",
-                   type == GL_DEBUG_TYPE_ERROR ? "GL_ERROR" : "", t, sev, message, src);
 }
 
 void ApplicationCore::CheckGLADIntegrity()
@@ -717,14 +641,14 @@ void ApplicationCore::OpenGLFunc()
 
 void ApplicationCore::OpenGLClear()
 {
-  const Vector3 color = m_Interface->GetOpenGLDebugClearColor();
+  const Vector3 color = mInterface->GetOpenGLDebugClearColor();
   glClearColor(color.x, color.y, color.z, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 Shader* ApplicationCore::ShaderFromVarName(String var)
 {
-  for (const auto& shader : m_ConfigShaders) {
+  for (const auto& shader : mConfigShaders) {
     /* If the var requested is the same as the shader var name, then it returns a pointer to that shader
     first = the shader point / second = the var string */
     if (var == shader.second) {
@@ -740,46 +664,46 @@ Shader* ApplicationCore::ShaderFromVarName(String var)
 void ApplicationCore::AddConfigShader(std::shared_ptr<Yeager::Shader> shader, const String& var) noexcept
 {
   std::pair<std::shared_ptr<Yeager::Shader>, String> config(shader, var);
-  m_ConfigShaders.push_back(config);
+  mConfigShaders.push_back(config);
 }
 
 std::vector<LoadedProjectHandle>* ApplicationCore::GetLoadedProjectsHandles()
 {
-  return &m_LoadedProjectsHandles;
+  return &mLoadedProjectsHandles;
 }
 Serialization* ApplicationCore::GetSerial()
 {
-  return m_Serial.get();
+  return mSerial.get();
 }
 Settings* ApplicationCore::GetSettings()
 {
-  return m_Settings.get();
+  return mSettings.get();
 }
 RequestHandle* ApplicationCore::GetRequestHandle()
 {
-  return m_Request.get();
+  return mRequest.get();
 }
 DefaultValues* ApplicationCore::GetDefaults()
 {
-  return m_Defaults.get();
+  return mDefaults.get();
 }
 PhysXHandle* ApplicationCore::GetPhysXHandle()
 {
-  return m_PhysXHandle.get();
+  return mPhysXHandle.get();
 }
 AudioEngineHandle* ApplicationCore::GetAudioEngineHandle()
 {
-  return m_AudioEngine.get();
+  return mAudioEngine.get();
 }
 physx::PxController* ApplicationCore::GetController()
 {
-  return m_Controller.get();
+  return mController.get();
 }
 float ApplicationCore::GetTimeBeforeLoop() const
 {
-  return m_TimeBeforeRender;
+  return mTimeBeforeRender;
 }
 long long ApplicationCore::GetFrameCurrentCount() const
 {
-  return m_FrameCurrentCount;
+  return mFrameCurrentCount;
 }

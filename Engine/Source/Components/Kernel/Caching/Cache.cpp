@@ -49,8 +49,8 @@ void TextureCache::Create(Yeager::MaterialTexture2D& texture)
   size_t alloc_size = sizeof(TextureCacheHeader) +
                       ((texture.GetWidth() * texture.GetHeight() * FormatToChannels(texture.GetFormat()).value()) *
                        sizeof(unsigned char));
-  m_CurrentData =
-      std::shared_ptr<unsigned char>(new unsigned char[alloc_size], [](unsigned char* mem) { delete[] mem; });
+  m_CurrentData = std::shared_ptr<unsigned char>(BaseAllocator::Allocate<unsigned char>(alloc_size),
+                                                 [](unsigned char* mem) { BaseAllocator::Deallocate(mem); });
 
   m_Allocated = true;
   TextureCacheHeader* header = reinterpret_cast<TextureCacheHeader*>(m_CurrentData.get());
@@ -71,7 +71,7 @@ void TextureCache::Create(Yeager::MaterialTexture2D& texture)
   const size_t data_size = alloc_size - sizeof(TextureCacheHeader);
 
   const size_t size = texture.GetWidth() * texture.GetHeight() * FormatToChannels(texture.GetFormat()).value();
-  GLuint* bytes = new GLuint[size];
+  GLuint* bytes = BaseAllocator::Allocate<GLuint>(size);
 
   glBindTexture(texture.GetTextureDataHandle()->BindTarget, texture.GetTextureID());
   glGetTexImage(texture.GetTextureDataHandle()->BindTarget, NULL, texture.GetTextureDataHandle()->Format,

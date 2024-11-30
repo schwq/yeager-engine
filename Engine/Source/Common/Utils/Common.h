@@ -30,8 +30,9 @@
 #ifdef DEBUG_ENABLED_ALL
 #define YEAGER_DEBUG_VERBOSE true
 #define DEBUG_OPENGL_CALLS
-#define DEBUG_OPENGL_FUN
-#define DEBUG_GLFW_GL_CONTEXT
+//#define DEBUG_OPENGL_FUN
+//#define DEBUG_GLFW_GL_CONTEXT
+#define DEBUG_MEM
 #endif
 
 #define YEAGER_API

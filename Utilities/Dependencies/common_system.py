@@ -190,12 +190,12 @@ def CmdSystem(command: str) -> int:
     return os.system(command)
 
 
-def validateCommand(command: str) -> tuple[bool, str]:
+def ValidateCmd(command: str) -> tuple[bool, str]:
     n, msg = subprocess.getstatusoutput(command)
     return n == 0, msg
 
 
-def copyType(src, dst):
+def CopyTreeDir(src, dst):
     try:
         shutil.copytree(src=src, dst=dst, dirs_exist_ok=True)
     except PermissionError:
@@ -203,14 +203,14 @@ def copyType(src, dst):
         sys.exit(0)
 
 
-def changeDirectory(dir: str):
+def ChangeDir(dir: str):
     if VerifyDirExists(dir):
         os.chdir(dir)
 
 
-def gitCloneLink(link: str, dir: str = None) -> bool:
+def InvolkeGitCloneLink(link: str, dir: str = None) -> bool:
     current = os.getcwd()
-    changeDirectory(dir)
+    ChangeDir(dir)
     print("[INFO] Cloning {} on {}".format(link, dir))
     process = (
         subprocess.call(
@@ -221,5 +221,5 @@ def gitCloneLink(link: str, dir: str = None) -> bool:
         )
         == 0
     )
-    changeDirectory(current)
+    ChangeDir(current)
     return process

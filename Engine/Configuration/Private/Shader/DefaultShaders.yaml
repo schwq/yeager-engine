@@ -1,0 +1,51 @@
+SceneShader: Default 
+Shaders: 
+  - Shader: Skybox Shader
+    VarName: Skybox 
+    FragmentPath: /Resources/Shaders/Skybox.frag
+    VertexPath: /Resources/Shaders/Skybox.vert
+  - Shader: Common Shader
+    VarName: Common 
+    FragmentPath: /Resources/Shaders/Common.frag
+    VertexPath: /Resources/Shaders/Common.vert
+  - Shader: Light Shader
+    VarName: Light 
+    FragmentPath: /Resources/Shaders/Lighting.frag
+    VertexPath: /Resources/Shaders/Lighting.vert
+  - Shader: Simple Shader
+    VarName: Simple 
+    FragmentPath: /Resources/Shaders/Simple.frag
+    VertexPath: /Resources/Shaders/Simple.vert
+  - Shader: SkyboxCubeMap Shader
+    VarName: SkyboxCubeMap 
+    FragmentPath: /Resources/Shaders/SkyboxCubemap.frag
+    VertexPath: /Resources/Shaders/SkyboxCubemap.vert
+  - Shader: TerrainGeneration Shader
+    VarName: TerrainGeneration
+    FragmentPath: /Resources/Shaders/Terrain.frag
+    VertexPath:  /Resources/Shaders/Terrain.vert
+  - Shader: Simple Animated Shader
+    VarName: SimpleAnimated 
+    FragmentPath: /Resources/Shaders/SimpleAnimated.frag
+    VertexPath: /Resources/Shaders/SimpleAnimated.vert
+  - Shader: Collision Shader
+    VarName: Collision
+    FragmentPath: /Resources/Shaders/Collision.frag
+    VertexPath: /Resources/Shaders/Collision.vert
+  - Shader: Simple Instanced Shader
+    VarName: SimpleInstanced
+    FragmentPath: /Resources/Shaders/SimpleInstanced.frag
+    VertexPath: /Resources/Shaders/SimpleInstanced.vert
+  - Shader: Simple Instanced Animated Shader
+    VarName: SimpleInstancedAnimated
+    FragmentPath: /Resources/Shaders/SimpleInstancedAnimated.frag
+    VertexPath: /Resources/Shaders/SimpleInstancedAnimated.vert
+  - Shader: Font2D Shader
+    VarName: Font2D
+    FragmentPath: /Resources/Shaders/Font2D.frag
+    VertexPath: /Resources/Shaders/Font2D.vert
+  - Shader: Font3D Shader
+    VarName: Font3D
+    FragmentPath: /Resources/Shaders/Font3D.frag
+    VertexPath: /Resources/Shaders/Font3D.vert
+  

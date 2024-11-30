@@ -18,6 +18,7 @@
 //    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #pragma once
+
 #include "Common/Utils/Common.h"
 #include "Common/Utils/LogEngine.h"
 #include "Common/Utils/Utilities.h"
@@ -31,6 +32,9 @@ namespace Yeager {
 
 class ApplicationCore;
 
+/**
+ * @brief Holds the enum that dictate the aspect ratios the engine accepts and converts them to float values
+ */
 struct AspectRatio {
   enum Enum { eASPECT_21_9, eASPECT_4_3 };
   YEAGER_ENUM_TO_STRING(AspectRatio)
@@ -38,30 +42,39 @@ struct AspectRatio {
   static float ToValue(Enum type);
 };
 
+/**
+ *  @brief Represents a plane in the screen 
+ */
 struct OnScreenSpaceRange {
-  Uint Width = 0, Height = 0;
-  Uint PositionX = 0, PositionY = 0;
+  UVector2 mSize;
+  UVector2 mPosition;
 };
 
+/**
+ * @brief Window general information is stored in this struct
+ */
 struct WindowInfo {
-  Vector2 EditorSize = Vector2(0.0f, 0.0f);
-  Vector2 LauncherSize = Vector2(0.0f, 0.0f);
-  Vector2 FrameBufferSize = Vector2(0.0f, 0.0f);
-  Vector2 FrameBufferPosition = Vector2(0.0f, 0.0f);
-  IVector2 WindowPosition = IVector2(0, 0);
-  String EditorTitle = YEAGER_EDITOR_DEFAULT_TITLE;
-  String LauncherTitle = YEAGER_LAUNCHER_DEFAULT_TITLE;
-  GLFWcursorposfun CursorFunc;
+  Vector2 mEditorSize = Vector2(0.0f, 0.0f);
+  Vector2 mLauncherSize = Vector2(0.0f, 0.0f);
+  Vector2 mFrameBufferSize = Vector2(0.0f, 0.0f);
+  Vector2 mFrameBufferPosition = Vector2(0.0f, 0.0f);
+  IVector2 mWindowPosition = IVector2(0, 0);
+  String mEditorTitle = YEAGER_EDITOR_DEFAULT_TITLE;
+  String mLauncherTitle = YEAGER_LAUNCHER_DEFAULT_TITLE;
+  GLFWcursorposfun mCursorFunc;
 };
 
-/* Used when we want to regenerate the window with different hints, we change this struct and the window is created based on it*/
+/**
+ *  @brief Struct that holes glfw window hints to be parse around without problem
+ */
 struct WindowCreationHints {
-  Uint ContextVersionMajor = 4;
-  Uint ContextVersionMinor = 6;
-  uint32_t OpenGLProfile = GLFW_OPENGL_CORE_PROFILE;
-  Uint AntiAliasingSamples = 4;
+  u_short mContextVersionMajor = 4;
+  u_short mContextVersionMinor = 6;
+  uint32_t mOpenGLProfile = GLFW_OPENGL_CORE_PROFILE;
+  u_short mAntiAliasingSamples = 4;
+
 #ifdef YEAGER_SYSTEM_MACOS
-  bool OpenGLForwandCompat = GL_TRUE;
+  bool mOpenGLForwandCompat = GL_TRUE;
 #endif
 };
 
@@ -78,20 +91,24 @@ class Window {
 
   Vector2 GetWindowSize() const;
 
-  void SetWindowPos(const IVector2& pos);
   IVector2 GetWindowPos() const;
 
-  bool GenerateWindow(Uint window_x, Uint window_y, String title);
-  bool RegenerateMainWindow(Uint window_x, Uint window_y, String title, GLFWcursorposfun cursor) noexcept;
+  void SetWindowPos(const IVector2& pos);
+
+  bool GenerateWindow(const UVector2& size, const String& title);
+
+  bool RegenerateMainWindow(const UVector2& size, const String& title) noexcept;
 
   void InitializeCallbacks(GLFWcursorposfun cursor);
-  /**
-   * GLFW Callbacks
-   */
+
   static void ResizeCallback(GLFWwindow* window, int width, int height);
+
   static void WindowMaximizeCallback(GLFWwindow* window, int maximized);
+
   static void WindowPosCallback(GLFWwindow* window, int xpos, int ypos);
+
   static void FramebufferSizeCallback(GLFWwindow* window, int width, int height);
+
   static void HandleError(int code, Cchar description);
 
   bool CheckIfOpenGLContext();
@@ -104,18 +121,19 @@ class Window {
 
   YEAGER_FORCE_INLINE bool ValidateAntiAliasingSampleValue(int samples) const;
 
-  YEAGER_FORCE_INLINE WindowInfo* GetWindowInformationPtr() { return &mWindowInformation; }
+  YEAGER_FORCE_INLINE WindowInfo* GetWindowInformationPtr() { return &sWindowInformation; }
+
   YEAGER_FORCE_INLINE WindowCreationHints* GetWindowCreationHintsPtr() { return &mWindowHints; }
 
   void BuildWindowHints();
 
  private:
-  static WindowInfo mWindowInformation;
+  static WindowInfo sWindowInformation;
+  static const std::vector<uint> sAcceptableSampleValues;
 
   WindowCreationHints mWindowHints;
   GLFWwindow* mWindowHandle = YEAGER_NULLPTR;
   Yeager::ApplicationCore* mApplication = YEAGER_NULLPTR;
-  std::unique_ptr<unsigned char> mIconImageData = YEAGER_NULLPTR;
 
   bool bMaximized = false;
   bool bFullScreen = false;

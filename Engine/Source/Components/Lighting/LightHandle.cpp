@@ -127,7 +127,8 @@ void PhysicalLightHandle::AddObjectPointLight(const ObjectPointLight& obj, Trans
 {
 
   ObjectPointLight pObj = obj;
-  pObj.ObjSource = new Object(EntityBuilder(mApplication, "SpotLight_" + std::to_string(m_ObjectPointLights.size())));
+  pObj.ObjSource = BaseAllocator::MakeSharedPtr<Object>(
+      EntityBuilder(mApplication, "SpotLight_" + std::to_string(m_ObjectPointLights.size())));
   pObj.ObjSource->GenerateObjectGeometry(ObjectGeometryType::eSPHERE,
                                          ObjectPhysXCreationStatic(Vector3(0.0f), Vector3(0.0f), Vector3(0.1f)));
   pObj.ObjSource->SetTransformation(trans);
@@ -155,7 +156,7 @@ void PhysicalLightHandle::AddObjectPointLight(const ObjectPointLight& obj)
 void PhysicalLightHandle::AddObjectPointLight(const ObjectPointLight& obj, Yeager::Object& custom_obj)
 {
   ObjectPointLight pObj = obj;
-  pObj.ObjSource = new Object(custom_obj);
+  pObj.ObjSource = BaseAllocator::MakeSharedPtr<Object>(custom_obj);
   pObj.ObjSource->GenerateObjectGeometry(custom_obj.GetGeometry(),
                                          ObjectPhysXCreationStatic(Vector3(0.0f), Vector3(0.0f), Vector3(0.1f)));
   pObj.Active = true;
@@ -170,7 +171,7 @@ void PhysicalLightHandle::AddObjectPointLight(const ObjectPointLight& obj, Yeage
 
 void PhysicalLightHandle::AddObjectPointLight(ObjectPointLight* light, ObjectGeometryType::Enum type)
 {
-  light->ObjSource = new Object(EntityBuilder(mApplication, "Point_Light"));
+  light->ObjSource = BaseAllocator::MakeSharedPtr<Object>(EntityBuilder(mApplication, "Point_Light"));
   light->ObjSource->GenerateObjectGeometry(type,
                                            ObjectPhysXCreationStatic(Vector3(0.0f), Vector3(0.0f), Vector3(0.1f)));
   light->Active = true;

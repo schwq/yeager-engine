@@ -1,4 +1,5 @@
 #include "PerlinNoise.h"
+#include "Components/Kernel/Memory/Allocator.h"
 
 using namespace Yeager;
 
@@ -6,9 +7,15 @@ PerlinNoise::PerlinNoise(int width, int lenght)
 {
   m_Width = width;
   m_Lenght = lenght;
-  m_Seed = new float[m_Width * m_Lenght];
-  m_Noise = new float[m_Lenght * m_Width];
+  m_Seed = BaseAllocator::Allocate<float>(m_Width * m_Lenght);
+  m_Noise = BaseAllocator::Allocate<float>(m_Lenght * m_Width);
   RegenerateSeed();
+}
+
+PerlinNoise::~PerlinNoise()
+{
+  BaseAllocator::Deallocate(m_Seed);
+  BaseAllocator::Deallocate(m_Noise);
 }
 
 void PerlinNoise::GeneratePerlin(Yeager::Math::Array2D<float>* arr, int octaves, int bias, int width, int height,

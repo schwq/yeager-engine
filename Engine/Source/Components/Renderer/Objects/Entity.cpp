@@ -38,7 +38,7 @@ String EntityObjectType::ToString(EntityObjectType::Enum type)
 void EditorEntity::BuildNode(std::shared_ptr<NodeComponent> parent)
 {
   if (mApplication->GetScene() != YEAGER_NULLPTR) {
-    mNode = std::make_shared<NodeComponent>(mApplication, this, parent);
+    mNode = BaseAllocator::MakeSharedPtr<NodeComponent>(mApplication, this, parent);
     Yeager::LogDebug(INFO, "Node build for {}, UUID {}, parent {}", mName, uuids::to_string(mEntityUUID),
                      parent->IsRoot() ? "Root" : parent->GetEntity()->GetName());
   }
@@ -47,7 +47,7 @@ void EditorEntity::BuildNode(std::shared_ptr<NodeComponent> parent)
 EditorEntity::EditorEntity(const EntityBuilder& builder) : Entity(builder)
 {
   if (mApplication) {
-    mToolbox = std::make_shared<ToolboxHandle>(this);
+    mToolbox = BaseAllocator::MakeSharedPtr<ToolboxHandle>(this);
     mApplication->GetScene()->GetToolboxs()->push_back(mToolbox);
   }
 }

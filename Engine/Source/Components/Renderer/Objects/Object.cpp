@@ -10,7 +10,7 @@ using namespace physx;
 void Yeager::SpawnCubeObject(Yeager::ApplicationCore* application, const String& name, const Vector3& position,
                              const Vector3& rotation, const Vector3& scale, const ObjectPhysicsType::Enum physics)
 {
-  auto object = std::make_shared<Object>(EntityBuilder(application, name));
+  auto object = BaseAllocator::MakeSharedPtr<Object>(EntityBuilder(application, name));
   object->SetCanBeSerialize(false);
   object->GenerateGeometryTexture(application->GetDefaults()->GetTexture().get());
   if (physics == ObjectPhysicsType::eSTATIC_BODY) {
@@ -24,7 +24,7 @@ void Yeager::SpawnCubeObject(Yeager::ApplicationCore* application, const String&
 void Yeager::SpawnSphereObject(Yeager::ApplicationCore* application, const String& name, const Vector3& position,
                                const Vector3& rotation, const Vector3& scale, const ObjectPhysicsType::Enum physics)
 {
-  auto object = std::make_shared<Object>(EntityBuilder(application, name));
+  auto object = BaseAllocator::MakeSharedPtr<Object>(EntityBuilder(application, name));
   object->SetCanBeSerialize(false);
   object->GenerateGeometryTexture(application->GetDefaults()->GetTexture().get());
   if (physics == ObjectPhysicsType::eSTATIC_BODY) {
@@ -84,8 +84,8 @@ ObjectGeometryType::Enum Yeager::StringToObjectGeometryType(const String& str)
 Object::Object(const EntityBuilder& builder)
     : GameEntity(EntityBuilder(builder.Application, builder.Name, EntityObjectType::OBJECT, builder.UUID)),
       m_InstancedType(ObjectInstancedType::eNON_INSTACED),
-      m_Actor(std::make_shared<PhysXActor>(builder.Application, this)),
-      m_ThreadImporter(std::make_shared<ImporterThreaded>(builder.Name, builder.Application))
+      m_Actor(BaseAllocator::MakeSharedPtr<PhysXActor>(builder.Application, this)),
+      m_ThreadImporter(BaseAllocator::MakeSharedPtr<ImporterThreaded>(builder.Name, builder.Application))
 {
   BuildNode(mApplication->GetScene()->GetRootNode());
 }
@@ -94,22 +94,23 @@ Object::Object(const EntityBuilder& builder, GLuint amount)
     : GameEntity(EntityBuilder(builder.Application, builder.Name, EntityObjectType::OBJECT, builder.UUID)),
       m_InstancedObjs(amount),
       m_InstancedType(ObjectInstancedType::eINSTANCED),
-      m_Actor(std::make_shared<PhysXActor>(builder.Application, this)),
-      m_ThreadImporter(std::make_shared<ImporterThreaded>(builder.Name, builder.Application))
+      m_Actor(BaseAllocator::MakeSharedPtr<PhysXActor>(builder.Application, this)),
+      m_ThreadImporter(BaseAllocator::MakeSharedPtr<ImporterThreaded>(builder.Name, builder.Application))
 {
   m_Props.reserve(amount);
   BuildNode(mApplication->GetScene()->GetRootNode());
 }
 
 AnimatedObject::AnimatedObject(const EntityBuilder& builder)
-    : Object(builder), m_ThreadImporter(std::make_shared<ImporterThreadedAnimated>(builder.Name, builder.Application))
+    : Object(builder),
+      m_ThreadImporter(BaseAllocator::MakeSharedPtr<ImporterThreadedAnimated>(builder.Name, builder.Application))
 {
   SetEntityType(EntityObjectType::OBJECT_ANIMATED);
 }
 
 AnimatedObject::AnimatedObject(const EntityBuilder& builder, GLuint amount)
     : Object(builder, amount),
-      m_ThreadImporter(std::make_shared<ImporterThreadedAnimated>(builder.Name, builder.Application))
+      m_ThreadImporter(BaseAllocator::MakeSharedPtr<ImporterThreadedAnimated>(builder.Name, builder.Application))
 {
   SetEntityType(EntityObjectType::OBJECT_INSTANCED_ANIMATED);
 }
@@ -600,7 +601,7 @@ void Object::GenerateGeometryTexture(MaterialTexture2D* texture)
 
 void AnimatedObject::BuildAnimation(String path)
 {
-  m_AnimationEngine = std::make_shared<AnimationEngine>();
+  m_AnimationEngine = BaseAllocator::MakeSharedPtr<AnimationEngine>();
   m_AnimationEngine->Initialize();
   m_AnimationEngine->LoadAnimationsFromFile(path, this);
 }

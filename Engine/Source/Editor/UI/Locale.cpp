@@ -66,7 +66,5 @@ String Locale::Translate(String key) const
 {
   if (!bLoaded)
     return YEAGER_NO_LOCALE_LOADED_STRING;
-  if (mMapData.find(key) != mMapData.end())
-    return mMapData.at(key);
-  return YEAGER_TRANSLATE_ERROR_STRING;
+  return mMapData.find(key) != mMapData.end() ? mMapData.at(key) : YEAGER_TRANSLATE_ERROR_STRING;
 }

@@ -22,6 +22,7 @@
 #include "Common/Utils/Common.h"
 #include "Common/Utils/LogEngine.h"
 #include "Common/Utils/Utilities.h"
+#include "Components/Kernel/Memory/Allocator.h"
 #include "Components/Renderer/Objects/Object.h"
 #include "Components/Renderer/Shader/ShaderHandle.h"
 #include "Components/Renderer/Texture/TextureHandle.h"
@@ -77,11 +78,10 @@ struct SpotLight {
  * TODO: Make this raw pointer into a smart pointer!
  */
 struct ObjectPointLight : public PointLight {
-  Object* ObjSource = YEAGER_NULLPTR;
+  std::shared_ptr<Object> ObjSource = YEAGER_NULLPTR;
   void Destroy() const
   {
-    if (ObjSource)
-      delete ObjSource;
+    //TODO
   }
 };
 

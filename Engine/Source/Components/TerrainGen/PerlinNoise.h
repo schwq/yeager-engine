@@ -27,7 +27,7 @@ namespace Yeager {
 class PerlinNoise {
  public:
   PerlinNoise(int width = 256, int lenght = 256);
-  ~PerlinNoise() = default;
+  ~PerlinNoise();
 
   void GeneratePerlin(Yeager::Math::Array2D<float>* arr, int octaves, int bias, int width, int height, float max_height,
                       bool regenerate_seed = false);

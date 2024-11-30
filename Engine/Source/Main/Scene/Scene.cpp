@@ -56,7 +56,7 @@ SceneType Yeager::StringToSceneType(String str)
 
 void Scene::InitializeRootNode()
 {
-  m_RootNodeOfScene = std::make_shared<NodeComponent>((ApplicationCore*)m_Application, (Scene*)this);
+  m_RootNodeOfScene = BaseAllocator::MakeSharedPtr<NodeComponent>((ApplicationCore*)m_Application, (Scene*)this);
   m_SceneContainsRootNode = true;
 }
 
@@ -82,10 +82,10 @@ void Scene::BuildScene(const LauncherProjectPicker& project)
   m_Context.ProjectSavePath = GetConfigurationFilePath(m_Context.ProjectFolderPath);
   ValidatesCommonFolders();
   m_AssetsFolderPath = m_Context.ProjectFolderPath + YG_PS + "Assets";
-  m_PlayerCamera = std::make_shared<PlayerCamera>(m_Application);
+  m_PlayerCamera = BaseAllocator::MakeSharedPtr<PlayerCamera>(m_Application);
   m_Application->AttachPlayerCamera(m_PlayerCamera);
-  m_Skybox = std::make_shared<Yeager::Skybox>(EntityBuilder(m_Application, YEAGER_SKYBOX_DEFAULT_NAME),
-                                              ObjectGeometryType::eCUSTOM);
+  m_Skybox = BaseAllocator::MakeSharedPtr<Yeager::Skybox>(EntityBuilder(m_Application, YEAGER_SKYBOX_DEFAULT_NAME),
+                                                          ObjectGeometryType::eCUSTOM);
 
   Log(INFO, "Created Scene name {}", m_Context.Name);
   InitializeRootNode();

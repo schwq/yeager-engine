@@ -1,4 +1,5 @@
 #include "ProceduralTerrain.h"
+#include "Components/Kernel/Memory/Allocator.h"
 using namespace Yeager;
 
 ProceduralTerrain::ProceduralTerrain(std::vector<String> TexturesPaths, int TerrainChunkPositionX,
@@ -30,7 +31,7 @@ void ProceduralTerrain::GenerateTerrain(Shader* shader, int octaves, int bias, b
     m_Perlin.RegenerateSeed();
   }
   m_MetricData.m_HeightMap =
-      std::make_shared<Yeager::Math::Array2D<float>>(m_MetricData.m_Width, m_MetricData.m_Height);
+      BaseAllocator::MakeSharedPtr<Yeager::Math::Array2D<float>>(m_MetricData.m_Width, m_MetricData.m_Height);
 
   m_Perlin.GeneratePerlin(m_MetricData.m_HeightMap.get(), octaves, bias, m_MetricData.m_Width, m_MetricData.m_Height,
                           m_MetricData.m_MaxHeight);
@@ -175,7 +176,7 @@ void FaultFormationTerrain::CreateFaultFormationTerrain(Shader* shader, int Terr
   shader->SetFloat("MinHeight", MinHeight);
 
   m_MetricData.m_HeightMap =
-      std::make_shared<Yeager::Math::Array2D<float>>(m_MetricData.m_Width, m_MetricData.m_Height);
+      BaseAllocator::MakeSharedPtr<Yeager::Math::Array2D<float>>(m_MetricData.m_Width, m_MetricData.m_Height);
   m_Perlin.RegenerateSeed();
   m_Perlin.GeneratePerlin(m_MetricData.m_HeightMap.get(), octaves, bias, m_MetricData.m_Width, m_MetricData.m_Height,
                           m_MetricData.m_MaxHeight);
@@ -279,7 +280,7 @@ void MidPointDisplacementTerrain::CreateMidPointDisplacement(Shader* shader, int
   shader->SetFloat("MaxHeight", MaxHeight);
 
   m_MetricData.m_HeightMap =
-      std::make_shared<Yeager::Math::Array2D<float>>(m_MetricData.m_Width, m_MetricData.m_Height);
+      BaseAllocator::MakeSharedPtr<Yeager::Math::Array2D<float>>(m_MetricData.m_Width, m_MetricData.m_Height);
   m_Perlin.RegenerateSeed();
   m_Perlin.GeneratePerlin(m_MetricData.m_HeightMap.get(), octaves, bias, m_MetricData.m_Width, m_MetricData.m_Height,
                           m_MetricData.m_MaxHeight);

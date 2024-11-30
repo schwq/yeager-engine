@@ -282,7 +282,7 @@ std::vector<MaterialTexture2D*> Importer::LoadMaterialTexture(aiMaterial* materi
 
     if (!skip) {
 
-      auto tex = std::make_shared<std::pair<MaterialTexture2D, STBIDataOutput*>>();
+      auto tex = BaseAllocator::MakeSharedPtr<std::pair<MaterialTexture2D, STBIDataOutput*>>();
 
       /* If the texture loading have been called in a thread without the openGL context loaded intro to it, the texture id will ALWAYS be 0, meaning it wont load, 
         we check if the current thread is with the openGL context, if not, the boolean incompleteID is set to true, and the texture loading is done after the thread is finished! */
@@ -304,7 +304,7 @@ std::vector<MaterialTexture2D*> Importer::LoadMaterialTexture(aiMaterial* materi
 
 STBIDataOutput* Importer::LoadStbiDataOutput(String path, bool flip)
 {
-  STBIDataOutput* output = new STBIDataOutput;
+  STBIDataOutput* output = BaseAllocator::Construct<STBIDataOutput>();
 
   stbi_set_flip_vertically_on_load(flip);
   ValidatesPath(path);

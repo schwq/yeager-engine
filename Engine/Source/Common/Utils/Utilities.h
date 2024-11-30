@@ -78,6 +78,12 @@ void LogDebug(int verbosity, fmt::format_string<T...> fmt, T&&... args);
     ptr = NULL;            \
   }
 
+#define YEAGER_DELETE_OP(ptr) \
+  if (ptr) {                  \
+    ::operator delete(ptr);   \
+    ptr = NULL;               \
+  }
+
 #define YEAGER_DELETE_ARRAY(arr) \
   if (arr) {                     \
     delete[] ptr;                \
@@ -102,8 +108,21 @@ struct EqualExists {
 };
 }  // namespace CHECK
 
-extern bool EvaluateIntToBool(const int i);
+/**
+ * std::is_base_of for template classes
+ * https://stackoverflow.com/questions/34672441/stdis-base-of-for-template-classes
+ */
+template <template <typename...> class base, typename derived>
+struct is_base_of_template_impl {
+  template <typename... Ts>
+  static constexpr std::true_type test(const base<Ts...>*);
+  static constexpr std::false_type test(...);
+  using type = decltype(test(std::declval<derived*>()));
+};
+template <template <typename...> class base, typename derived>
+using is_base_of_template = typename is_base_of_template_impl<base, derived>::type;
 
+extern bool EvaluateIntToBool(const int i);
 extern Cchar g_OperatingSystemString;
 extern bool g_FromSourceCode;
 

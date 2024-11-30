@@ -33,12 +33,11 @@ include_directories(
 )
 
 add_subdirectory(Engine/Include)
-
 add_subdirectory(Engine/Source/Main)
 add_subdirectory(Engine/Source/Common)
 add_subdirectory(Engine/Source/Components)
 add_subdirectory(Engine/Source/Editor)
-
+add_subdirectory(Engine/Source/Debug)
 add_subdirectory(Engine/ThirdParty)
 
 add_executable(${projectName} ${SOURCE_FILES}  ${LIBRARIES_FILES})

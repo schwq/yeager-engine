@@ -11,13 +11,13 @@ FolderExplorer::FolderExplorer(Yeager::ApplicationCore* application, const Path&
 
 void FolderExplorer::LoadIcons()
 {
-  auto folder =
-      std::make_shared<MaterialTexture2D>(EntityBuilder(mApplication, "Folder_Icon"), MaterialTextureType::eDIFFUSE);
+  auto folder = BaseAllocator::MakeSharedPtr<MaterialTexture2D>(EntityBuilder(mApplication, "Folder_Icon"),
+                                                                MaterialTextureType::eDIFFUSE);
   folder->GenerateFromFile(GetPathFromShared("/Resources/Icons/folder.png").value(), true);
   mIcons.insert(std::pair<DirectoryHierarchyType::Enum, std::shared_ptr<MaterialTexture2D>>(
       DirectoryHierarchyType::eFOLDER, folder));
-  auto file =
-      std::make_shared<MaterialTexture2D>(EntityBuilder(mApplication, "File_Icon"), MaterialTextureType::eDIFFUSE);
+  auto file = BaseAllocator::MakeSharedPtr<MaterialTexture2D>(EntityBuilder(mApplication, "File_Icon"),
+                                                              MaterialTextureType::eDIFFUSE);
   file->GenerateFromFile(GetPathFromShared("/Resources/Icons/file.png").value(), true);
   mIcons.insert(
       std::pair<DirectoryHierarchyType::Enum, std::shared_ptr<MaterialTexture2D>>(DirectoryHierarchyType::eFILE, file));

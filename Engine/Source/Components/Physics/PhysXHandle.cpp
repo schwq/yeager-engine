@@ -109,7 +109,7 @@ bool PhysXHandle::InitPxEngine()
     return false;
   }
 
-  m_PxSceneDesc = new PxSceneDesc(m_PxPhysics->getTolerancesScale());
+  m_PxSceneDesc = BaseAllocator::Construct<PxSceneDesc>(m_PxPhysics->getTolerancesScale());
   m_PxSceneDesc->gravity = PxVec3(0.0f, -90.81f, 0.0f);
   m_PxSceneDesc->cpuDispatcher = m_PxCpuDispatcher;
   m_PxSceneDesc->filterShader = PxDefaultSimulationFilterShader;
@@ -132,8 +132,8 @@ bool PhysXHandle::InitPxEngine()
   m_PxActors.push_back(groundPlane);
   m_PxScene->addActor(*groundPlane);
 
-  m_PhysXGeometryHandle = new PhysXGeometryHandle(this, m_Application);
-  m_CharacterController = new PhysXCharacterController(this);
+  m_PhysXGeometryHandle = BaseAllocator::Construct<PhysXGeometryHandle>(this, m_Application);
+  m_CharacterController = BaseAllocator::Construct<PhysXCharacterController>(this);
 
   m_Initialized = true;
   return true;
@@ -155,7 +155,7 @@ void PhysXHandle::TerminateEngine()
   }
 
   if (m_PxSceneDesc) {
-    delete m_PxSceneDesc;
+    BaseAllocator::Deallocate(m_PxSceneDesc);
   }
 
   if (m_PxPvd) {
@@ -164,7 +164,8 @@ void PhysXHandle::TerminateEngine()
 
   PX_RELEASE(m_PxFoundation);
 
-  YEAGER_DELETE(m_PhysXGeometryHandle);
+  BaseAllocator::Deallocate(m_PhysXGeometryHandle);
+  // TODO: Check this
   //YEAGER_DELETE(m_CharacterController);
   Yeager::Log(INFO, "PhysX Engine terminated!");
 }

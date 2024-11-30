@@ -8,6 +8,10 @@ set(SOURCE_FILES ${SOURCE_FILES}
     Engine/Source/Components/Kernel/Network/Connection.cpp 
     Engine/Source/Components/Kernel/Network/NetworkSocket.h
     Engine/Source/Components/Kernel/Network/NetworkSocket.cpp
+    Engine/Source/Components/Kernel/Memory/Allocator.h
+    Engine/Source/Components/Kernel/Memory/Allocator.cpp
+    Engine/Source/Components/Kernel/Process/WpThread.h
+    Engine/Source/Components/Kernel/Process/WpThread.cpp
 
     Engine/Source/Components/Lighting/LightHandle.h
     Engine/Source/Components/Lighting/LightHandle.cpp 

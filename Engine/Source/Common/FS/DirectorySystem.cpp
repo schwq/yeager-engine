@@ -260,7 +260,7 @@ String Yeager::GetPathFromSourceCode(String path)
 {
   if (g_OperatingSystemString == YEAGER_WINDOWS32_OS_STRING)
     std::replace(path.begin(), path.end(), '/', '\\');
-  return String(std::filesystem::current_path().string() + YG_PS + "Apps" + YG_PS + "Yeager" + path);
+  return String(std::filesystem::current_path().string() + YG_PS + "Engine" + YG_PS + "Source" + path);
 }
 
 void Yeager::DumpConsoleDataInFile(const std::filesystem::path& path)
