@@ -54,6 +54,12 @@ class Skybox : public EditorEntity {
   YEAGER_NODISCARD ObjectGeometryType::Enum GetGeometry() const { return m_Geometry; }
   YEAGER_NODISCARD bool IsLoaded() const { return m_SkyboxDataLoaded; }
 
+  void SetShouldRender(bool should) { m_SkyboxShouldRender = should; }
+
+  bool* GetShouldRender() { return &m_SkyboxShouldRender; }
+
+  std::shared_ptr<MaterialTexture2D> GetTexture() { return m_Texture; }
+
  private:
   void Setup();
   void SetupModel();
@@ -61,6 +67,7 @@ class Skybox : public EditorEntity {
   void GenerateCubemapGeometry();
 
   bool m_SkyboxDataLoaded = false;
+  bool m_SkyboxShouldRender = true;
 
   std::shared_ptr<MaterialTexture2D> m_Texture = YEAGER_NULLPTR;
 

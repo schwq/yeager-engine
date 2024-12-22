@@ -4,6 +4,7 @@
 #include "Components/Renderer/Objects/Object.h"
 #include "Components/Renderer/Skybox/Skybox.h"
 #include "Components/TerrainGen/ProceduralTerrain.h"
+#include "Components/TerrainGen/TerrainGenThread.h"
 
 using namespace Yeager;
 
@@ -391,20 +392,26 @@ void ApplicationCore::ProcessArgumentsDuringRender()
   }
 }
 
+void ApplicationCore::CreateGeneralLight()
+{
+  std::vector<Shader*> shaders = {ShaderFromVarName("Common"),
+                                  ShaderFromVarName("Simple"),
+                                  ShaderFromVarName("TerrainGeneration"),
+                                  ShaderFromVarName("SimpleAnimated"),
+                                  ShaderFromVarName("SimpleInstanced"),
+                                  ShaderFromVarName("SimpleInstancedAnimated")};
+
+  mGeneralLight = BaseAllocator::MakeSharedPtr<PhysicalLightHandle>(EntityBuilder(this, "General Light"), shaders,
+                                                                    ShaderFromVarName("Light"));
+  mGeneralLight->SetCanBeSerialize(false);
+  mGeneralLight->GetDirectionalLight()->Ambient = Vector3(1);
+  mScene->GetLightSources()->push_back(mGeneralLight);
+}
+
 void ApplicationCore::UpdateTheEngine()
 {
   OpenGLFunc();
-
-  mTimeBeforeRender = static_cast<float>(glfwGetTime());
-
-  auto light = BaseAllocator::MakeSharedPtr<PhysicalLightHandle>(
-      EntityBuilder(this, "main"),
-      std::vector<Shader*>{ShaderFromVarName("Simple"), ShaderFromVarName("SimpleAnimated"),
-                           ShaderFromVarName("TerrainGeneration")},
-      ShaderFromVarName("Light"));
-  light->SetCanBeSerialize(false);
-  light->GetDirectionalLight()->Ambient = Vector3(1);
-  mScene->GetLightSources()->push_back(light);
+  CreateGeneralLight();
   BeginEngineTimer();
 
   while (ShouldRender()) {
@@ -413,7 +420,7 @@ void ApplicationCore::UpdateTheEngine()
     IntervalElapsedTimeManager::StartTimeInterval("Application Frame");
 
     ProcessArgumentsDuringRender();
-    glfwPollEvents();
+    mWindow->StartFrame();
     OpenGLClear();
 
     mInterface->InitRenderFrame();
@@ -435,32 +442,32 @@ void ApplicationCore::UpdateTheEngine()
 
     mScene->DrawSkybox(ShaderFromVarName("Skybox"), mWorldMatrices.mView, mWorldMatrices.mProjection);
 
-    GetInterface()->RenderUI();
-    GetScene()->CheckScheduleDeletions();
-    GetInput()->ProcessInputRender(GetWindow(), mDeltaTime);
+    mInterface->RenderUI();
+    mScene->CheckScheduleDeletions();
+    mInput->ProcessInputRender(mWindow.get(), mDeltaTime);
     mRequest->HandleRequests();
 
     IntervalElapsedTimeManager::EndTimeInterval("Application Frame");
 
     mInterface->DebugTimeInterval();
     mInterface->TerminateRenderFrame();
-    glfwSwapBuffers(GetWindow()->GetGLFWwindow());
+    mWindow->EndFrame();
   }
 
   TerminatePosRender();
-  ThreadManagement::TerminateThreads();
 }
 
 void ApplicationCore::TerminatePosRender()
 {
-  GetScene()->CheckAndAwaitThreadsToFinish();
-  GetScene()->Save();
+  mScene->CheckAndAwaitThreadsToFinish();
+  mScene->Save();
 
   mAudioEngine->TerminateAudioEngine();
   mPhysXHandle->TerminateEngine();
 
   mSerial->WriteEngineConfiguration(GetPathFromLocal("/Configuration/Variables/EngineConfiguration.yml").value());
 
+  mGeneralLight.reset();
   mPhysXHandle.reset();
   mScene->Terminate();
   mInterface->Terminate();
@@ -491,6 +498,7 @@ void ApplicationCore::BeginEngineTimer()
 {
   mTimeElapsedSinceStart = std::chrono::system_clock::now();
   mTimerHasStarted = true;
+  mTimeBeforeRender = static_cast<float>(glfwGetTime());
 }
 
 float ApplicationCore::GetSecondsElapsedSinceStart() const
@@ -663,8 +671,7 @@ Shader* ApplicationCore::ShaderFromVarName(String var)
 
 void ApplicationCore::AddConfigShader(std::shared_ptr<Yeager::Shader> shader, const String& var) noexcept
 {
-  std::pair<std::shared_ptr<Yeager::Shader>, String> config(shader, var);
-  mConfigShaders.push_back(config);
+  mConfigShaders.push_back(std::pair<std::shared_ptr<Yeager::Shader>, String>(shader, var));
 }
 
 std::vector<LoadedProjectHandle>* ApplicationCore::GetLoadedProjectsHandles()

@@ -1,3 +1,4 @@
 #include "WpThread.h"
 using namespace Yeager;
-std::vector<ThreadManagement::shared_t> ThreadManagement::sThreadsInUse;
+
+std::size_t ThreadManagement::sNumOfThreadsCreated = 0;

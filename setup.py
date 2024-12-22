@@ -5,6 +5,7 @@ from enum import Enum
 import Utilities.Dependencies.common_system as common_system
 
 import Engine.Binaries.Build.Python.gen_cmakelists as gcmake
+import Engine.Binaries.Build.Python.dependecies as dep
 
 
 class ModeRequested(Enum):
@@ -67,7 +68,8 @@ def ExeInstructions():
             windows_x64.InstallEngineWindows()
 
 
-if __file__ == "__main__":
+if __name__ == "__main__":
+    dep.InstallDependecies()
     common_system.CheckOSPlatform()
     ProcessAllArguments()
     ExeInstructions()

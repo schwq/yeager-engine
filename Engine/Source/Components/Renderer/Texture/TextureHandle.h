@@ -21,13 +21,14 @@
 #include "Common/Utils/Common.h"
 #include "Common/Utils/LogEngine.h"
 
-#include "Components/Kernel/Caching/Cache.h"
+#include "Components/Kernel/Caching/TextureCache.h"
 #include "Components/Renderer/Objects/Entity.h"
 #include "Components/Renderer/Shader/ShaderHandle.h"
 
 namespace Yeager {
 
 class ApplicationCore;
+struct TextureCacheHeader;
 
 /* Materials are the process in which, objects gain some color, that can be a defined color by the user, a physical material, or a texture (even multiple textures combined) */
 struct MaterialType {
@@ -188,6 +189,12 @@ struct STBIDataOutput {
   String OriginalPath = YEAGER_NULL_LITERAL;
 };
 
+struct TextureCacheData {
+  TextureCacheHeader* mHeader;
+  unsigned char* mData = YEAGER_NULLPTR;
+  String mPath = YEAGER_NULL_LITERAL;
+};
+
 struct TextureHandleBase {
   GLuint Texture = -1;
   GLenum Format = GL_RGBA;
@@ -240,6 +247,9 @@ class MaterialTexture2D : public MaterialBase {
 
   MaterialTextureDataHandle* GetTextureDataHandle() { return &m_TextureHandle; }
 
+  bool CreateCache(const String& path);
+  bool LoadCache(const String& path);
+
   YEAGER_CONSTEXPR int GetWidth() const { return m_TextureHandle.Width; }
   YEAGER_CONSTEXPR int GetHeight() const { return m_TextureHandle.Height; }
 
@@ -267,6 +277,11 @@ class MaterialTexture2D : public MaterialBase {
                                 const MateriaTextureParameterGL parameteri =
                                     MateriaTextureParameterGL(GL_TEXTURE_2D, GL_REPEAT, GL_REPEAT, GL_REPEAT, 0,
                                                               GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR));
+
+  void GenerateFromCacheData(TextureCacheData* data,
+                             const MateriaTextureParameterGL parameteri =
+                                 MateriaTextureParameterGL(GL_TEXTURE_2D, GL_REPEAT, GL_REPEAT, GL_REPEAT, 0,
+                                                           GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR));
 
   void GenerateFromData(STBIDataOutput* output,
                         const MateriaTextureParameterGL parameteri = MateriaTextureParameterGL(

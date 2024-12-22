@@ -16,16 +16,15 @@ ProceduralTerrain::ProceduralTerrain(std::vector<String> TexturesPaths, int Terr
     Yeager::Log(ERROR, "Textures paths given to terrain isnt equal to 4!!");
   }
 
-  for (int x = 0; x < MAX_TEXTURE_TILES; x++) {
-    m_TextureData.m_TexturesLoaded[x].GenerateFromFile(TexturesPaths[x], false);
+  if (!TexturesPaths.empty()) {
+    for (int x = 0; x < MAX_TEXTURE_TILES; x++) {
+      m_TextureData.m_TexturesLoaded[x].GenerateFromFile(TexturesPaths[x], false);
+    }
   }
 }
 
 void ProceduralTerrain::GenerateTerrain(Shader* shader, int octaves, int bias, bool regenerate_seed)
 {
-  shader->UseShader();
-  shader->SetFloat("MinHeight", m_MetricData.m_MinHeight);
-  shader->SetFloat("MaxHeight", m_MetricData.m_MaxHeight);
 
   if (regenerate_seed) {
     m_Perlin.RegenerateSeed();
@@ -35,7 +34,8 @@ void ProceduralTerrain::GenerateTerrain(Shader* shader, int octaves, int bias, b
 
   m_Perlin.GeneratePerlin(m_MetricData.m_HeightMap.get(), octaves, bias, m_MetricData.m_Width, m_MetricData.m_Height,
                           m_MetricData.m_MaxHeight);
-  Setup();
+
+  SetupVertices();
 }
 
 float ProceduralTerrain::GetHeightInterpolated(float x, float z) const
@@ -52,22 +52,8 @@ void TerrainVertex::InitVertex(ProceduralTerrain* Terrain, int x, int z)
   float TextureScale = Terrain->GetTextureScale();
   TexCoords = Vector2(TextureScale * (float)x / Size, TextureScale * (float)z / Size);
 }
-
-void ProceduralTerrain::Setup()
+void ProceduralTerrain::SetupVertices()
 {
-  m_DrawData.Renderer.GenBuffers();
-
-  m_DrawData.Renderer.BindBuffers();
-
-  m_DrawData.Renderer.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex),
-                                          (const void*)offsetof(TerrainVertex, Position));
-
-  m_DrawData.Renderer.VertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex),
-                                          (const void*)offsetof(TerrainVertex, TexCoords));
-
-  m_DrawData.Renderer.VertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex),
-                                          (const void*)offsetof(TerrainVertex, Normals));
-
   int v_index = 0;
   m_DrawData.Vertices.resize(m_MetricData.m_Width * m_MetricData.m_Height);
   for (int x = 0; x < m_MetricData.m_Width; x++) {
@@ -109,6 +95,26 @@ void ProceduralTerrain::Setup()
   for (Uint x = 0; x < m_DrawData.Vertices.size(); x++) {
     m_DrawData.Vertices[x].Normals = glm::normalize(m_DrawData.Vertices[x].Normals);
   }
+}
+
+void ProceduralTerrain::SetupGL(Shader* shader)
+{
+  shader->UseShader();
+  shader->SetFloat("MinHeight", m_MetricData.m_MinHeight);
+  shader->SetFloat("MaxHeight", m_MetricData.m_MaxHeight);
+
+  m_DrawData.Renderer.GenBuffers();
+
+  m_DrawData.Renderer.BindBuffers();
+
+  m_DrawData.Renderer.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex),
+                                          (const void*)offsetof(TerrainVertex, Position));
+
+  m_DrawData.Renderer.VertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex),
+                                          (const void*)offsetof(TerrainVertex, TexCoords));
+
+  m_DrawData.Renderer.VertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex),
+                                          (const void*)offsetof(TerrainVertex, Normals));
 
   m_DrawData.Renderer.BufferData(GL_ARRAY_BUFFER, sizeof(m_DrawData.Vertices[0]) * m_DrawData.Vertices.size(),
                                  &m_DrawData.Vertices[0], GL_STATIC_DRAW);
@@ -171,9 +177,6 @@ void FaultFormationTerrain::CreateFaultFormationTerrain(Shader* shader, int Terr
   m_MetricData.m_TerrainSize = TerrainSize;
   m_MetricData.m_MinHeight = MinHeight;
   m_MetricData.m_MaxHeight = MaxHeight;
-  shader->UseShader();
-  shader->SetFloat("MaxHeight", MaxHeight);
-  shader->SetFloat("MinHeight", MinHeight);
 
   m_MetricData.m_HeightMap =
       BaseAllocator::MakeSharedPtr<Yeager::Math::Array2D<float>>(m_MetricData.m_Width, m_MetricData.m_Height);
@@ -182,7 +185,7 @@ void FaultFormationTerrain::CreateFaultFormationTerrain(Shader* shader, int Terr
                           m_MetricData.m_MaxHeight);
   CreateFaultFormationInternal(It, MinHeight, MaxHeight, FIR);
   m_MetricData.m_HeightMap->Normalize(MinHeight, MaxHeight);
-  Setup();
+  SetupVertices();
 }
 
 void FaultFormationTerrain::CreateFaultFormationInternal(int It, int MinHeight, int MaxHeight, float FIR)
@@ -275,10 +278,6 @@ void MidPointDisplacementTerrain::CreateMidPointDisplacement(Shader* shader, int
   m_MetricData.m_MaxHeight = MaxHeight;
   m_MetricData.m_MinHeight = MinHeight;
 
-  shader->UseShader();
-  shader->SetFloat("MinHeight", MinHeight);
-  shader->SetFloat("MaxHeight", MaxHeight);
-
   m_MetricData.m_HeightMap =
       BaseAllocator::MakeSharedPtr<Yeager::Math::Array2D<float>>(m_MetricData.m_Width, m_MetricData.m_Height);
   m_Perlin.RegenerateSeed();
@@ -287,7 +286,7 @@ void MidPointDisplacementTerrain::CreateMidPointDisplacement(Shader* shader, int
 
   CreateMidPointDisplacementF32(Roughness);
   m_MetricData.m_HeightMap->Normalize(MinHeight, MaxHeight);
-  Setup();
+  SetupVertices();
 }
 
 void MidPointDisplacementTerrain::CreateMidPointDisplacementF32(float Roughness)

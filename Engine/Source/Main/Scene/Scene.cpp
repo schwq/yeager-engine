@@ -197,6 +197,7 @@ std::vector<std::pair<String, String>> Scene::VerifySoundsOptionsInAssetFolder()
 
 void Scene::CheckDuplicatesLightSources()
 {
+
   auto pos = CheckDuplicatesEntities<PhysicalLightHandle>(&m_LightSources);
   if (!pos.has_value())
     return;
@@ -209,8 +210,6 @@ void Scene::CheckDuplicatesLightSources()
       indexMinus--;
     }
   }
-
-  Yeager::LogDebug(INFO, "Removed {} Duplicates Light Sources", pos.value().size());
 }
 
 void Scene::CheckScheduleDeletions()

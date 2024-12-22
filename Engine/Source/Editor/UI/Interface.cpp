@@ -1,6 +1,7 @@
 #include "Interface.h"
 #include "Common/Math/Mathematics.h"
 #include "Common/Utils/Common.h"
+#include "Components/Renderer/Skybox/Skybox.h"
 #include "Explorer.h"
 #include "Main/Core/Application.h"
 #include "Main/IO/InputHandle.h"
@@ -69,6 +70,13 @@ void SpaceFitText::Build()
   }
   /* The last string being built is forced to be flush at the end */
   StringBlocks.push_back(buildingString);
+}
+
+void Interface::TerrainGenControlWindow()
+{
+  Begin("Terrain Gen");
+
+  End();
 }
 
 bool Yeager::InputVector3(const char* label, Vector3* v, const char* format, ImGuiInputTextFlags flags)
@@ -1056,6 +1064,10 @@ void Interface::RenderDebugger()
 
   Separator();
 
+  if (scene != YEAGER_NULLPTR) {
+    if (scene->GetSkybox() != YEAGER_NULLPTR)
+      Checkbox("Skybox Should render", m_Application->GetScene()->GetSkybox()->GetShouldRender());
+  }
   Text("%s: %s", locale.Translate("Debug.Dev.Cam.Should.Move.Txt").c_str(),
        m_Application->GetCamera()->GetShouldMove() ? locale.Translate("Common.Boolean.True.Txt").c_str()
                                                    : locale.Translate("Common.Boolean.False.Txt").c_str());
@@ -1226,7 +1238,12 @@ void Interface::DebugTimeInterval()
   int x = 0;
 
   for (const auto& it : *IntervalElapsedTimeManager::GetIntervals()) {
-    Text("%d. %s : %d microseconds", ++x, it.mProcessName.c_str(), it.mDiff.count());
+    Text("(dynamic) %d. %s : %d microseconds", ++x, it.mProcessName.c_str(), it.mDiff.count());
+  }
+
+  for (const auto& it : *IntervalElapsedTimeManager::GetStaticIntervals()) {
+    if (it.mEnded)
+      Text("(static) %d. %s : %d microseconds", ++x, it.mProcessName.c_str(), it.mDiff.count());
   }
 
   End();

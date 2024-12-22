@@ -4,7 +4,9 @@ set(SOURCE_FILES ${SOURCE_FILES}
     Engine/Source/Common/Algorithm/KMPSearchPattern.cpp 
     Engine/Source/Common/Algorithm/KMPSearchPattern.h  
     Engine/Source/Common/FS/DirectorySystem.cpp
-    Engine/Source/Common/FS/DirectorySystem.h 
+    Engine/Source/Common/FS/DirectorySystem.h
+    Engine/Source/Common/FS/FileUtils.h 
+    Engine/Source/Common/FS/FileUtils.cpp
     Engine/Source/Common/Math/Mathematics.cpp
     Engine/Source/Common/Math/Mathematics.h 
     Engine/Source/Common/Utils/Common.h

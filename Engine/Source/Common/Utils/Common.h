@@ -35,6 +35,11 @@
 #define DEBUG_MEM
 #endif
 
+// Tests to do during development
+#ifdef DEBUG_TEST_ENABLED_ALL
+#define DEBUG_MEM_TEST
+#endif
+
 #define YEAGER_API
 
 #define YEAGER_VERSION 100

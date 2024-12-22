@@ -83,6 +83,9 @@ struct IntervalElapsedTime {
   std::chrono::steady_clock::time_point mStart;
   std::chrono::steady_clock::time_point mEnd;
   std::chrono::microseconds mDiff;
+
+  bool mEnded = false;
+  std::thread::id mThreadId;
 };
 
 struct TimeDurationFormat {
@@ -99,9 +102,19 @@ class IntervalElapsedTimeManager {
 
   static std::vector<IntervalElapsedTime>* GetIntervals();
 
+  static IntervalElapsedTime StaticStartTimeInterval(const String& process);
+  static IntervalElapsedTime StaticEndTimeInterval(const String& process);
+
+  static IntervalElapsedTime StaticStartTimeInterval(const String& process, std::thread::id thread_id);
+  static IntervalElapsedTime StaticEndTimeInterval(const String& process, std::thread::id thread_id);
+
+  static std::vector<IntervalElapsedTime>* GetStaticIntervals();
+
   static void ResetIntervals();
 
   static std::vector<IntervalElapsedTime> sIntervals;
+
+  static std::vector<IntervalElapsedTime> sStaticIntervals;
 
  private:
 };

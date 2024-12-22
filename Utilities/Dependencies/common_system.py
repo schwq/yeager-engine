@@ -206,20 +206,3 @@ def CopyTreeDir(src, dst):
 def ChangeDir(dir: str):
     if VerifyDirExists(dir):
         os.chdir(dir)
-
-
-def InvolkeGitCloneLink(link: str, dir: str = None) -> bool:
-    current = os.getcwd()
-    ChangeDir(dir)
-    print("[INFO] Cloning {} on {}".format(link, dir))
-    process = (
-        subprocess.call(
-            ["git", "clone", link],
-            shell=False,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.STDOUT,
-        )
-        == 0
-    )
-    ChangeDir(current)
-    return process

@@ -25,7 +25,7 @@
 #include "Common/Utils/LogEngine.h"
 #include "Common/Utils/Utilities.h"
 
-#include "Components/Kernel/Caching/Cache.h"
+#include "Components/Kernel/Caching/TextureCache.h"
 #include "Components/Kernel/Memory/Allocator.h"
 #include "Components/Kernel/Network/NetworkSocket.h"
 #include "Components/Kernel/Process/WpThread.h"
@@ -232,6 +232,8 @@ class ApplicationCore {
 
   void ProcessArgumentsDuringRender();
 
+  void CreateGeneralLight();
+
  private:
   UsableVariables mEngineVariables;
   ProgramArguments mArguments;
@@ -272,6 +274,7 @@ class ApplicationCore {
   SharedPtr<PhysXHandle> mPhysXHandle = YEAGER_NULLPTR;
   SharedPtr<Settings> mSettings = YEAGER_NULLPTR;
   SharedPtr<AudioEngine> mAudiosFromEngine = YEAGER_NULLPTR;
+  SharedPtr<PhysicalLightHandle> mGeneralLight = YEAGER_NULLPTR;
 
   WorldCharacterMatrices mWorldMatrices;
   ApplicationState::Enum mCurrentState = ApplicationState::eAPPLICATION_RUNNING;

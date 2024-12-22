@@ -10,9 +10,7 @@ set(LIBRARIES_FILES
     Engine/Include/imgui/imgui.cpp 
 
     Engine/Include/implot/implot.cpp 
-    Engine/Include/implot/implot_items.cpp 
-    
-    Engine/Include/Loguru/loguru.cpp 
+    Engine/Include/implot/implot_items.cpp  
 
     PARENT_SCOPE
 )

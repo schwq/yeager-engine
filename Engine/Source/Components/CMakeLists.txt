@@ -1,7 +1,7 @@
 set(SOURCE_FILES ${SOURCE_FILES}
 
-    Engine/Source/Components/Kernel/Caching/Cache.h
-    Engine/Source/Components/Kernel/Caching/Cache.cpp 
+    Engine/Source/Components/Kernel/Caching/TextureCache.h
+    Engine/Source/Components/Kernel/Caching/TextureCache.cpp
     Engine/Source/Components/Kernel/Hardware/HardwareInfo.h
     Engine/Source/Components/Kernel/Hardware/HardwareInfo.cpp 
     Engine/Source/Components/Kernel/Network/Connection.h
@@ -63,6 +63,8 @@ set(SOURCE_FILES ${SOURCE_FILES}
     Engine/Source/Components/TerrainGen/PerlinNoise.cpp 
     Engine/Source/Components/TerrainGen/ProceduralTerrain.h
     Engine/Source/Components/TerrainGen/ProceduralTerrain.cpp 
+    Engine/Source/Components/TerrainGen/TerrainGenThread.h 
+    Engine/Source/Components/TerrainGen/TerrainGenThread.cpp
 
     Engine/Source/Components/Text/TextRendering.h
     Engine/Source/Components/Text/TextRendering.cpp

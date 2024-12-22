@@ -471,11 +471,13 @@ ImporterThreaded::~ImporterThreaded() {}
 void ImporterThreaded::ThreadImport(Cchar path, const ObjectCreationConfiguration configuration, bool flip_image,
                                     Uint assimp_flags)
 {
+
   m_CreationConfiguration = configuration;
   m_ImageFlip = flip_image;
 
   m_FullPath = path;
   m_Thread = std::thread([this, path, assimp_flags] {
+    IntervalElapsedTimeManager::StaticStartTimeInterval("Importer_Thread", m_Thread.get_id());
     Assimp::Importer imp;
     m_Scene = const_cast<aiScene*>(imp.ReadFile(m_FullPath.c_str(), assimp_flags));
 
@@ -488,6 +490,7 @@ void ImporterThreaded::ThreadImport(Cchar path, const ObjectCreationConfiguratio
     m_Data.SuccessfulLoaded = true;
     m_ThreadFinished = true;
     m_PromiseObject.set_value(m_Data);
+    IntervalElapsedTimeManager::StaticEndTimeInterval("Importer_Thread", m_Thread.get_id());
   });
 }
 
@@ -505,6 +508,7 @@ void ImporterThreadedAnimated::ThreadImport(Cchar path, const ObjectCreationConf
   m_ImageFlip = flip_image;
   m_FullPath = path;
   m_Thread = std::thread([this, path, assimp_flags] {
+    IntervalElapsedTimeManager::StaticStartTimeInterval("Importer_Thread", m_Thread.get_id());
     Assimp::Importer imp;
     m_Scene = const_cast<aiScene*>(imp.ReadFile(m_FullPath.c_str(), assimp_flags));
 
@@ -517,6 +521,7 @@ void ImporterThreadedAnimated::ThreadImport(Cchar path, const ObjectCreationConf
     m_Data.SuccessfulLoaded = true;
     m_ThreadFinished = true;
     m_PromiseObject.set_value(m_Data);
+    IntervalElapsedTimeManager::StaticEndTimeInterval("Importer_Thread", m_Thread.get_id());
   });
 }
 

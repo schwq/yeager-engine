@@ -3,6 +3,7 @@
 using namespace Yeager;
 
 std::vector<IntervalElapsedTime> IntervalElapsedTimeManager::sIntervals;
+std::vector<IntervalElapsedTime> IntervalElapsedTimeManager::sStaticIntervals;
 
 String TimePointType::CurrentTimeFormatToString()
 {
@@ -154,9 +155,78 @@ IntervalElapsedTime IntervalElapsedTimeManager::EndTimeInterval(const String& pr
   return IntervalElapsedTime();
 }
 
+IntervalElapsedTime IntervalElapsedTimeManager::StaticStartTimeInterval(const String& process,
+                                                                        std::thread::id thread_id)
+{
+  if (IntervalElapsedTimeManager::sStaticIntervals.size() >= YEAGER_MAX_PROCESS_TIME_MAN) {
+    Yeager::Log(WARNING, "The max size of processes in the interval time manager was reached! Max: {}",
+                YEAGER_MAX_PROCESS_TIME_MAN);
+    return IntervalElapsedTime();
+  }
+
+  IntervalElapsedTime time;
+  time.mProcessName = process;
+  time.mStart = std::chrono::steady_clock::now();
+  time.mThreadId = thread_id;
+  IntervalElapsedTimeManager::sStaticIntervals.push_back(time);
+  return time;
+}
+
+IntervalElapsedTime IntervalElapsedTimeManager::StaticEndTimeInterval(const String& process, std::thread::id thread_id)
+{
+  using tm = IntervalElapsedTimeManager;
+  auto it = std::find_if(tm::sStaticIntervals.begin(), tm::sStaticIntervals.end(), [&](IntervalElapsedTime& time) {
+    return time.mProcessName == process && time.mThreadId == thread_id;
+  });
+
+  if (it != tm::sStaticIntervals.end()) {
+    it->mEnd = std::chrono::steady_clock::now();
+    it->mDiff = std::chrono::duration_cast<std::chrono::microseconds>(it->mEnd - it->mStart);
+    it->mEnded = true;
+    return (*it);
+  }
+}
+
+IntervalElapsedTime IntervalElapsedTimeManager::StaticStartTimeInterval(const String& process)
+{
+  if (IntervalElapsedTimeManager::sStaticIntervals.size() >= YEAGER_MAX_PROCESS_TIME_MAN) {
+    Yeager::Log(WARNING, "The max size of processes in the interval time manager was reached! Max: {}",
+                YEAGER_MAX_PROCESS_TIME_MAN);
+    return IntervalElapsedTime();
+  }
+
+  IntervalElapsedTime time;
+  time.mProcessName = process;
+  time.mStart = std::chrono::steady_clock::now();
+  IntervalElapsedTimeManager::sStaticIntervals.push_back(time);
+  return time;
+}
+
+IntervalElapsedTime IntervalElapsedTimeManager::StaticEndTimeInterval(const String& process)
+{
+  using tm = IntervalElapsedTimeManager;
+  auto it = std::find_if(tm::sStaticIntervals.begin(), tm::sStaticIntervals.end(),
+                         [&](IntervalElapsedTime& time) { return time.mProcessName == process; });
+
+  if (it != tm::sStaticIntervals.end()) {
+    it->mEnd = std::chrono::steady_clock::now();
+    it->mDiff = std::chrono::duration_cast<std::chrono::microseconds>(it->mEnd - it->mStart);
+    it->mEnded = true;
+    return (*it);
+  }
+
+  Yeager::Log(ERROR, "Cannot find process {} in the intervals of time!", process);
+  return IntervalElapsedTime();
+}
+
 std::vector<IntervalElapsedTime>* IntervalElapsedTimeManager::GetIntervals()
 {
   return &IntervalElapsedTimeManager::sIntervals;
+}
+
+std::vector<IntervalElapsedTime>* IntervalElapsedTimeManager::GetStaticIntervals()
+{
+  return &IntervalElapsedTimeManager::sStaticIntervals;
 }
 
 void IntervalElapsedTimeManager::ResetIntervals()

@@ -32,7 +32,7 @@ MaterialTexture2D::MaterialTexture2D(const EntityBuilder& builder, const Materia
 MaterialTexture2D::~MaterialTexture2D()
 {
   if (m_TextureHandle.Generated)
-    glDeleteTextures(1, &m_TextureHandle.Texture);
+    GL_CALL(glDeleteTextures(1, &m_TextureHandle.Texture));
 }
 
 GLenum Yeager::ChannelsToFormat(const int channels)
@@ -65,6 +65,18 @@ std::optional<Uint> Yeager::FormatToChannels(GLenum format)
   }
 }
 
+bool MaterialTexture2D::CreateCache(const String& path)
+{
+  TextureCache cache(mApplication);
+  return cache.Create(path, *this);
+}
+
+bool MaterialTexture2D::LoadCache(const String& path)
+{
+  TextureCache cache(mApplication);
+  return cache.Load(path, this);
+}
+
 void Yeager::DisplayImageImGui(MaterialTexture2D* texture, Uint resize)
 {
 
@@ -78,13 +90,41 @@ void Yeager::DisplayImageImGui(MaterialTexture2D* texture, Uint resize)
 
 void MaterialTexture2D::Unbind2DTextures()
 {
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, NULL);
+  GL_CALL(glActiveTexture(GL_TEXTURE0));
+  GL_CALL(glBindTexture(GL_TEXTURE_2D, NULL));
 }
 
 void MaterialTexture2D::BindTexture()
 {
-  glBindTexture(m_TextureHandle.BindTarget, m_TextureHandle.Texture);
+  GL_CALL(glBindTexture(m_TextureHandle.BindTarget, m_TextureHandle.Texture));
+}
+
+void MaterialTexture2D::GenerateFromCacheData(TextureCacheData* data, const MateriaTextureParameterGL parameteri)
+{
+  if (m_TextureHandle.Generated)
+    Yeager::LogDebug(WARNING, "Material texture already generated! Overrided by a texture 2d!");
+
+  stbi_set_flip_vertically_on_load(true);  // TODO: implment flip on header
+
+  m_MaterialType = MaterialType::eTEXTURE2D;
+  m_TextureHandle.Parameter = parameteri;
+
+  GenerateTextureParameter(parameteri);
+  m_TextureHandle.Height = data->mHeader->Height;
+  m_TextureHandle.Width = data->mHeader->Width;
+  m_TextureHandle.Path = data->mPath;
+  m_TextureHandle.Generated = true;
+  m_TextureHandle.Format = data->mHeader->Format;
+  m_TextureHandle.BindTarget = parameteri.BindTarget;
+  m_TextureHandle.Flipped = true;
+
+  GL_CALL(glTexImage2D(parameteri.BindTarget, 0, m_TextureHandle.Format, data->mHeader->Width, data->mHeader->Height, 0,
+                       m_TextureHandle.Format, GL_UNSIGNED_BYTE, data->mData));
+  GL_CALL(glGenerateMipmap(parameteri.BindTarget));
+
+  GL_CALL(glBindTexture(parameteri.BindTarget, 0));
+
+  Yeager::LogDebug(INFO, "Created Material texture2D {} UUID {}", mName, uuids::to_string(mEntityUUID));
 }
 
 void MaterialTexture2D::GenerateFromData(STBIDataOutput* output, const MateriaTextureParameterGL parameteri)
@@ -106,13 +146,13 @@ void MaterialTexture2D::GenerateFromData(STBIDataOutput* output, const MateriaTe
   m_TextureHandle.BindTarget = parameteri.BindTarget;
   m_TextureHandle.Flipped = output->Flip;
 
-  glTexImage2D(parameteri.BindTarget, 0, m_TextureHandle.Format, output->Width, output->Height, 0,
-               m_TextureHandle.Format, GL_UNSIGNED_BYTE, output->Data);
-  glGenerateMipmap(parameteri.BindTarget);
+  GL_CALL(glTexImage2D(parameteri.BindTarget, 0, m_TextureHandle.Format, output->Width, output->Height, 0,
+                       m_TextureHandle.Format, GL_UNSIGNED_BYTE, output->Data));
+  GL_CALL(glGenerateMipmap(parameteri.BindTarget));
 
   stbi_image_free(output->Data);
 
-  glBindTexture(parameteri.BindTarget, 0);
+  GL_CALL(glBindTexture(parameteri.BindTarget, 0));
 
   Yeager::LogDebug(INFO, "Created Material texture2D {} UUID {}", mName, uuids::to_string(mEntityUUID));
 }
@@ -120,17 +160,17 @@ void MaterialTexture2D::GenerateFromData(STBIDataOutput* output, const MateriaTe
 void MaterialTexture2D::GenerateTextureParameter(const MateriaTextureParameterGL& parameter)
 {
   if (m_TextureHandle.Generated)
-    glDeleteTextures(1, &m_TextureHandle.Texture);  // kill the current texture
+    GL_CALL(glDeleteTextures(1, &m_TextureHandle.Texture));  // kill the current texture
 
-  glGenTextures(1, &m_TextureHandle.Texture);
-  glBindTexture(parameter.BindTarget, m_TextureHandle.Texture);
+  GL_CALL(glGenTextures(1, &m_TextureHandle.Texture));
+  GL_CALL(glBindTexture(parameter.BindTarget, m_TextureHandle.Texture));
 
-  glTexParameteri(parameter.BindTarget, GL_TEXTURE_WRAP_S, parameter.WRAP_S);
-  glTexParameteri(parameter.BindTarget, GL_TEXTURE_WRAP_T, parameter.WRAP_T);
-  glTexParameteri(parameter.BindTarget, GL_TEXTURE_WRAP_R, parameter.WRAP_R);
-  glTexParameterf(parameter.BindTarget, GL_TEXTURE_BASE_LEVEL, parameter.BASE_LEVEL);
-  glTexParameteri(parameter.BindTarget, GL_TEXTURE_MIN_FILTER, parameter.MIN_FILTER);
-  glTexParameteri(parameter.BindTarget, GL_TEXTURE_MAG_FILTER, parameter.MAG_FILTER);
+  GL_CALL(glTexParameteri(parameter.BindTarget, GL_TEXTURE_WRAP_S, parameter.WRAP_S));
+  GL_CALL(glTexParameteri(parameter.BindTarget, GL_TEXTURE_WRAP_T, parameter.WRAP_T));
+  GL_CALL(glTexParameteri(parameter.BindTarget, GL_TEXTURE_WRAP_R, parameter.WRAP_R));
+  GL_CALL(glTexParameterf(parameter.BindTarget, GL_TEXTURE_BASE_LEVEL, parameter.BASE_LEVEL));
+  GL_CALL(glTexParameteri(parameter.BindTarget, GL_TEXTURE_MIN_FILTER, parameter.MIN_FILTER));
+  GL_CALL(glTexParameteri(parameter.BindTarget, GL_TEXTURE_MAG_FILTER, parameter.MAG_FILTER));
 }
 
 bool MaterialTexture2D::RegenerateTextureFlipped(bool flip)
@@ -177,9 +217,9 @@ bool MaterialTexture2D::GenerateFromFile(const String& path, bool flip, const Ma
 
     GenerateTextureParameter(parameteri);
 
-    glTexImage2D(parameteri.BindTarget, 0, m_TextureHandle.Format, m_TextureHandle.Width, m_TextureHandle.Height, 0,
-                 m_TextureHandle.Format, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(parameteri.BindTarget);
+    GL_CALL(glTexImage2D(parameteri.BindTarget, 0, m_TextureHandle.Format, m_TextureHandle.Width,
+                         m_TextureHandle.Height, 0, m_TextureHandle.Format, GL_UNSIGNED_BYTE, data));
+    GL_CALL(glGenerateMipmap(parameteri.BindTarget));
 
     m_TextureHandle.Path = path;
     m_TextureHandle.Generated = true;
@@ -188,7 +228,7 @@ bool MaterialTexture2D::GenerateFromFile(const String& path, bool flip, const Ma
 
     stbi_image_free(data);
 
-    glBindTexture(parameteri.BindTarget, 0);
+    GL_CALL(glBindTexture(parameteri.BindTarget, 0));
 
     return true;
 
@@ -224,10 +264,10 @@ bool MaterialTexture2D::GenerateCubeMapFromFile(const std::vector<String>& paths
 
       GenerateTextureParameter(parameteri);
 
-      glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, m_TextureHandle.Format, m_TextureHandle.Width,
-                   m_TextureHandle.Height, 0, m_TextureHandle.Format, GL_UNSIGNED_BYTE, data);
+      GL_CALL(glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, m_TextureHandle.Format, m_TextureHandle.Width,
+                           m_TextureHandle.Height, 0, m_TextureHandle.Format, GL_UNSIGNED_BYTE, data));
 
-      glGenerateMipmap(parameteri.BindTarget);
+      GL_CALL(glGenerateMipmap(parameteri.BindTarget));
 
       m_TextureHandle.CubeMapsPaths = paths;
       m_TextureHandle.Generated = true;
@@ -243,6 +283,6 @@ bool MaterialTexture2D::GenerateCubeMapFromFile(const std::vector<String>& paths
     }
   }
 
-  glBindTexture(parameteri.BindTarget, 0);
+  GL_CALL(glBindTexture(parameteri.BindTarget, 0));
   return successed;
 }

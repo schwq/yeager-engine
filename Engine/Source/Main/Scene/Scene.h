@@ -23,9 +23,9 @@
 #include "Common/Utils/Common.h"
 #include "Common/Utils/LogEngine.h"
 #include "Common/Utils/Utilities.h"
-
 #include "Components/Lighting/LightHandle.h"
 #include "Components/Renderer/Objects/Object.h"
+#include "Components/TerrainGen/ProceduralTerrain.h"
 #include "Editor/Camera/Camera.h"
 #include "Editor/Media/AudioHandle.h"
 #include "Editor/UI/ToolboxObj.h"
@@ -33,13 +33,9 @@
 #include "Main/IO/Serialization.h"
 
 namespace Yeager {
+
 class ApplicationCore;
 class Skybox;
-
-template <typename Type>
-using VecSharedPtr = std::vector<std::shared_ptr<Type>>;
-template <typename Ty1, typename Ty2>
-using VecPair = std::vector<std::pair<Ty1, Ty2>>;
 
 enum SceneType { Scene2D, Scene3D, SceneError };
 enum SceneRenderer { OpenGL3_3, OpenGL4, RendererError };
@@ -65,10 +61,17 @@ static SceneContext InitializeContext(String name, String author, SceneType type
 
 class Scene {
  public:
+  template <typename T>
+  using VecSharedPtr = std::vector<std::shared_ptr<T>>;
+
+  template <typename T, typename U>
+  using VecPair = std::vector<std::pair<T, U>>;
+
+  Scene() = default;
+
   Scene(Yeager::ApplicationCore* app);
 
   ~Scene();
-  Scene() {}
 
   void BuildScene(const LauncherProjectPicker& project);
 
@@ -210,7 +213,6 @@ class Scene {
   VecSharedPtr<Yeager::AnimatedObject> m_AnimatedObject;
   VecSharedPtr<Yeager::ToolboxHandle> m_Toolboxes;
   VecSharedPtr<Yeager::PhysicalLightHandle> m_LightSources;
-
   std::vector<std::shared_ptr<NodeComponent>> m_NodeHierarchy;
 };
 }  // namespace Yeager

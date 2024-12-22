@@ -26,93 +26,147 @@
 namespace Yeager {
 
 #define DEBUG_THREAD
+#define YEAGER_THREAD_DEFAULT_NAME "DNThread"
 
+/**
+ * @brief Wrapper around std::thread, contains the process name, the thread handle, and std::atomic<bool> to know when is finished.
+ *  This kind of thread, when created using the ThreadManagemenet, is stored in a vector for futher debugging 
+ * @attention This struct is only useful when the thread must not return a value! Only void functions can be used, here the result is compute inside the function
+ */
 struct WpThread {
-  String mProcessName = "DNThread";
+  ~WpThread()
+  {
+    if (mThread.joinable())
+      mThread.join();
+  }
+  String mProcessName = YEAGER_THREAD_DEFAULT_NAME;
   std::thread mThread;
+  std::atomic<bool> bIsFinished = false;
 };
 
+/**
+ * @brief A better wrapper on std::thread, its the same as WpThread but holds a std::promise, std::future and works around a value T data
+ * @attention The component that make uses of this thread must take care of the asnyc value being generate, like checks to know when the thread is finished
+ */
+template <typename T>
+struct WpThreadFuture : public WpThread {
+  std::promise<T> mPromise;
+  std::future<T> mFuture;
+
+  T Get() { mFuture.get(); }
+  std::atomic<bool> IsFinished() { mFuture.valid() ? bIsFinished : false; }
+
+  T mData;
+};
+
+/**
+ * @brief Thread Management managers mostly of the threads and provide function to create them.
+ * All threads created using this function are returned as shared_ptr, so them dont go out of scope and terminate
+ */
 class ThreadManagement {
  public:
   using shared_t = std::shared_ptr<WpThread>;
-  /*
-  template <typename Fun, typename... Args>
-  static shared_t NewThread(Fun&& fun, Args&&... args)
-  {
-    auto wt = BaseAllocator::MakeSharedPtr<WpThread>();
-    wt->mThread = std::thread(fun, std::forward<Args>(args)...);
-    sThreadsInUse.push_back(wt);
 
-#ifdef DEBUG_THREAD
-    Yeager::LogDebug(INFO, "Created new thread ({})! Current number of threads: {}", wt->mProcessName,
-                     sThreadsInUse.size());
-#endif
+  template <typename T>
+  using shared_tf = std::shared_ptr<WpThreadFuture<T>>;
 
-    return wt;
-  }
-
-  template <typename Callable>
-  static shared_t NewThread(Callable&& fun)
-  {
-    auto wt = BaseAllocator::MakeSharedPtr<WpThread>();
-    wt->mThread = std::thread([=] { fun(); });
-    sThreadsInUse.push_back(wt);
-
-#ifdef DEBUG_THREAD
-    Yeager::LogDebug(INFO, "Created new thread ({})! Current number of threads: {}", wt->mProcessName,
-                     sThreadsInUse.size());
-#endif
-
-    return wt;
-  }
-*/
+  /**
+   * @brief Creates a new thread with the process name and a given Callable function, like a lambda function. 
+   * During the thread, the function is executed and marked as finished once done. 
+   * @return Returns a shared_ptr to the created thread, but dont worry, the thread is stored in a std::vector during execution
+   */
   template <typename Callable>
   static shared_t NewThread(const String& process, Callable&& fun)
   {
     auto wt = BaseAllocator::MakeSharedPtr<WpThread>();
     wt->mProcessName = process;
-    wt->mThread = std::thread([=] { fun(); });
-    sThreadsInUse.push_back(wt);
+    wt->mThread = std::thread([&, wt] {
+      fun();
+      wt->bIsFinished = true;
+      ThreadDebugLog(INFO, "Thread {} was finished doing the task!", wt->mProcessName);
+    });
+    sNumOfThreadsCreated += 1;
 
-#ifdef DEBUG_THREAD
-    Yeager::LogDebug(INFO, "Created new thread ({})! Current number of threads: {}", wt->mProcessName,
-                     sThreadsInUse.size());
-#endif
+    ThreadDebugLog(INFO, "Created new thread ({})!", process);
 
     return wt;
   }
 
+  /**
+   * @brief Creates a new thread with the process name and a given Fun function with the given Agrs arguments. 
+   * During the thread, the function is executed and marked as finished once done. 
+   * @return Returns a shared_ptr to the created thread, but dont worry, the thread is stored in a std::vector during execution
+   */
   template <typename Fun, typename... Args>
   static shared_t NewThread(const String& process, Fun&& fun, Args&&... args)
   {
     auto wt = BaseAllocator::MakeSharedPtr<WpThread>();
     wt->mProcessName = process;
-    wt->mThread = std::thread(fun, std::forward<Args>(args)...);
-    sThreadsInUse.push_back(wt);
+    wt->mThread = std::thread([&, wt] {
+      fun(std::forward<Args>(args)...);
+      wt->bIsFinished = true;
+      ThreadDebugLog(INFO, "Thread {} was finished doing the task!", wt->mProcessName);
+    });
+    sNumOfThreadsCreated += 1;
 
-#ifdef DEBUG_THREAD
-    Yeager::LogDebug(INFO, "Created new thread ({})! Current number of threads: {}", wt->mProcessName,
-                     sThreadsInUse.size());
-#endif
+    ThreadDebugLog(INFO, "Created new thread ({})!", process);
 
     return wt;
   }
 
-  static void TerminateThreads()
+  /**
+   * @brief Creates a new thread future with the process name and a given Callable function, like a lambda function. 
+   * During the thread, the function is executed and marked as finished once done. You can get the value once the thread is finished.
+   * @return Returns a shared_ptr to the created thread marked as [[nodiscard]], you must take care of the thread during execution!
+   */
+  template <typename T, typename Callable>
+  YEAGER_NODISCARD static shared_tf<T> NewThreadFuture(const String& process, Callable&& fun)
   {
-    std::size_t num = sThreadsInUse.size();
-    for (auto& t : sThreadsInUse) {
-      if (t->mThread.joinable())
-        t->mThread.join();
+    auto wt = BaseAllocator::MakeSharedPtr<WpThreadFuture<T>>();
+    wt->mProcessName = process;
+    wt->mFuture = wt->mPromise.get_future();
+
+    wt->mThread = std::thread([&, wt] {
+      wt->mData = fun();
+      wt->mPromise.set_value(wt->mData);
+      wt->bIsFinished = true;
+      ThreadDebugLog(INFO, "Thread {} was finished doing the task!", wt->mProcessName);
+    });
+
+    return wt;
+  }
+
+  /**
+   * @brief Creates a new thread future with the process name and a given Fun function and Args arguments. 
+   * During the thread, the function is executed and marked as finished once done. You can get the value once the thread is finished.
+   * @return Returns a shared_ptr to the created thread marked as [[nodiscard]], you must take care of the thread during execution!
+   */
+  template <typename T, typename Fun, typename... Args>
+  YEAGER_NODISCARD static shared_tf<T> NewThreadFuture(const String& process, Fun&& fun, Args&&... args)
+  {
+    auto wt = BaseAllocator::MakeSharedPtr<WpThreadFuture<T>>();
+    wt->mProcessName = process;
+    wt->mFuture = wt->mPromise.get_future();
+
+    wt->mThread = std::thread([&, wt] {
+      wt->mData = fun(std::forward<Args>(args)...);
+      wt->mPromise.set_value(wt->mData);
+      wt->bIsFinished = true;
+      ThreadDebugLog(INFO, "Thread {} was finished doing the task!", wt->mProcessName);
+    });
+
+    return wt;
+  }
+
+  template <typename... T>
+  static void ThreadDebugLog(int verbosity, fmt::format_string<T...> fmt, T&&... args)
+  {
 #ifdef DEBUG_THREAD
-      Yeager::LogDebug(INFO, "Terminated thread ({})! Current number of threads: {}", t->mProcessName, --num);
+    Yeager::LogDebug(verbosity, fmt, std::forward<T>(args)...);
 #endif
-      t.reset();
-    }
-    sThreadsInUse.clear();
   }
 
  private:
-  static std::vector<shared_t> sThreadsInUse;
+  static std::size_t sNumOfThreadsCreated;
 };
 }  // namespace Yeager

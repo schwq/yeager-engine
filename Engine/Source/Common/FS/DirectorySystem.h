@@ -20,6 +20,7 @@
 
 #include "Common/Utils/Common.h"
 #include "Common/Utils/LogEngine.h"
+#include "FileUtils.h"
 
 namespace Yeager {
 

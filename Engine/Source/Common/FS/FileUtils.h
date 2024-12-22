@@ -15,19 +15,24 @@
 //
 //    You should have received a copy of the GNU General Public License
 //    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-// clang-format off
+
+#pragma once
 
 #include "Common/Utils/Common.h"
-#include "Main/Core/Application.h"
-#include "Common/Utils/Utilities.h"
+#include "Common/Utils/LogEngine.h"
 
+namespace Yeager {
 
-// clang-format on 
-int main(int argc, char* argv[])
-{
-  Yeager::ApplicationCore Application(argc, argv);
-  if(Application.ShouldRender()) {
-    Application.UpdateTheEngine();
-  }
-  return Application.GetReturnCode();
-}
+struct FileHandle {
+  std::fstream mFile;
+  String mPath = YEAGER_NULL_LITERAL;
+  std::size_t mSize = 0;
+  bool bValid = false;
+};
+
+extern FileHandle OpenFileR(const String& path, std::ios_base::openmode mode);
+extern FileHandle OpenFileW(const String& path, std::ios_base::openmode mode);
+extern std::size_t GetFileSize(FileHandle& handle);
+extern bool CloseFile(FileHandle& handle);
+
+}  // namespace Yeager

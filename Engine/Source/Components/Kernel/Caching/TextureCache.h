@@ -28,7 +28,7 @@ namespace Yeager {
 class ApplicationCore;
 class MaterialTexture2D;
 
-#define YEAGER_TEXTURE_CACHE_EXT_STR ".ygen_tex_cache"
+#define YEAGER_TEXTURE_CACHE_EXT_STR ".ytex_ch"
 #define YEAGER_CACHE_MAGIC_CONST "YGEN"
 /**
  * Texture cache header file (name_hash).ygen_tex_cache  
@@ -57,10 +57,8 @@ class TextureCache {
   TextureCache(Yeager::ApplicationCore* application);
   ~TextureCache() {}
 
-  virtual void Create(const String& path);
-  virtual void Create(unsigned char* data, uint16_t format, uint16_t width, uint16_t height);
-  virtual void Create(Yeager::MaterialTexture2D& texture);
-  unsigned char* Load(const String& path);
+  virtual bool Create(const String& folder, Yeager::MaterialTexture2D& texture);
+  bool Load(const String& path, MaterialTexture2D* texture);
 
   std::optional<TextureCacheHeader*> GetDataHeader();
 
@@ -70,7 +68,7 @@ class TextureCache {
   bool m_Allocated = true;
   YEAGER_USING_SHARED_PTR
   SharedPtr<TextureCacheHeader> m_Header = YEAGER_NULLPTR;
-  SharedPtr<unsigned char> m_CurrentData = YEAGER_NULLPTR;
+  unsigned char* m_CurrentData = YEAGER_NULLPTR;
   Yeager::ApplicationCore* m_Application = YEAGER_NULLPTR;
 };
 

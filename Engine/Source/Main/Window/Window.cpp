@@ -104,6 +104,15 @@ void Window::BuildWindowHints()
 #endif
 }
 
+void Window::StartFrame()
+{
+  glfwPollEvents();
+}
+void Window::EndFrame()
+{
+  glfwSwapBuffers(mWindowHandle);
+}
+
 bool Window::RegenerateMainWindow(const UVector2& size, const String& title) noexcept
 {
   if (mWindowHandle) {

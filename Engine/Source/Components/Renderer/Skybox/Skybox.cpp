@@ -27,6 +27,7 @@ bool Skybox::BuildSkyboxFromImport(String path, bool flip)
       return false;
     }
 
+    m_Texture = std::shared_ptr<MaterialTexture2D>(&m_Model.TexturesLoaded[0]->first);
     m_Geometry = ObjectGeometryType::eCUSTOM;
     m_Type = SkyboxTextureType::ESampler2D;
     m_SkyboxDataLoaded = true;
@@ -169,6 +170,9 @@ Skybox::~Skybox()
 
 void Skybox::Draw(Yeager::Shader* shader, Matrix4 view, Matrix4 projection)
 {
+  if (!m_SkyboxShouldRender)
+    return;
+
   glDisable(GL_CULL_FACE);
 
   if (m_SkyboxDataLoaded && bRender) {

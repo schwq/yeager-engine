@@ -54,4 +54,4 @@ pthread
 freetype
 dl)
 
-add_definitions(-w -DDEBUG_ENABLED_ALL) 
+add_definitions(-w -DDEBUG_ENABLED_ALL -DDEBUG_TEST_ENABLED_ALL) 

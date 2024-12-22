@@ -134,7 +134,9 @@ class ProceduralTerrain {
   void GenerateTerrain(Shader* shader, int octaves, int bias, bool regenerate_seed = true);
 
   /** Setup the openGL buffers and vertex arrays, assign the attribs*/
-  void Setup();
+  void SetupGL(Shader* shader);
+
+  void SetupVertices();
 
   /**
    * @brief         Draw the terrain, calling the meshes draw method
@@ -194,8 +196,8 @@ class ProceduralTerrain {
 
  protected:
   TerrainDrawData m_DrawData;
-  TerrainMetricData m_MetricData;
   TerrainTexturingData m_TextureData;
+  TerrainMetricData m_MetricData;
   TerrainChunkInformation m_ChunkInfo;
   PerlinNoise m_Perlin;
 };
@@ -212,6 +214,8 @@ class FaultFormationTerrain : public ProceduralTerrain {
   FaultFormationTerrain(std::vector<String> TexturesPaths, int TerrainChunkPositionX = 0, int TerrainChunkPositionY = 0)
       : ProceduralTerrain(TexturesPaths, TerrainChunkPositionX, TerrainChunkPositionY)
   {}
+
+  FaultFormationTerrain() : ProceduralTerrain(std::vector<String>(), 0, 0) {}
 
   /**
    * @brief             Creates the heightmap values, by doing mostly the same as GenerateProceduralTerrain(), 

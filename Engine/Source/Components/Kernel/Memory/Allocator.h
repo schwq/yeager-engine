@@ -39,6 +39,10 @@ struct GeneralMemoryAllocationStats {
   std::size_t mBytesDeallocated = 0;
 
   const std::size_t DiffOfBytes() noexcept { return mBytesAllocated - mBytesDeallocated; }
+
+#ifdef DEBUG_MEM_TEST
+  std::map<String, size_t> mDifferencesOfMemAllocDuringInterval;
+#endif
 };
 
 class BaseAllocator {
@@ -58,6 +62,37 @@ class BaseAllocator {
 
   static GeneralMemoryAllocationStats sGenMemoryStats;
 
+  static void* Memcpy(void* __restrict__ dest, const void* __restrict src, size_t N)
+  {
+    if (!dest) {
+      MemDebugLog(ERROR, "Memcpy destination pointer is not valid!");
+      return YEAGER_NULLPTR;
+    }
+    if (!src) {
+      MemDebugLog(ERROR, "Memcpy source pointer is not valid!");
+      return YEAGER_NULLPTR;
+    }
+
+    MemDebugLog(INFO, "Copying {} bytes from {} to {}", N, fmt::ptr(src), fmt::ptr(dest));
+    return std::memcpy(dest, src, N);
+  }
+
+  static int Memcmp(const void* s1, const void* s2, size_t N)
+  {
+    if (!s1) {
+      MemDebugLog(ERROR, "The first pointer given to memcmp is invalid!");
+      return -1;
+    }
+
+    if (!s2) {
+      MemDebugLog(ERROR, "The second pointer given to memcmp is invalid!");
+      return -1;
+    }
+
+    MemDebugLog(INFO, "Comparing {} bytes of {} and {}", N, fmt::ptr(s1), fmt::ptr(s2));
+    return memcmp(s1, s2, N);
+  }
+
   template <typename T>
   static T* Allocate(std::size_t n = 1)
   {
@@ -67,9 +102,7 @@ class BaseAllocator {
     T* ptr = static_cast<T*>(::operator new(n * sizeof(T)));
     mPointersInUse[static_cast<void*>(ptr)] = n * sizeof(T);
 
-#ifdef DEBUG_MEM
-    Yeager::LogDebug(INFO, "Successful allocated size {}, located {}", n * sizeof(T), fmt::ptr(ptr));
-#endif
+    MemDebugLog(INFO, "Successful allocated size {}, located {}", n * sizeof(T), fmt::ptr(ptr));
 
     return ptr;
   }
@@ -83,9 +116,7 @@ class BaseAllocator {
     sGenMemoryStats.mBytesDeallocated += sz;
     mPointersInUse.erase(static_cast<void*>(ptr));
 
-#ifdef DEBUG_MEM
-    Yeager::LogDebug(INFO, "Successful deallocated size {}, located {}", sz, fmt::ptr(ptr));
-#endif
+    MemDebugLog(INFO, "Successful deallocated size {}, located {}", sz, fmt::ptr(ptr));
 
     YEAGER_DELETE_OP(ptr);
   }
@@ -97,9 +128,7 @@ class BaseAllocator {
     T* ptr = Allocate<T>(1);
     new (ptr) T(std::forward<Args>(args)...);
 
-#ifdef DEBUG_MEM
-    Yeager::LogDebug(INFO, "Successful construct size {}, located {}", sizeof(T), fmt::ptr(ptr));
-#endif
+    MemDebugLog(INFO, "Successful construct size {}, located {}", sizeof(T), fmt::ptr(ptr));
 
     return ptr;
   }
@@ -109,9 +138,7 @@ class BaseAllocator {
   {
     ptr->~T();
 
-#ifdef DEBUG_MEM
-    Yeager::LogDebug(INFO, "Successful destroyed size {}, located {}", sizeof(T), fmt::ptr(ptr));
-#endif
+    MemDebugLog(INFO, "Successful destroyed size {}, located {}", sizeof(T), fmt::ptr(ptr));
   }
 
   /**
@@ -123,9 +150,7 @@ class BaseAllocator {
     weak ptr = weak<T>(__args...);
     BaseAllocator::sWeakPointersCreated.mCount += 1;
 
-#ifdef DEBUG_MEM
-    Yeager::LogDebug(INFO, "Succcess allocated weak_ptr size: {}, located: {}", sizeof(T), fmt::ptr(ptr.get()));
-#endif
+    MemDebugLog(INFO, "Succcess allocated weak_ptr size: {}, located: {}", sizeof(T), fmt::ptr(ptr.get()));
 
     return ptr;
   }
@@ -139,9 +164,7 @@ class BaseAllocator {
     unique ptr = std::make_unique<T>(__args...);
     BaseAllocator::sUniquePointersCreated.mCount += 1;
 
-#ifdef DEBUG_MEM
-    Yeager::LogDebug(INFO, "Succcess allocated unique_ptr size: {}, located: {}", sizeof(T), fmt::ptr(ptr.get()));
-#endif
+    MemDebugLog(INFO, "Succcess allocated unique_ptr size: {}, located: {}", sizeof(T), fmt::ptr(ptr.get()));
 
     return ptr;
   }
@@ -155,14 +178,55 @@ class BaseAllocator {
     shared ptr = std::make_shared<T>(__args...);
     BaseAllocator::sSharedPointersCreated.mCount += 1;
 
-#ifdef DEBUG_MEM
-    Yeager::LogDebug(INFO, "Succcess allocated shared_ptr size: {}, located: {}", sizeof(T), fmt::ptr(ptr.get()));
-#endif
+    MemDebugLog(INFO, "Succcess allocated shared_ptr size: {}, located: {}", sizeof(T), fmt::ptr(ptr.get()));
 
     return ptr;
   }
 
+#ifdef DEBUG_MEM_TEST
+
+  static void AddIntervalOfMemChecking(const String& processname)
+  {
+    auto* map = &sGenMemoryStats.mDifferencesOfMemAllocDuringInterval;
+    if (map->find(processname) == map->end()) {
+      map->insert(std::pair<String, size_t>(processname, sGenMemoryStats.DiffOfBytes()));
+      MemDebugLog(INFO, "Process name ({}) added to vector, the current difference of bytes is {}", processname,
+                  sGenMemoryStats.DiffOfBytes());
+    } else {
+      MemDebugLog(WARNING, "Process name ({}) already exists!", processname);
+    }
+  }
+
+  static void EndIntervalOfMemChecking(const String& processname)
+  {
+    auto* map = &sGenMemoryStats.mDifferencesOfMemAllocDuringInterval;
+
+    if (auto it = map->find(processname); it != map->end()) {
+
+      if (sGenMemoryStats.DiffOfBytes() != map->at(processname)) {
+        MemDebugLog(
+            ERROR, "The difference of bytes for process name {}, is not the same as the start of the interval! Diff {}",
+            processname, static_cast<int>(sGenMemoryStats.DiffOfBytes() - map->at(processname)));
+      } else {
+        MemDebugLog(INFO, "The process name {} was the same bytes difference as the start! Not leaks!", processname);
+      }
+      map->erase(it);
+    } else {
+      MemDebugLog(WARNING, "Cannot find process name {} in the vector!", processname);
+    }
+  }
+
+#endif
+
  private:
+  template <typename... T>
+  static void MemDebugLog(int verbosity, fmt::format_string<T...> fmt, T&&... args)
+  {
+#ifdef DEBUG_MEM
+    Yeager::LogDebug(verbosity, fmt, std::forward<T>(args)...);
+#endif
+  }
+
   static std::unordered_map<void*, std::size_t> mPointersInUse;
 };
 

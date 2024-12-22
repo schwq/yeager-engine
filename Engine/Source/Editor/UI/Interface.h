@@ -262,6 +262,8 @@ class Interface {
   void LightHandleControlWindow();
   void PhysXHandleControlWindow();
 
+  void TerrainGenControlWindow();
+
   bool GetDebugControlWindowOpen() const { return m_DebugControlWindowOpen; }
   void SetDebugControlWindowOpen(const bool open) { m_DebugControlWindowOpen = open; }
   void DebugControlWindow();

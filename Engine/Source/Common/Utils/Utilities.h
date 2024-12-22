@@ -180,4 +180,11 @@ extern bool CheckIFLinuxCmdExists(const String& cmd);
 extern String ToLower(const String& str);
 extern String ToUpper(const String& str);
 
+template <typename T>
+void QuicKDeleteVec(std::vector<T>& vec, int idx)
+{
+  vec[idx] = vec.back();
+  vec.pop_back();
+}
+
 }  // namespace Yeager

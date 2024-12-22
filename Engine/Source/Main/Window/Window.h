@@ -89,6 +89,9 @@ class Window {
 
   YEAGER_NODISCARD GLFWwindow* GetGLFWwindow() { return mWindowHandle; }
 
+  void StartFrame();
+  void EndFrame();
+
   Vector2 GetWindowSize() const;
 
   IVector2 GetWindowPos() const;
